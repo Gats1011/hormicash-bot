@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const twilio = require('twilio');
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccount.json');
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 // Firebase
 admin.initializeApp({
