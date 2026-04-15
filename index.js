@@ -15,14 +15,25 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Parser de gastos
-function parsearGasto(texto) {
+// Parser de movimientos (gastos e ingresos)
+function parsearMovimiento(texto) {
   const lower = texto.toLowerCase();
   const match = lower.match(/(\d+(?:[.,]\d{1,2})?)/);
   if (!match) return null;
   const monto = parseFloat(match[1].replace(',', '.'));
   if (isNaN(monto) || monto <= 0) return null;
 
+  // Detectar si es ingreso
+  const ingresosKeywords = ['ingreso','sueldo','salario','pago','transferencia','depósito','deposito','freelance','propina','bono','regalo','cobro','cobré','cobre','me pagaron','ganancia'];
+  const esIngreso = ingresosKeywords.some(k => lower.includes(k));
+
+  if (esIngreso) {
+    const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g, '').replace(/soles?|sol|s\//gi, '').trim();
+    const label = desc.length > 2 ? desc.charAt(0).toUpperCase() + desc.slice(1) : 'Ingreso';
+    return { monto, tipo: 'ingreso', categoria: 'ingreso', label };
+  }
+
+  // Es gasto — categorizar
   const categorias = {
     comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger'],
     cafe: ['café','cafe','cappuccino','latte','té','te','bebida','jugo'],
@@ -41,7 +52,7 @@ function parsearGasto(texto) {
   const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g, '').replace(/soles?|sol|s\//gi, '').trim();
   const label = desc.length > 2 ? desc.charAt(0).toUpperCase() + desc.slice(1) : 'Gasto';
 
-  return { monto, categoria, label };
+  return { monto, tipo: 'gasto', categoria, label };
 }
 
 // Webhook de Twilio
@@ -51,33 +62,72 @@ app.post('/webhook', async (req, res) => {
   const twiml = new twilio.twiml.MessagingResponse();
 
   if (mensaje.toLowerCase() === '/resumen') {
+    const hoy = new Date();
+    hoy.setHours(0,0,0,0);
+
     const snapshot = await db.collection('gastos')
       .where('telefono', '==', telefono)
       .orderBy('fecha', 'desc')
-      .limit(10)
+      .limit(20)
       .get();
 
     if (snapshot.empty) {
-      twiml.message('No tienes gastos registrados hoy 📋');
+      twiml.message('No tienes movimientos registrados 📋');
     } else {
-      let total = 0;
-      snapshot.forEach(doc => total += doc.data().monto);
-      twiml.message(`📊 Tus últimos gastos:\nTotal: S/ ${total.toFixed(2)}\n${snapshot.size} transacciones registradas`);
+      let totalGastos = 0;
+      let totalIngresos = 0;
+      let countGastos = 0;
+      let countIngresos = 0;
+
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const fecha = d.fecha?.toDate ? d.fecha.toDate() : new Date(d.fecha);
+        if (fecha >= hoy) {
+          if (d.tipo === 'ingreso') {
+            totalIngresos += d.monto;
+            countIngresos++;
+          } else {
+            totalGastos += d.monto;
+            countGastos++;
+          }
+        }
+      });
+
+      const balance = totalIngresos - totalGastos;
+      const emoji = balance >= 0 ? '✅' : '⚠️';
+
+      twiml.message(
+        `📊 *Resumen de hoy*\n\n` +
+        `💰 Ingresos: S/ ${totalIngresos.toFixed(2)} (${countIngresos})\n` +
+        `💸 Gastos: S/ ${totalGastos.toFixed(2)} (${countGastos})\n` +
+        `${emoji} Balance: S/ ${balance.toFixed(2)}`
+      );
     }
   } else {
-    const gasto = parsearGasto(mensaje);
-    if (!gasto) {
-      twiml.message('No entendí el monto 🤔\nEscribe algo como: "Almuerzo 15" o "Café 8 soles"');
+    const mov = parsearMovimiento(mensaje);
+    if (!mov) {
+      twiml.message(
+        'No entendí el monto 🤔\n\n' +
+        '*Gastos:* "Almuerzo 15" o "Café 8 soles"\n' +
+        '*Ingresos:* "Ingreso 500 sueldo" o "Cobré 200 freelance"\n\n' +
+        'Escribe /resumen para ver tu balance'
+      );
     } else {
       await db.collection('gastos').add({
         telefono,
-        monto: gasto.monto,
-        categoria: gasto.categoria,
-        label: gasto.label,
+        monto: mov.monto,
+        tipo: mov.tipo,
+        categoria: mov.categoria,
+        label: mov.label,
         mensaje,
         fecha: admin.firestore.FieldValue.serverTimestamp()
       });
-      twiml.message(`✅ S/ ${gasto.monto.toFixed(2)} registrado\n🐜 ${gasto.label}\nEscribe /resumen para ver tus gastos`);
+
+      if (mov.tipo === 'ingreso') {
+        twiml.message(`💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance`);
+      } else {
+        twiml.message(`✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`);
+      }
     }
   }
 
