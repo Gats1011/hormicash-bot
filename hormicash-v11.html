@@ -614,7 +614,7 @@
   .bar-fill.danger { background: linear-gradient(90deg, var(--accent), var(--red)); }
   .budget-msg { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
-  .cat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+  .cat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
   .cat-item {
     background: var(--card);
     border: 1px solid var(--border);
@@ -892,7 +892,7 @@
 
   @media (max-width: 768px) {
     .stats-row { grid-template-columns: 1fr 1fr; }
-    .cat-grid { grid-template-columns: 1fr 1fr; }
+    .cat-grid { grid-template-columns: repeat(3, 1fr); }
     .insights-grid { grid-template-columns: 1fr; }
     .login-plans { grid-template-columns: 1fr; }
     .phone-input-group { flex-direction: column; }
@@ -1071,9 +1071,15 @@
       <div class="section-title">Categorías</div>
       <div class="cat-grid">
         <div class="cat-item"><div class="cat-icon">🍱</div><div class="cat-name">Comida</div><div class="cat-amount" id="cat-comida">S/ 0</div></div>
-        <div class="cat-item"><div class="cat-icon">🚌</div><div class="cat-name">Transporte</div><div class="cat-amount" id="cat-transporte">S/ 0</div></div>
         <div class="cat-item"><div class="cat-icon">☕</div><div class="cat-name">Café</div><div class="cat-amount" id="cat-cafe">S/ 0</div></div>
+        <div class="cat-item"><div class="cat-icon">🚌</div><div class="cat-name">Transporte</div><div class="cat-amount" id="cat-transporte">S/ 0</div></div>
         <div class="cat-item"><div class="cat-icon">📱</div><div class="cat-name">Telecom</div><div class="cat-amount" id="cat-telecom">S/ 0</div></div>
+        <div class="cat-item"><div class="cat-icon">🛍️</div><div class="cat-name">Compras</div><div class="cat-amount" id="cat-compras">S/ 0</div></div>
+        <div class="cat-item"><div class="cat-icon">🎮</div><div class="cat-name">Ocio</div><div class="cat-amount" id="cat-entretenimiento">S/ 0</div></div>
+        <div class="cat-item"><div class="cat-icon">🏠</div><div class="cat-name">Hogar</div><div class="cat-amount" id="cat-hogar">S/ 0</div></div>
+        <div class="cat-item"><div class="cat-icon">💊</div><div class="cat-name">Salud</div><div class="cat-amount" id="cat-salud">S/ 0</div></div>
+        <div class="cat-item"><div class="cat-icon">📚</div><div class="cat-name">Educación</div><div class="cat-amount" id="cat-educacion">S/ 0</div></div>
+        <div class="cat-item"><div class="cat-icon">💸</div><div class="cat-name">Otros</div><div class="cat-amount" id="cat-otros">S/ 0</div></div>
       </div>
     </div>
 
@@ -1159,7 +1165,7 @@
   updateMonthLabel();
 
   const BUDGET = 50;
-  const emojis = { comida:'🍱', cafe:'☕', transporte:'🚌', telecom:'📱', otros:'💸' };
+  const emojis = { comida:'🍱', cafe:'☕', transporte:'🚌', telecom:'📱', compras:'🛍️', entretenimiento:'🎮', hogar:'🏠', salud:'💊', educacion:'📚', otros:'💸' };
 
   window.userPlan = 'free';
   let userPhone = null;
@@ -1377,12 +1383,17 @@
     const cx = 110, cy = 110, r = 85, lineWidth = 28;
     const colors = {
       comida: '#f59e0b',
-      transporte: '#3b82f6',
       cafe: '#a78bfa',
+      transporte: '#3b82f6',
       telecom: '#22c55e',
+      compras: '#ec4899',
+      entretenimiento: '#f97316',
+      hogar: '#06b6d4',
+      salud: '#ef4444',
+      educacion: '#8b5cf6',
       otros: '#6b7a8d'
     };
-    const labels = { comida:'Comida', transporte:'Transporte', cafe:'Café', telecom:'Telecom', otros:'Otros' };
+    const labels = { comida:'Comida', cafe:'Café', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
 
     ctx.clearRect(0, 0, 220, 220);
 
@@ -1624,10 +1635,15 @@
     if (quickType === 'gasto') {
       const lower = desc.toLowerCase();
       const categorias = {
-        comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger'],
-        cafe: ['café','cafe','cappuccino','latte','té','te','bebida','jugo'],
-        transporte: ['pasaje','bus','taxi','uber','metro','combi','moto'],
-        telecom: ['recarga','celular','internet','datos','spotify','netflix'],
+        comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','tacos','empanada','salchipapa','broaster','lomo','causa','sopa','guiso','tallarines','chaufa','anticucho','chicharron','tamales','fruta','ensalada','galleta','snack','lonche','merienda'],
+        cafe: ['café','cafe','cappuccino','latte','té','te','bebida','jugo','gaseosa','agua','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo'],
+        transporte: ['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','rappi','glovo','envío','envio','delivery','bicicleta'],
+        telecom: ['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono'],
+        compras: ['zapatillas','zapatilla','ropa','zapatos','zapato','tienda','regalo','camisa','polo','pantalón','pantalon','jean','short','falda','vestido','mochila','cartera','lentes','reloj','accesorio','mall','saga','ripley','oechsle','zara','nike','adidas','amazon','mercado libre','tottus','plaza vea','wong','vivanda','sodimac','promart'],
+        entretenimiento: ['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','salida','juerga','cumpleaños','celebración'],
+        hogar: ['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','pintura','herramienta','lavandería'],
+        salud: ['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','jabón','higiene','terapia','consulta'],
+        educacion: ['libro','curso','universidad','copias','impresión','cuaderno','lapicero','útiles','matrícula','pensión','academia','tutoría','certificado','examen','material']
       };
       for (const [cat, keywords] of Object.entries(categorias)) {
         if (keywords.some(k => lower.includes(k))) {
@@ -1704,7 +1720,7 @@
       let totalIngresos = 0;
       let countGastos = 0;
       let countIngresos = 0;
-      const cats = { comida:0, transporte:0, cafe:0, telecom:0, otros:0 };
+      const cats = { comida:0, cafe:0, transporte:0, telecom:0, compras:0, entretenimiento:0, hogar:0, salud:0, educacion:0, otros:0 };
 
       mesActual.forEach(d => {
         if (d.tipo === 'ingreso') {
@@ -1774,7 +1790,7 @@
         const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
         if (ahorroEl) ahorroEl.textContent = 'S/ ' + (topCat[1] * 0.3).toFixed(0);
 
-        const catLabels = { comida:'🍱 Comida', transporte:'🚌 Transporte', cafe:'☕ Café', telecom:'📱 Telecom', otros:'💸 Otros' };
+        const catLabels = { comida:'🍱 Comida', cafe:'☕ Café', transporte:'🚌 Transporte', telecom:'📱 Telecom', compras:'🛍️ Compras', entretenimiento:'🎮 Ocio', hogar:'🏠 Hogar', salud:'💊 Salud', educacion:'📚 Educación', otros:'💸 Otros' };
         if (catTopEl && topCat[1] > 0) {
           catTopEl.textContent = catLabels[topCat[0]] || topCat[0];
           if (catTopDescEl) catTopDescEl.textContent = 'S/ ' + topCat[1].toFixed(0) + ' este mes';
