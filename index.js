@@ -21,7 +21,7 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// ── FUNCIÓN: Descargar imagen de Twilio como base64 ──────────────
+// ── FUNCIÓN: Descargar media de Twilio como base64 ───────────────
 async function downloadTwilioMedia(mediaUrl) {
   const response = await axios.get(mediaUrl, {
     auth: {
@@ -61,7 +61,41 @@ Si la imagen no es un voucher o ticket, responde: {"error": "no_voucher"}`;
 
   const text = result.response.text().trim();
   const clean = text.replace(/```json|```/g, '').trim();
-return JSON.parse(clean);
+  return JSON.parse(clean);
+}
+
+// ── FUNCIÓN: Extraer gasto desde audio con Gemini ────────────────
+async function extractAudioData(base64, mimeType) {
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+
+  const prompt = `Escucha este audio de voz en español y extrae la información de un gasto o ingreso mencionado.
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin markdown, sin backticks.
+
+Formato exacto:
+{
+  "tipo": "gasto o ingreso",
+  "negocio": "nombre del lugar o null si no se menciona",
+  "monto": 0.00,
+  "moneda": "PEN",
+  "categoria": "una de: Comida, Transporte, Entretenimiento, Salud, Educación, Ropa, Tecnología, Hogar, Otros",
+  "descripcion": "breve descripción del gasto en máximo 10 palabras"
+}
+
+Ejemplos de frases que puede decir el usuario:
+- "Almuerzo en La Lucha, veinte soles" → tipo: gasto, negocio: La Lucha, monto: 20, categoria: Comida
+- "Taxi al trabajo, ocho soles" → tipo: gasto, negocio: null, monto: 8, categoria: Transporte
+- "Cobré doscientos de freelance" → tipo: ingreso, negocio: null, monto: 200, categoria: null
+
+Si no se puede identificar un monto claro, responde: {"error": "no_monto"}`;
+
+  const result = await model.generateContent([
+    { inlineData: { data: base64, mimeType } },
+    prompt,
+  ]);
+
+  const text = result.response.text().trim();
+  const clean = text.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
 }
 
 // ── FUNCIÓN: Parser de movimientos (gastos e ingresos) ───────────
@@ -109,45 +143,92 @@ app.post('/webhook', async (req, res) => {
   const numMedia = parseInt(req.body.NumMedia || '0');
   const twiml = new twilio.twiml.MessagingResponse();
 
-  // ── FLUJO VOUCHER (imagen) ──────────────────────────────────────
+  // ── FLUJO MEDIA (imagen o audio) ────────────────────────────────
   if (numMedia > 0) {
     const mediaUrl = req.body.MediaUrl0;
     const mediaMime = req.body.MediaContentType0 || 'image/jpeg';
+    const esAudio = mediaMime.startsWith('audio/');
 
     try {
       const { base64, mimeType } = await downloadTwilioMedia(mediaUrl);
-      const voucher = await extractVoucherData(base64, mimeType || mediaMime);
+      const mime = mimeType || mediaMime;
 
-      if (voucher.error === 'no_voucher') {
-        twiml.message('📸 No pude identificar un voucher en esa imagen.\nEnvía una foto clara de tu ticket o recibo.');
-        return res.type('text/xml').send(twiml.toString());
+      // ── AUDIO ──────────────────────────────────────────────────
+      if (esAudio) {
+        const audio = await extractAudioData(base64, mime);
+
+        if (audio.error === 'no_monto') {
+          twiml.message('🎙️ No pude identificar un monto en el audio.\nIntenta decir: "Almuerzo en La Lucha, veinte soles"');
+          return res.type('text/xml').send(twiml.toString());
+        }
+
+        const esIngreso = audio.tipo === 'ingreso';
+
+        await db.collection('gastos').add({
+          telefono,
+          monto: audio.monto,
+          tipo: audio.tipo || 'gasto',
+          categoria: audio.categoria ? audio.categoria.toLowerCase() : 'otros',
+          label: audio.negocio || audio.descripcion || (esIngreso ? 'Ingreso por voz' : 'Gasto por voz'),
+          descripcion: audio.descripcion,
+          fuente: 'audio_whatsapp',
+          mensaje: '[audio]',
+          fecha: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        if (esIngreso) {
+          twiml.message(
+            `💰 *Ingreso registrado por voz*\n\n` +
+            `💵 S/ ${audio.monto.toFixed(2)}\n` +
+            `📝 ${audio.descripcion}\n\n` +
+            `Escribe /resumen para ver tu balance`
+          );
+        } else {
+          twiml.message(
+            `✅ *Gasto registrado por voz*\n\n` +
+            `🏪 ${audio.negocio || 'Sin negocio'}\n` +
+            `💰 S/ ${audio.monto.toFixed(2)}\n` +
+            `📂 ${audio.categoria}\n` +
+            `📝 ${audio.descripcion}\n\n` +
+            `Escribe /resumen para ver tu balance`
+          );
+        }
+
+      // ── IMAGEN (voucher) ───────────────────────────────────────
+      } else {
+        const voucher = await extractVoucherData(base64, mime);
+
+        if (voucher.error === 'no_voucher') {
+          twiml.message('📸 No pude identificar un voucher en esa imagen.\nEnvía una foto clara de tu ticket o recibo.');
+          return res.type('text/xml').send(twiml.toString());
+        }
+
+        await db.collection('gastos').add({
+          telefono,
+          monto: voucher.monto,
+          tipo: 'gasto',
+          categoria: voucher.categoria ? voucher.categoria.toLowerCase() : 'otros',
+          label: voucher.negocio || 'Voucher',
+          descripcion: voucher.descripcion,
+          fecha_voucher: voucher.fecha,
+          fuente: 'voucher_whatsapp',
+          mensaje: '[imagen]',
+          fecha: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        twiml.message(
+          `✅ *Gasto registrado desde voucher*\n\n` +
+          `🏪 ${voucher.negocio}\n` +
+          `💰 S/ ${voucher.monto.toFixed(2)}\n` +
+          `📂 ${voucher.categoria}\n` +
+          `📝 ${voucher.descripcion}\n\n` +
+          `Escribe /resumen para ver tu balance`
+        );
       }
 
-      await db.collection('gastos').add({
-        telefono,
-        monto: voucher.monto,
-        tipo: 'gasto',
-        categoria: voucher.categoria ? voucher.categoria.toLowerCase() : 'otros',
-        label: voucher.negocio || 'Voucher',
-        descripcion: voucher.descripcion,
-        fecha_voucher: voucher.fecha,
-        fuente: 'voucher_whatsapp',
-        mensaje: '[imagen]',
-        fecha: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      twiml.message(
-        `✅ *Gasto registrado desde voucher*\n\n` +
-        `🏪 ${voucher.negocio}\n` +
-        `💰 S/ ${voucher.monto.toFixed(2)}\n` +
-        `📂 ${voucher.categoria}\n` +
-        `📝 ${voucher.descripcion}\n\n` +
-        `Escribe /resumen para ver tu balance`
-      );
-
     } catch (err) {
-      console.error('Error procesando voucher:', err);
-      twiml.message('❌ No pude leer el voucher. Intenta con una foto más clara o con mejor iluminación.');
+      console.error('Error procesando media:', err);
+      twiml.message('❌ No pude procesar el archivo. Intenta de nuevo.');
     }
 
     return res.type('text/xml').send(twiml.toString());
@@ -203,7 +284,8 @@ app.post('/webhook', async (req, res) => {
         'No entendí el monto 🤔\n\n' +
         '*Gastos:* "Almuerzo 15" o "Café 8 soles"\n' +
         '*Ingresos:* "Ingreso 500 sueldo" o "Cobré 200 freelance"\n' +
-        '*Voucher:* Envía una foto de tu ticket 📸\n\n' +
+        '*Voucher:* Envía una foto de tu ticket 📸\n' +
+        '*Voz:* Envía un audio con tu gasto 🎙️\n\n' +
         'Escribe /resumen para ver tu balance'
       );
     } else {
