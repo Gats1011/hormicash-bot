@@ -60,7 +60,8 @@ Si la imagen no es un voucher o ticket, responde: {"error": "no_voucher"}`;
   ]);
 
   const text = result.response.text().trim();
-  return JSON.parse(text);
+  const clean = text.replace(/```json|```/g, '').trim();
+return JSON.parse(clean);
 }
 
 // ── FUNCIÓN: Parser de movimientos (gastos e ingresos) ───────────
