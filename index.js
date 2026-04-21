@@ -2,6 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const twilio = require('twilio');
 const admin = require('firebase-admin');
+const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 // Firebase
@@ -10,12 +13,57 @@ admin.initializeApp({
 });
 const db = admin.firestore();
 
+// Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 // Express
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// Parser de movimientos (gastos e ingresos)
+// ── FUNCIÓN: Descargar imagen de Twilio como base64 ──────────────
+async function downloadTwilioMedia(mediaUrl) {
+  const response = await axios.get(mediaUrl, {
+    auth: {
+      username: process.env.TWILIO_ACCOUNT_SID,
+      password: process.env.TWILIO_AUTH_TOKEN,
+    },
+    responseType: 'arraybuffer',
+  });
+  const base64 = Buffer.from(response.data).toString('base64');
+  const mimeType = response.headers['content-type'] || 'image/jpeg';
+  return { base64, mimeType };
+}
+
+// ── FUNCIÓN: Extraer datos del voucher con Gemini Vision ─────────
+async function extractVoucherData(base64, mimeType) {
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+
+  const prompt = `Analiza este voucher, ticket o recibo y extrae la información del gasto.
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin markdown, sin backticks.
+
+Formato exacto:
+{
+  "negocio": "nombre del negocio o establecimiento",
+  "monto": 0.00,
+  "moneda": "PEN",
+  "categoria": "una de: Comida, Transporte, Entretenimiento, Salud, Educación, Ropa, Tecnología, Hogar, Otros",
+  "fecha": "YYYY-MM-DD o null si no se puede leer",
+  "descripcion": "breve descripción del gasto en máximo 10 palabras"
+}
+
+Si la imagen no es un voucher o ticket, responde: {"error": "no_voucher"}`;
+
+  const result = await model.generateContent([
+    { inlineData: { data: base64, mimeType } },
+    prompt,
+  ]);
+
+  const text = result.response.text().trim();
+  return JSON.parse(text);
+}
+
+// ── FUNCIÓN: Parser de movimientos (gastos e ingresos) ───────────
 function parsearMovimiento(texto) {
   const lower = texto.toLowerCase();
   const match = lower.match(/(\d+(?:[.,]\d{1,2})?)/);
@@ -23,7 +71,6 @@ function parsearMovimiento(texto) {
   const monto = parseFloat(match[1].replace(',', '.'));
   if (isNaN(monto) || monto <= 0) return null;
 
-  // Detectar si es ingreso
   const ingresosKeywords = ['ingreso','sueldo','salario','pago','transferencia','depósito','deposito','freelance','propina','bono','regalo','cobro','cobré','cobre','me pagaron','ganancia'];
   const esIngreso = ingresosKeywords.some(k => lower.includes(k));
 
@@ -33,7 +80,6 @@ function parsearMovimiento(texto) {
     return { monto, tipo: 'ingreso', categoria: 'ingreso', label };
   }
 
-  // Es gasto — categorizar
   const categorias = {
     comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger'],
     cafe: ['café','cafe','cappuccino','latte','té','te','bebida','jugo'],
@@ -55,12 +101,58 @@ function parsearMovimiento(texto) {
   return { monto, tipo: 'gasto', categoria, label };
 }
 
-// Webhook de Twilio
+// ── WEBHOOK ──────────────────────────────────────────────────────
 app.post('/webhook', async (req, res) => {
   const mensaje = req.body.Body || '';
   const telefono = req.body.From || '';
+  const numMedia = parseInt(req.body.NumMedia || '0');
   const twiml = new twilio.twiml.MessagingResponse();
 
+  // ── FLUJO VOUCHER (imagen) ──────────────────────────────────────
+  if (numMedia > 0) {
+    const mediaUrl = req.body.MediaUrl0;
+    const mediaMime = req.body.MediaContentType0 || 'image/jpeg';
+
+    try {
+      const { base64, mimeType } = await downloadTwilioMedia(mediaUrl);
+      const voucher = await extractVoucherData(base64, mimeType || mediaMime);
+
+      if (voucher.error === 'no_voucher') {
+        twiml.message('📸 No pude identificar un voucher en esa imagen.\nEnvía una foto clara de tu ticket o recibo.');
+        return res.type('text/xml').send(twiml.toString());
+      }
+
+      await db.collection('gastos').add({
+        telefono,
+        monto: voucher.monto,
+        tipo: 'gasto',
+        categoria: voucher.categoria ? voucher.categoria.toLowerCase() : 'otros',
+        label: voucher.negocio || 'Voucher',
+        descripcion: voucher.descripcion,
+        fecha_voucher: voucher.fecha,
+        fuente: 'voucher_whatsapp',
+        mensaje: '[imagen]',
+        fecha: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      twiml.message(
+        `✅ *Gasto registrado desde voucher*\n\n` +
+        `🏪 ${voucher.negocio}\n` +
+        `💰 S/ ${voucher.monto.toFixed(2)}\n` +
+        `📂 ${voucher.categoria}\n` +
+        `📝 ${voucher.descripcion}\n\n` +
+        `Escribe /resumen para ver tu balance`
+      );
+
+    } catch (err) {
+      console.error('Error procesando voucher:', err);
+      twiml.message('❌ No pude leer el voucher. Intenta con una foto más clara o con mejor iluminación.');
+    }
+
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── FLUJO TEXTO ─────────────────────────────────────────────────
   if (mensaje.toLowerCase() === '/resumen') {
     const hoy = new Date();
     hoy.setHours(0,0,0,0);
@@ -109,7 +201,8 @@ app.post('/webhook', async (req, res) => {
       twiml.message(
         'No entendí el monto 🤔\n\n' +
         '*Gastos:* "Almuerzo 15" o "Café 8 soles"\n' +
-        '*Ingresos:* "Ingreso 500 sueldo" o "Cobré 200 freelance"\n\n' +
+        '*Ingresos:* "Ingreso 500 sueldo" o "Cobré 200 freelance"\n' +
+        '*Voucher:* Envía una foto de tu ticket 📸\n\n' +
         'Escribe /resumen para ver tu balance'
       );
     } else {
@@ -119,6 +212,7 @@ app.post('/webhook', async (req, res) => {
         tipo: mov.tipo,
         categoria: mov.categoria,
         label: mov.label,
+        fuente: 'texto_whatsapp',
         mensaje,
         fecha: admin.firestore.FieldValue.serverTimestamp()
       });
