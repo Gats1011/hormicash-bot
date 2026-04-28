@@ -7,420 +7,278 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
-// Firebase
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
-
-// Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Twilio client (para enviar mensajes proactivos)
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// Express
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-// ── ESTADO DE CONVERSACIÓN (en memoria) ──────────────────────────
 const estadoUsuario = {};
 
-// ── FUNCIÓN: Registrar usuario en Firestore ──────────────────────
+const CATEGORIAS = ['comida','cafe','transporte','telecom','entretenimiento','salud','educacion','ropa','hogar','otros'];
+const CATEGORIAS_DISPLAY = {
+  comida:'🍔 Comida', cafe:'☕ Café', transporte:'🚌 Transporte', telecom:'📱 Telecom',
+  entretenimiento:'🎬 Entretenimiento', salud:'💊 Salud', educacion:'📚 Educación',
+  ropa:'👕 Ropa', hogar:'🏠 Hogar', otros:'📦 Otros'
+};
+
+async function esPremium(telefono) {
+  try {
+    const doc = await db.collection('usuarios_whatsapp').doc(telefono).get();
+    return doc.exists && doc.data().plan === 'premium';
+  } catch(e) { return false; }
+}
+
 async function registrarUsuario(telefono) {
   try {
+    const doc = await db.collection('usuarios_whatsapp').doc(telefono).get();
+    const esNuevo = !doc.exists;
     await db.collection('usuarios_whatsapp').doc(telefono).set({
       telefono,
       ultimo_mensaje: admin.firestore.FieldValue.serverTimestamp(),
       activo: true
     }, { merge: true });
-  } catch (e) {
-    console.error('Error registrando usuario:', e);
-  }
+    return esNuevo;
+  } catch(e) { return false; }
 }
 
-// ── FUNCIÓN: Descargar media de Twilio como base64 ───────────────
+async function verificarLimite(telefono, categoria, montoNuevo) {
+  try {
+    const userDoc = await db.collection('usuarios_whatsapp').doc(telefono).get();
+    if (!userDoc.exists) return null;
+    const userData = userDoc.data();
+    if (userData.plan !== 'premium') return null;
+    const limites = userData.limites || {};
+    const limite = limites[categoria];
+    if (!limite) return null;
+    const inicioMes = new Date();
+    inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+    const snapshot = await db.collection('gastos')
+      .where('telefono','==',telefono)
+      .where('categoria','==',categoria)
+      .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes))
+      .get();
+    let totalMes = 0;
+    snapshot.forEach(doc => { totalMes += doc.data().monto; });
+    totalMes += montoNuevo;
+    const porcentaje = (totalMes / limite) * 100;
+    if (porcentaje >= 100) return { tipo:'superado', totalMes, limite, porcentaje };
+    if (porcentaje >= 80) return { tipo:'advertencia', totalMes, limite, porcentaje };
+    return null;
+  } catch(e) { return null; }
+}
+
 async function downloadTwilioMedia(mediaUrl) {
   const response = await axios.get(mediaUrl, {
-    auth: {
-      username: process.env.TWILIO_ACCOUNT_SID,
-      password: process.env.TWILIO_AUTH_TOKEN,
-    },
+    auth: { username: process.env.TWILIO_ACCOUNT_SID, password: process.env.TWILIO_AUTH_TOKEN },
     responseType: 'arraybuffer',
   });
-  const base64 = Buffer.from(response.data).toString('base64');
-  const mimeType = response.headers['content-type'] || 'image/jpeg';
-  return { base64, mimeType };
+  return { base64: Buffer.from(response.data).toString('base64'), mimeType: response.headers['content-type'] || 'image/jpeg' };
 }
 
-// ── FUNCIÓN: Extraer datos del voucher con Gemini Vision ─────────
 async function extractVoucherData(base64, mimeType) {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-
   const prompt = `Analiza este voucher, ticket o recibo y extrae la información del gasto.
 Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin markdown, sin backticks.
-
-Formato exacto:
-{
-  "negocio": "nombre del negocio o establecimiento",
-  "monto": 0.00,
-  "moneda": "PEN",
-  "categoria": "una de: Comida, Transporte, Entretenimiento, Salud, Educación, Ropa, Tecnología, Hogar, Otros",
-  "fecha": "YYYY-MM-DD o null si no se puede leer",
-  "descripcion": "breve descripción del gasto en máximo 10 palabras"
+Formato: {"negocio":"","monto":0.00,"moneda":"PEN","categoria":"Comida|Transporte|Entretenimiento|Salud|Educación|Ropa|Tecnología|Hogar|Otros","fecha":"YYYY-MM-DD o null","descripcion":""}
+Si no es voucher: {"error":"no_voucher"}`;
+  const result = await model.generateContent([{ inlineData: { data: base64, mimeType } }, prompt]);
+  return JSON.parse(result.response.text().trim().replace(/```json|```/g,'').trim());
 }
 
-Si la imagen no es un voucher o ticket, responde: {"error": "no_voucher"}`;
-
-  const result = await model.generateContent([
-    { inlineData: { data: base64, mimeType } },
-    prompt,
-  ]);
-
-  const text = result.response.text().trim();
-  const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
-}
-
-// ── FUNCIÓN: Extraer gasto desde audio con Gemini ────────────────
 async function extractAudioData(base64, mimeType) {
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-
-  const prompt = `Escucha este audio de voz en español y extrae la información de un gasto o ingreso mencionado.
-Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin markdown, sin backticks.
-
-Formato exacto:
-{
-  "tipo": "gasto o ingreso",
-  "negocio": "nombre del lugar o null si no se menciona",
-  "monto": 0.00,
-  "moneda": "PEN",
-  "categoria": "una de: Comida, Transporte, Entretenimiento, Salud, Educación, Ropa, Tecnología, Hogar, Otros",
-  "descripcion": "breve descripción del gasto en máximo 10 palabras"
+  const prompt = `Escucha este audio y extrae el gasto o ingreso mencionado.
+Responde ÚNICAMENTE JSON: {"tipo":"gasto|ingreso","negocio":"null o nombre","monto":0.00,"moneda":"PEN","categoria":"Comida|Transporte|Entretenimiento|Salud|Educación|Ropa|Tecnología|Hogar|Otros","descripcion":""}
+Si no hay monto: {"error":"no_monto"}`;
+  const result = await model.generateContent([{ inlineData: { data: base64, mimeType } }, prompt]);
+  return JSON.parse(result.response.text().trim().replace(/```json|```/g,'').trim());
 }
 
-Ejemplos de frases que puede decir el usuario:
-- "Almuerzo en La Lucha, veinte soles" → tipo: gasto, negocio: La Lucha, monto: 20, categoria: Comida
-- "Taxi al trabajo, ocho soles" → tipo: gasto, negocio: null, monto: 8, categoria: Transporte
-- "Cobré doscientos de freelance" → tipo: ingreso, negocio: null, monto: 200, categoria: null
-
-Si no se puede identificar un monto claro, responde: {"error": "no_monto"}`;
-
-  const result = await model.generateContent([
-    { inlineData: { data: base64, mimeType } },
-    prompt,
-  ]);
-
-  const text = result.response.text().trim();
-  const clean = text.replace(/```json|```/g, '').trim();
-  return JSON.parse(clean);
-}
-
-// ── FUNCIÓN: Parser de movimientos (gastos e ingresos) ───────────
 function parsearMovimiento(texto) {
   const lower = texto.toLowerCase();
   const match = lower.match(/(\d+(?:[.,]\d{1,2})?)/);
   if (!match) return null;
-  const monto = parseFloat(match[1].replace(',', '.'));
+  const monto = parseFloat(match[1].replace(',','.'));
   if (isNaN(monto) || monto <= 0) return null;
-
   const ingresosKeywords = ['ingreso','sueldo','salario','pago','transferencia','depósito','deposito','freelance','propina','bono','regalo','cobro','cobré','cobre','me pagaron','ganancia'];
-  const esIngreso = ingresosKeywords.some(k => lower.includes(k));
-
-  if (esIngreso) {
-    const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g, '').replace(/soles?|sol|s\//gi, '').trim();
-    const label = desc.length > 2 ? desc.charAt(0).toUpperCase() + desc.slice(1) : 'Ingreso';
-    return { monto, tipo: 'ingreso', categoria: 'ingreso', label };
+  if (ingresosKeywords.some(k => lower.includes(k))) {
+    const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g,'').replace(/soles?|sol|s\//gi,'').trim();
+    return { monto, tipo:'ingreso', categoria:'ingreso', label: desc.length > 2 ? desc.charAt(0).toUpperCase()+desc.slice(1) : 'Ingreso' };
   }
-
-  const categorias = {
-    comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger'],
-    cafe: ['café','cafe','cappuccino','latte','té','te','bebida','jugo'],
-    transporte: ['pasaje','bus','taxi','uber','metro','combi','moto'],
-    telecom: ['recarga','celular','internet','datos','spotify','netflix'],
-  };
-
+  const cats = { comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger'], cafe:['café','cafe','cappuccino','latte','té','te','bebida','jugo'], transporte:['pasaje','bus','taxi','uber','metro','combi','moto'], telecom:['recarga','celular','internet','datos','spotify','netflix'] };
   let categoria = 'otros';
-  for (const [cat, keywords] of Object.entries(categorias)) {
-    if (keywords.some(k => lower.includes(k))) {
-      categoria = cat;
-      break;
-    }
-  }
-
-  const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g, '').replace(/soles?|sol|s\//gi, '').trim();
-  const label = desc.length > 2 ? desc.charAt(0).toUpperCase() + desc.slice(1) : 'Gasto';
-
-  return { monto, tipo: 'gasto', categoria, label };
+  for (const [cat,kws] of Object.entries(cats)) { if (kws.some(k=>lower.includes(k))) { categoria=cat; break; } }
+  const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g,'').replace(/soles?|sol|s\//gi,'').trim();
+  return { monto, tipo:'gasto', categoria, label: desc.length > 2 ? desc.charAt(0).toUpperCase()+desc.slice(1) : 'Gasto' };
 }
 
-// ── CRON JOB: Aviso nocturno a las 9pm hora Perú (2am UTC) ──────
+function mensajeAlerta(alerta, catDisplay) {
+  return alerta.tipo === 'superado'
+    ? `\n\n🔴 *¡Superaste tu límite en ${catDisplay}!*\nLlevás S/ ${alerta.totalMes.toFixed(2)} de S/ ${alerta.limite}`
+    : `\n\n⚠️ *Llevas el ${Math.round(alerta.porcentaje)}% de tu límite en ${catDisplay}*\nS/ ${alerta.totalMes.toFixed(2)} de S/ ${alerta.limite}`;
+}
+
 async function enviarAvisosNocturno() {
   console.log('🌙 Ejecutando aviso nocturno...');
-
   const ahora = new Date();
   const inicioDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-
   try {
-    // Obtener todos los usuarios activos
-    const usuariosSnap = await db.collection('usuarios_whatsapp')
-      .where('activo', '==', true)
-      .get();
-
+    const usuariosSnap = await db.collection('usuarios_whatsapp').where('activo','==',true).get();
     for (const userDoc of usuariosSnap.docs) {
       const { telefono } = userDoc.data();
-
-      // Verificar si registró algún gasto hoy
-      const gastosHoy = await db.collection('gastos')
-        .where('telefono', '==', telefono)
-        .where('fecha', '>=', admin.firestore.Timestamp.fromDate(inicioDia))
-        .limit(1)
-        .get();
-
+      const gastosHoy = await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioDia)).limit(1).get();
       if (gastosHoy.empty) {
-        // No registró gastos hoy → enviar aviso
         try {
           await twilioClient.messages.create({
-            from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-            to: telefono,
-            body:
-              `🐜 *Hormicash — Recordatorio*\n\n` +
-              `¡Hola! Hoy no registraste ningún gasto.\n\n` +
-              `Recuerda que los pequeños gastos son los que más se acumulan 💸\n\n` +
-              `Escríbeme cualquier gasto ahora:\n` +
-              `_"Almuerzo 15"_ o _"Taxi 8 soles"_`
+            from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`, to: telefono,
+            body: `🐜 *Hormicash — Recordatorio*\n\n¡Hola! Hoy no registraste ningún gasto.\n\nRecuerda que los pequeños gastos son los que más se acumulan 💸\n\nEscríbeme: _"Almuerzo 15"_ o _"Taxi 8 soles"_`
           });
-          console.log(`✅ Aviso enviado a ${telefono}`);
-        } catch (e) {
-          console.error(`❌ Error enviando a ${telefono}:`, e.message);
-        }
+        } catch(e) { console.error(`❌ Error enviando a ${telefono}:`, e.message); }
       }
     }
-  } catch (e) {
-    console.error('Error en aviso nocturno:', e);
-  }
+  } catch(e) { console.error('Error aviso nocturno:', e); }
 }
 
-// ── SCHEDULER: Verificar cada minuto si es hora de enviar ────────
 setInterval(() => {
   const ahora = new Date();
-  // Hora Perú = UTC-5, entonces 9pm Perú = 2am UTC
-  const horaUTC = ahora.getUTCHours();
-  const minUTC = ahora.getUTCMinutes();
-  if (horaUTC === 2 && minUTC === 0) {
-    enviarAvisosNocturno();
-  }
-}, 60 * 1000);
+  if (ahora.getUTCHours() === 2 && ahora.getUTCMinutes() === 0) enviarAvisosNocturno();
+}, 60000);
 
-// ── WEBHOOK ──────────────────────────────────────────────────────
 app.post('/webhook', async (req, res) => {
-  const mensaje = req.body.Body || '';
+  const mensaje = req.body.Body?.trim() || '';
   const telefono = req.body.From || '';
   const numMedia = parseInt(req.body.NumMedia || '0');
   const twiml = new twilio.twiml.MessagingResponse();
 
-  // ── REGISTRAR USUARIO AUTOMÁTICAMENTE ───────────────────────────
-  await registrarUsuario(telefono);
+  const esNuevo = await registrarUsuario(telefono);
 
-  // ── FLUJO MEDIA (imagen o audio) ────────────────────────────────
+  // ── BIENVENIDA ───────────────────────────────────────────────────
+  if (esNuevo) {
+    estadoUsuario[telefono] = { esperando: 'bienvenida_limites' };
+    twiml.message(
+      `🐜 *¡Bienvenido a Hormicash!*\n\n` +
+      `Soy tu asistente de gastos hormiga. Registra tus gastos por:\n\n` +
+      `📸 Foto de voucher\n🎙️ Mensaje de voz\n💬 Texto: _"Almuerzo 15"_\n\n` +
+      `─────────────────\n` +
+      `¿Quieres configurar *límites de gasto* mensuales? ⭐ Premium\n\n` +
+      `1️⃣ Sí, configurar ahora\n2️⃣ Lo haré después`
+    );
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── RESPUESTA A BIENVENIDA ───────────────────────────────────────
+  if (estadoUsuario[telefono]?.esperando === 'bienvenida_limites') {
+    if (mensaje === '1') {
+      const premium = await esPremium(telefono);
+      if (!premium) {
+        delete estadoUsuario[telefono];
+        twiml.message(`⭐ *Función Premium*\n\nActiva tu plan en: https://hormicash.web.app\n\nPor ahora ya puedes registrar gastos 🐜`);
+      } else {
+        estadoUsuario[telefono] = { esperando:'limite_categoria', limites:{}, categoriaIndex:0 };
+        twiml.message(`💰 ¿Límite mensual para *${CATEGORIAS_DISPLAY[CATEGORIAS[0]]}*?\n\nEscribe el monto o _"saltar"_.\n_(1 de ${CATEGORIAS.length})_`);
+      }
+    } else {
+      delete estadoUsuario[telefono];
+      twiml.message(`¡Perfecto! Edita tus límites cuando quieras en:\nhttps://hormicash.web.app\n\nEscribe _"Almuerzo 15"_ para empezar 🐜`);
+    }
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── CONFIGURACIÓN DE LÍMITES ─────────────────────────────────────
+  if (estadoUsuario[telefono]?.esperando === 'limite_categoria') {
+    const estado = estadoUsuario[telefono];
+    if (mensaje.toLowerCase() !== 'saltar') {
+      const monto = parseFloat(mensaje.replace(',','.'));
+      if (!isNaN(monto) && monto > 0) estado.limites[CATEGORIAS[estado.categoriaIndex]] = monto;
+    }
+    estado.categoriaIndex++;
+    if (estado.categoriaIndex < CATEGORIAS.length) {
+      twiml.message(`💰 ¿Límite para *${CATEGORIAS_DISPLAY[CATEGORIAS[estado.categoriaIndex]]}*?\n\nEscribe el monto o _"saltar"_.\n_(${estado.categoriaIndex+1} de ${CATEGORIAS.length})_`);
+    } else {
+      await db.collection('usuarios_whatsapp').doc(telefono).set({ limites: estado.limites }, { merge:true });
+      delete estadoUsuario[telefono];
+      const resumen = Object.entries(estado.limites).map(([c,m]) => `  • ${CATEGORIAS_DISPLAY[c]}: S/ ${m}`).join('\n');
+      twiml.message(`✅ *¡Límites configurados!*\n\n${resumen}\n\nTe avisaré cuando te acerques 🎯\nEdítalos en: https://hormicash.web.app`);
+    }
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── MEDIA ────────────────────────────────────────────────────────
   if (numMedia > 0) {
     const mediaUrl = req.body.MediaUrl0;
     const mediaMime = req.body.MediaContentType0 || 'image/jpeg';
-    const esAudio = mediaMime.startsWith('audio/');
-
     try {
       const { base64, mimeType } = await downloadTwilioMedia(mediaUrl);
       const mime = mimeType || mediaMime;
-
-      // ── AUDIO ──────────────────────────────────────────────────
-      if (esAudio) {
+      if (mediaMime.startsWith('audio/')) {
         const audio = await extractAudioData(base64, mime);
-
-        if (audio.error === 'no_monto') {
-          twiml.message('🎙️ No pude identificar un monto en el audio.\nIntenta decir: "Almuerzo en La Lucha, veinte soles"');
-          return res.type('text/xml').send(twiml.toString());
-        }
-
+        if (audio.error === 'no_monto') { twiml.message('🎙️ No pude identificar un monto.\nIntenta: "Almuerzo en La Lucha, veinte soles"'); return res.type('text/xml').send(twiml.toString()); }
         const esIngreso = audio.tipo === 'ingreso';
-
-        await db.collection('gastos').add({
-          telefono,
-          monto: audio.monto,
-          tipo: audio.tipo || 'gasto',
-          categoria: audio.categoria ? audio.categoria.toLowerCase() : 'otros',
-          label: audio.negocio || audio.descripcion || (esIngreso ? 'Ingreso por voz' : 'Gasto por voz'),
-          descripcion: audio.descripcion,
-          fuente: 'audio_whatsapp',
-          mensaje: '[audio]',
-          fecha: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        if (esIngreso) {
-          twiml.message(
-            `💰 *Ingreso registrado por voz*\n\n` +
-            `💵 S/ ${audio.monto.toFixed(2)}\n` +
-            `📝 ${audio.descripcion}\n\n` +
-            `Escribe /resumen para ver tu balance`
-          );
-        } else {
-          twiml.message(
-            `✅ *Gasto registrado por voz*\n\n` +
-            `🏪 ${audio.negocio || 'Sin negocio'}\n` +
-            `💰 S/ ${audio.monto.toFixed(2)}\n` +
-            `📂 ${audio.categoria}\n` +
-            `📝 ${audio.descripcion}\n\n` +
-            `Escribe /resumen para ver tu balance`
-          );
-        }
-
-      // ── IMAGEN (voucher) ───────────────────────────────────────
+        const cat = audio.categoria?.toLowerCase() || 'otros';
+        await db.collection('gastos').add({ telefono, monto:audio.monto, tipo:audio.tipo||'gasto', categoria:cat, label:audio.negocio||audio.descripcion||(esIngreso?'Ingreso por voz':'Gasto por voz'), descripcion:audio.descripcion, fuente:'audio_whatsapp', mensaje:'[audio]', fecha:admin.firestore.FieldValue.serverTimestamp() });
+        let resp = esIngreso ? `💰 *Ingreso por voz*\n\n💵 S/ ${audio.monto.toFixed(2)}\n📝 ${audio.descripcion}\n\nEscribe /resumen para ver tu balance` : `✅ *Gasto por voz*\n\n🏪 ${audio.negocio||'Sin negocio'}\n💰 S/ ${audio.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n\nEscribe /resumen para ver tu balance`;
+        if (!esIngreso) { const a = await verificarLimite(telefono,cat,audio.monto); if(a) resp += mensajeAlerta(a, CATEGORIAS_DISPLAY[cat]||cat); }
+        twiml.message(resp);
       } else {
         const voucher = await extractVoucherData(base64, mime);
-
-        if (voucher.error === 'no_voucher') {
-          twiml.message('📸 No pude identificar un voucher en esa imagen.\nEnvía una foto clara de tu ticket o recibo.');
-          return res.type('text/xml').send(twiml.toString());
-        }
-
-        await db.collection('gastos').add({
-          telefono,
-          monto: voucher.monto,
-          tipo: 'gasto',
-          categoria: voucher.categoria ? voucher.categoria.toLowerCase() : 'otros',
-          label: voucher.negocio || 'Voucher',
-          descripcion: voucher.descripcion,
-          fecha_voucher: voucher.fecha,
-          fuente: 'voucher_whatsapp',
-          mensaje: '[imagen]',
-          fecha: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        twiml.message(
-          `✅ *Gasto registrado desde voucher*\n\n` +
-          `🏪 ${voucher.negocio}\n` +
-          `💰 S/ ${voucher.monto.toFixed(2)}\n` +
-          `📂 ${voucher.categoria}\n` +
-          `📝 ${voucher.descripcion}\n\n` +
-          `Escribe /resumen para ver tu balance`
-        );
+        if (voucher.error === 'no_voucher') { twiml.message('📸 No pude identificar un voucher.\nEnvía una foto clara de tu ticket.'); return res.type('text/xml').send(twiml.toString()); }
+        const cat = voucher.categoria?.toLowerCase() || 'otros';
+        await db.collection('gastos').add({ telefono, monto:voucher.monto, tipo:'gasto', categoria:cat, label:voucher.negocio||'Voucher', descripcion:voucher.descripcion, fecha_voucher:voucher.fecha, fuente:'voucher_whatsapp', mensaje:'[imagen]', fecha:admin.firestore.FieldValue.serverTimestamp() });
+        let resp = `✅ *Voucher registrado*\n\n🏪 ${voucher.negocio}\n💰 S/ ${voucher.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n📝 ${voucher.descripcion}\n\nEscribe /resumen para ver tu balance`;
+        const a = await verificarLimite(telefono,cat,voucher.monto); if(a) resp += mensajeAlerta(a, CATEGORIAS_DISPLAY[cat]||cat);
+        twiml.message(resp);
       }
-
-    } catch (err) {
-      console.error('Error procesando media:', err);
-      twiml.message('❌ No pude procesar el archivo. Intenta de nuevo.');
-    }
-
+    } catch(err) { console.error('Error media:', err); twiml.message('❌ No pude procesar el archivo. Intenta de nuevo.'); }
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── FLUJO TEXTO ─────────────────────────────────────────────────
-
-  // ── PASO 2: Usuario está eligiendo tipo de resumen ───────────────
+  // ── RESUMEN ──────────────────────────────────────────────────────
   if (estadoUsuario[telefono]?.esperando === 'resumen') {
-    const opcion = mensaje.trim();
+    const opcion = mensaje;
     delete estadoUsuario[telefono];
-
     const ahora = new Date();
-    let desde;
-    let periodo;
-
-    if (opcion === '1') {
-      desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-      periodo = 'Hoy';
-    } else if (opcion === '2') {
-      desde = new Date(ahora);
-      desde.setDate(ahora.getDate() - 7);
-      periodo = 'Esta semana';
-    } else if (opcion === '3') {
-      desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-      periodo = 'Este mes';
-    } else {
-      twiml.message('❌ Opción no válida.\nEscribe /resumen para intentar de nuevo.');
-      return res.type('text/xml').send(twiml.toString());
-    }
-
-    const snapshot = await db.collection('gastos')
-      .where('telefono', '==', telefono)
-      .where('fecha', '>=', admin.firestore.Timestamp.fromDate(desde))
-      .get();
-
-    let totalGastos = 0;
-    let totalIngresos = 0;
-    const categorias = {};
-
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      if (d.tipo === 'ingreso') {
-        totalIngresos += d.monto;
-      } else {
-        totalGastos += d.monto;
-        categorias[d.categoria] = (categorias[d.categoria] || 0) + d.monto;
-      }
-    });
-
-    let resumenCategorias = '';
-    for (const [cat, monto] of Object.entries(categorias)) {
-      resumenCategorias += `  • ${cat}: S/ ${monto.toFixed(2)}\n`;
-    }
-
-    const balance = totalIngresos - totalGastos;
-    const balanceEmoji = balance >= 0 ? '🟢' : '🔴';
-
-    twiml.message(
-      `📊 *Resumen - ${periodo}*\n` +
-      `━━━━━━━━━━━━━━\n` +
-      `💸 Gastos: S/ ${totalGastos.toFixed(2)}\n` +
-      `${resumenCategorias}` +
-      `💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n` +
-      `━━━━━━━━━━━━━━\n` +
-      `${balanceEmoji} Balance: S/ ${balance.toFixed(2)}`
-    );
-
+    let desde, periodo;
+    if (opcion==='1') { desde=new Date(ahora.getFullYear(),ahora.getMonth(),ahora.getDate()); periodo='Hoy'; }
+    else if (opcion==='2') { desde=new Date(ahora); desde.setDate(ahora.getDate()-7); periodo='Esta semana'; }
+    else if (opcion==='3') { desde=new Date(ahora.getFullYear(),ahora.getMonth(),1); periodo='Este mes'; }
+    else { twiml.message('❌ Opción no válida.\nEscribe /resumen para intentar de nuevo.'); return res.type('text/xml').send(twiml.toString()); }
+    const snapshot = await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(desde)).get();
+    let totalGastos=0, totalIngresos=0; const cats={};
+    snapshot.forEach(doc => { const d=doc.data(); if(d.tipo==='ingreso'){totalIngresos+=d.monto;}else{totalGastos+=d.monto; cats[d.categoria]=(cats[d.categoria]||0)+d.monto;} });
+    let resCats = '';
+    for (const [c,m] of Object.entries(cats)) resCats += `  • ${CATEGORIAS_DISPLAY[c]||c}: S/ ${m.toFixed(2)}\n`;
+    const balance = totalIngresos-totalGastos;
+    twiml.message(`📊 *Resumen - ${periodo}*\n━━━━━━━━━━━━━━\n💸 Gastos: S/ ${totalGastos.toFixed(2)}\n${resCats}💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n━━━━━━━━━━━━━━\n${balance>=0?'🟢':'🔴'} Balance: S/ ${balance.toFixed(2)}`);
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── PASO 1: Usuario escribe /resumen → mostrar menú ──────────────
-  if (mensaje.trim().toLowerCase() === '/resumen') {
-    estadoUsuario[telefono] = { esperando: 'resumen' };
-    twiml.message(
-      `📊 *¿Qué resumen deseas?*\n\n` +
-      `1️⃣ Hoy\n` +
-      `2️⃣ Esta semana\n` +
-      `3️⃣ Este mes\n\n` +
-      `Responde con el número de tu elección.`
-    );
+  if (mensaje.toLowerCase() === '/resumen') {
+    estadoUsuario[telefono] = { esperando:'resumen' };
+    twiml.message(`📊 *¿Qué resumen deseas?*\n\n1️⃣ Hoy\n2️⃣ Esta semana\n3️⃣ Este mes\n\nResponde con el número.`);
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── REGISTRO DE GASTO/INGRESO POR TEXTO ──────────────────────────
+  if (mensaje.toLowerCase() === '/limites') {
+    const premium = await esPremium(telefono);
+    if (!premium) { twiml.message(`⭐ *Función Premium*\n\nActívala en: https://hormicash.web.app`); return res.type('text/xml').send(twiml.toString()); }
+    estadoUsuario[telefono] = { esperando:'limite_categoria', limites:{}, categoriaIndex:0 };
+    twiml.message(`💰 *Configurar límites*\n\n¿Límite para *${CATEGORIAS_DISPLAY[CATEGORIAS[0]]}*?\n\nEscribe el monto o _"saltar"_.\n_(1 de ${CATEGORIAS.length})_`);
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── TEXTO ────────────────────────────────────────────────────────
   const mov = parsearMovimiento(mensaje);
   if (!mov) {
-    twiml.message(
-      'No entendí el monto 🤔\n\n' +
-      '*Gastos:* "Almuerzo 15" o "Café 8 soles"\n' +
-      '*Ingresos:* "Ingreso 500 sueldo" o "Cobré 200 freelance"\n' +
-      '*Voucher:* Envía una foto de tu ticket 📸\n' +
-      '*Voz:* Envía un audio con tu gasto 🎙️\n\n' +
-      'Escribe /resumen para ver tu balance'
-    );
+    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n*Límites:* /limites\n*Resumen:* /resumen');
   } else {
-    await db.collection('gastos').add({
-      telefono,
-      monto: mov.monto,
-      tipo: mov.tipo,
-      categoria: mov.categoria,
-      label: mov.label,
-      fuente: 'texto_whatsapp',
-      mensaje,
-      fecha: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    if (mov.tipo === 'ingreso') {
-      twiml.message(`💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance`);
-    } else {
-      twiml.message(`✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`);
-    }
+    await db.collection('gastos').add({ telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria, label:mov.label, fuente:'texto_whatsapp', mensaje, fecha:admin.firestore.FieldValue.serverTimestamp() });
+    let resp = mov.tipo==='ingreso' ? `💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance` : `✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`;
+    if (mov.tipo==='gasto') { const a=await verificarLimite(telefono,mov.categoria,mov.monto); if(a) resp+=mensajeAlerta(a, CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria); }
+    twiml.message(resp);
   }
 
   res.type('text/xml');
