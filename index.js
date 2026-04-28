@@ -16,13 +16,29 @@ const db = admin.firestore();
 // Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Twilio client (para enviar mensajes proactivos)
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+
 // Express
 const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 // ── ESTADO DE CONVERSACIÓN (en memoria) ──────────────────────────
-const estadoUsuario = {}; // { telefono: { esperando: 'resumen' } }
+const estadoUsuario = {};
+
+// ── FUNCIÓN: Registrar usuario en Firestore ──────────────────────
+async function registrarUsuario(telefono) {
+  try {
+    await db.collection('usuarios_whatsapp').doc(telefono).set({
+      telefono,
+      ultimo_mensaje: admin.firestore.FieldValue.serverTimestamp(),
+      activo: true
+    }, { merge: true });
+  } catch (e) {
+    console.error('Error registrando usuario:', e);
+  }
+}
 
 // ── FUNCIÓN: Descargar media de Twilio como base64 ───────────────
 async function downloadTwilioMedia(mediaUrl) {
@@ -139,12 +155,73 @@ function parsearMovimiento(texto) {
   return { monto, tipo: 'gasto', categoria, label };
 }
 
+// ── CRON JOB: Aviso nocturno a las 9pm hora Perú (2am UTC) ──────
+async function enviarAvisosNocturno() {
+  console.log('🌙 Ejecutando aviso nocturno...');
+
+  const ahora = new Date();
+  const inicioDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+
+  try {
+    // Obtener todos los usuarios activos
+    const usuariosSnap = await db.collection('usuarios_whatsapp')
+      .where('activo', '==', true)
+      .get();
+
+    for (const userDoc of usuariosSnap.docs) {
+      const { telefono } = userDoc.data();
+
+      // Verificar si registró algún gasto hoy
+      const gastosHoy = await db.collection('gastos')
+        .where('telefono', '==', telefono)
+        .where('fecha', '>=', admin.firestore.Timestamp.fromDate(inicioDia))
+        .limit(1)
+        .get();
+
+      if (gastosHoy.empty) {
+        // No registró gastos hoy → enviar aviso
+        try {
+          await twilioClient.messages.create({
+            from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+            to: telefono,
+            body:
+              `🐜 *Hormicash — Recordatorio*\n\n` +
+              `¡Hola! Hoy no registraste ningún gasto.\n\n` +
+              `Recuerda que los pequeños gastos son los que más se acumulan 💸\n\n` +
+              `Escríbeme cualquier gasto ahora:\n` +
+              `_"Almuerzo 15"_ o _"Taxi 8 soles"_`
+          });
+          console.log(`✅ Aviso enviado a ${telefono}`);
+        } catch (e) {
+          console.error(`❌ Error enviando a ${telefono}:`, e.message);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Error en aviso nocturno:', e);
+  }
+}
+
+// ── SCHEDULER: Verificar cada minuto si es hora de enviar ────────
+setInterval(() => {
+  const ahora = new Date();
+  // Hora Perú = UTC-5, entonces 9pm Perú = 2am UTC
+  const horaUTC = ahora.getUTCHours();
+  const minUTC = ahora.getUTCMinutes();
+  if (horaUTC === 2 && minUTC === 0) {
+    enviarAvisosNocturno();
+  }
+}, 60 * 1000);
+
 // ── WEBHOOK ──────────────────────────────────────────────────────
 app.post('/webhook', async (req, res) => {
   const mensaje = req.body.Body || '';
   const telefono = req.body.From || '';
   const numMedia = parseInt(req.body.NumMedia || '0');
   const twiml = new twilio.twiml.MessagingResponse();
+
+  // ── REGISTRAR USUARIO AUTOMÁTICAMENTE ───────────────────────────
+  await registrarUsuario(telefono);
 
   // ── FLUJO MEDIA (imagen o audio) ────────────────────────────────
   if (numMedia > 0) {
@@ -242,7 +319,7 @@ app.post('/webhook', async (req, res) => {
   // ── PASO 2: Usuario está eligiendo tipo de resumen ───────────────
   if (estadoUsuario[telefono]?.esperando === 'resumen') {
     const opcion = mensaje.trim();
-    delete estadoUsuario[telefono]; // limpiar estado
+    delete estadoUsuario[telefono];
 
     const ahora = new Date();
     let desde;
