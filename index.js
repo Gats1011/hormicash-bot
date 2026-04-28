@@ -21,6 +21,9 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+// ── ESTADO DE CONVERSACIÓN (en memoria) ──────────────────────────
+const estadoUsuario = {}; // { telefono: { esperando: 'resumen' } }
+
 // ── FUNCIÓN: Descargar media de Twilio como base64 ───────────────
 async function downloadTwilioMedia(mediaUrl) {
   const response = await axios.get(mediaUrl, {
@@ -235,76 +238,111 @@ app.post('/webhook', async (req, res) => {
   }
 
   // ── FLUJO TEXTO ─────────────────────────────────────────────────
-  if (mensaje.toLowerCase() === '/resumen') {
-    const hoy = new Date();
-    hoy.setHours(0,0,0,0);
+
+  // ── PASO 2: Usuario está eligiendo tipo de resumen ───────────────
+  if (estadoUsuario[telefono]?.esperando === 'resumen') {
+    const opcion = mensaje.trim();
+    delete estadoUsuario[telefono]; // limpiar estado
+
+    const ahora = new Date();
+    let desde;
+    let periodo;
+
+    if (opcion === '1') {
+      desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+      periodo = 'Hoy';
+    } else if (opcion === '2') {
+      desde = new Date(ahora);
+      desde.setDate(ahora.getDate() - 7);
+      periodo = 'Esta semana';
+    } else if (opcion === '3') {
+      desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+      periodo = 'Este mes';
+    } else {
+      twiml.message('❌ Opción no válida.\nEscribe /resumen para intentar de nuevo.');
+      return res.type('text/xml').send(twiml.toString());
+    }
 
     const snapshot = await db.collection('gastos')
       .where('telefono', '==', telefono)
-      .orderBy('fecha', 'desc')
-      .limit(20)
+      .where('fecha', '>=', admin.firestore.Timestamp.fromDate(desde))
       .get();
 
-    if (snapshot.empty) {
-      twiml.message('No tienes movimientos registrados 📋');
-    } else {
-      let totalGastos = 0;
-      let totalIngresos = 0;
-      let countGastos = 0;
-      let countIngresos = 0;
+    let totalGastos = 0;
+    let totalIngresos = 0;
+    const categorias = {};
 
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const fecha = d.fecha?.toDate ? d.fecha.toDate() : new Date(d.fecha);
-        if (fecha >= hoy) {
-          if (d.tipo === 'ingreso') {
-            totalIngresos += d.monto;
-            countIngresos++;
-          } else {
-            totalGastos += d.monto;
-            countGastos++;
-          }
-        }
-      });
-
-      const balance = totalIngresos - totalGastos;
-      const emoji = balance >= 0 ? '✅' : '⚠️';
-
-      twiml.message(
-        `📊 *Resumen de hoy*\n\n` +
-        `💰 Ingresos: S/ ${totalIngresos.toFixed(2)} (${countIngresos})\n` +
-        `💸 Gastos: S/ ${totalGastos.toFixed(2)} (${countGastos})\n` +
-        `${emoji} Balance: S/ ${balance.toFixed(2)}`
-      );
-    }
-  } else {
-    const mov = parsearMovimiento(mensaje);
-    if (!mov) {
-      twiml.message(
-        'No entendí el monto 🤔\n\n' +
-        '*Gastos:* "Almuerzo 15" o "Café 8 soles"\n' +
-        '*Ingresos:* "Ingreso 500 sueldo" o "Cobré 200 freelance"\n' +
-        '*Voucher:* Envía una foto de tu ticket 📸\n' +
-        '*Voz:* Envía un audio con tu gasto 🎙️\n\n' +
-        'Escribe /resumen para ver tu balance'
-      );
-    } else {
-      await db.collection('gastos').add({
-        telefono,
-        monto: mov.monto,
-        tipo: mov.tipo,
-        categoria: mov.categoria,
-        label: mov.label,
-        fuente: 'texto_whatsapp',
-        mensaje,
-        fecha: admin.firestore.FieldValue.serverTimestamp()
-      });
-
-      if (mov.tipo === 'ingreso') {
-        twiml.message(`💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance`);
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.tipo === 'ingreso') {
+        totalIngresos += d.monto;
       } else {
-        twiml.message(`✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`);
+        totalGastos += d.monto;
+        categorias[d.categoria] = (categorias[d.categoria] || 0) + d.monto;
       }
+    });
+
+    let resumenCategorias = '';
+    for (const [cat, monto] of Object.entries(categorias)) {
+      resumenCategorias += `  • ${cat}: S/ ${monto.toFixed(2)}\n`;
+    }
+
+    const balance = totalIngresos - totalGastos;
+    const balanceEmoji = balance >= 0 ? '🟢' : '🔴';
+
+    twiml.message(
+      `📊 *Resumen - ${periodo}*\n` +
+      `━━━━━━━━━━━━━━\n` +
+      `💸 Gastos: S/ ${totalGastos.toFixed(2)}\n` +
+      `${resumenCategorias}` +
+      `💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n` +
+      `━━━━━━━━━━━━━━\n` +
+      `${balanceEmoji} Balance: S/ ${balance.toFixed(2)}`
+    );
+
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── PASO 1: Usuario escribe /resumen → mostrar menú ──────────────
+  if (mensaje.trim().toLowerCase() === '/resumen') {
+    estadoUsuario[telefono] = { esperando: 'resumen' };
+    twiml.message(
+      `📊 *¿Qué resumen deseas?*\n\n` +
+      `1️⃣ Hoy\n` +
+      `2️⃣ Esta semana\n` +
+      `3️⃣ Este mes\n\n` +
+      `Responde con el número de tu elección.`
+    );
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── REGISTRO DE GASTO/INGRESO POR TEXTO ──────────────────────────
+  const mov = parsearMovimiento(mensaje);
+  if (!mov) {
+    twiml.message(
+      'No entendí el monto 🤔\n\n' +
+      '*Gastos:* "Almuerzo 15" o "Café 8 soles"\n' +
+      '*Ingresos:* "Ingreso 500 sueldo" o "Cobré 200 freelance"\n' +
+      '*Voucher:* Envía una foto de tu ticket 📸\n' +
+      '*Voz:* Envía un audio con tu gasto 🎙️\n\n' +
+      'Escribe /resumen para ver tu balance'
+    );
+  } else {
+    await db.collection('gastos').add({
+      telefono,
+      monto: mov.monto,
+      tipo: mov.tipo,
+      categoria: mov.categoria,
+      label: mov.label,
+      fuente: 'texto_whatsapp',
+      mensaje,
+      fecha: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    if (mov.tipo === 'ingreso') {
+      twiml.message(`💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance`);
+    } else {
+      twiml.message(`✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`);
     }
   }
 

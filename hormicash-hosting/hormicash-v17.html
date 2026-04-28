@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Hormicash – Controla tus gastos hormiga</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
@@ -142,16 +145,25 @@
     margin-bottom: 28px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    padding: 0 4px;
   }
 
   .login-feat {
     font-size: 14px;
-    color: var(--text);
-    padding: 10px 14px;
-    background: var(--card2);
-    border-radius: 10px;
-    border: 1px solid var(--border);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+  }
+  .login-feat::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
   }
 
   .login-footer {
@@ -416,41 +428,14 @@
   /* ── APP ── */
   #app { display: none; }
 
-  header {
-    position: sticky; top: 0; z-index: 100;
-    background: var(--header-bg);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 12px 24px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 20px; color: var(--accent); }
-  .logo span { color: var(--green); }
-
-  .plan-chip {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 20px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .chip-free { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
-  .chip-premium { background: var(--premium-dim); color: var(--premium); border: 1px solid rgba(167,139,250,0.3); }
-
-  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-
-  .user-avatar {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid var(--border);
-  }
-
-  .user-name { font-size: 13px; color: var(--muted); }
+  header { display: none; }
+  .logo { display: none; }
+  .plan-chip { display: none; }
+  .chip-free { display: none; }
+  .chip-premium { display: none; }
+  .header-right { display: none; }
+  .user-avatar { display: none; }
+  .user-name { display: none; }
 
   .theme-btn {
     background: var(--input-bg);
@@ -639,14 +624,7 @@
   }
 
   /* ── DASHBOARD ── */
-  .dashboard {
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 24px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
+  .dashboard { display: contents; /* legacy - replaced by tab layout */ }
 
   .dash-header { display: flex; justify-content: space-between; align-items: center; }
   .dash-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; }
@@ -713,14 +691,111 @@
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
-  .budget-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 10px; }
-  .budget-pct { color: var(--accent); font-weight: 700; }
+  .budget-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .budget-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .config-btn {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .config-btn:hover { border-color: var(--green); color: var(--green); }
+
+  .bar-block { display: flex; flex-direction: column; gap: 6px; }
+  .budget-row { display: flex; justify-content: space-between; font-size: 13px; }
+  .budget-pct { font-weight: 700; }
   .bar-track { height: 7px; background: var(--border); border-radius: 7px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+  .bar-fill { height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--green), #16a34a); transition: width 0.7s cubic-bezier(0.34,1.56,0.64,1); }
   .bar-fill.danger { background: linear-gradient(90deg, var(--accent), var(--red)); }
-  .budget-msg { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .bar-fill-hormiga { height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--accent), #f97316); transition: width 0.7s cubic-bezier(0.34,1.56,0.64,1); }
+  .budget-msg { font-size: 12px; color: var(--muted); }
+
+  /* Config Modal */
+  .config-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .config-modal-overlay.open { display: flex; }
+  .config-modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px 28px;
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .config-modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .config-field { margin-bottom: 16px; }
+  .config-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; display: block; }
+  .config-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .config-input:focus { border-color: var(--green); }
+  .config-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .config-save {
+    flex: 1;
+    padding: 12px;
+    background: var(--green);
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #000;
+    cursor: pointer;
+  }
+  .config-cancel {
+    padding: 12px 18px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+  }
 
   .cat-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
   .cat-item {
@@ -931,6 +1006,103 @@
   .insight-value { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
   .insight-desc { font-size: 12px; color: var(--muted); }
 
+  /* ── PREMIUM KPI CARDS ── */
+  .premium-kpi-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .pkpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .pkpi-card:hover { transform: translateY(-2px); }
+
+  .pkpi-icon-circle {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .pkpi-icon-circle.green { background: rgba(34,197,94,0.15); }
+  .pkpi-icon-circle.red { background: rgba(239,68,68,0.15); }
+  .pkpi-icon-circle.blue { background: rgba(59,130,246,0.15); }
+  .pkpi-icon-circle.amber { background: rgba(245,158,11,0.15); }
+  .pkpi-icon-circle.purple { background: rgba(167,139,250,0.15); }
+
+  .pkpi-info { flex: 1; }
+  .pkpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600; margin-bottom: 4px; }
+  .pkpi-value { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .pkpi-sub { font-size: 11px; color: var(--muted); }
+
+  .pkpi-card.pkpi-green { border-color: rgba(34,197,94,0.2); }
+  .pkpi-card.pkpi-red { border-color: rgba(239,68,68,0.2); }
+  .pkpi-card.pkpi-blue { border-color: rgba(59,130,246,0.2); }
+  .pkpi-card.pkpi-amber { border-color: rgba(245,158,11,0.2); }
+  .pkpi-card.pkpi-purple { border-color: rgba(167,139,250,0.2); }
+
+  /* Top categorías ranking */
+  .top-cats-card {
+    background: var(--card);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .top-cats-card::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, #7c3aed, var(--premium));
+  }
+  .top-cats-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--premium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .top-cat-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .top-cat-item:last-child { margin-bottom: 0; }
+
+  .top-cat-rank {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .rank-1 { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: #000; box-shadow: 0 4px 12px rgba(245,158,11,0.4); }
+  .rank-2 { background: linear-gradient(135deg, #6b7a8d, #94a3b8); color: #fff; box-shadow: 0 4px 12px rgba(107,114,128,0.3); }
+  .rank-3 { background: linear-gradient(135deg, #b45309, #d97706); color: #fff; box-shadow: 0 4px 12px rgba(180,83,9,0.3); }
+
+  .top-cat-info { flex: 1; }
+  .top-cat-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .top-cat-bar-track { height: 6px; background: var(--border); border-radius: 6px; overflow: hidden; }
+  .top-cat-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #7c3aed, var(--premium)); transition: width 0.8s ease; }
+  .top-cat-amount { font-size: 15px; font-weight: 700; color: var(--premium); flex-shrink: 0; }
+
   .tip-card {
     background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(167,139,250,0.06));
     border: 1px solid rgba(167,139,250,0.2);
@@ -1099,6 +1271,736 @@
     .phone-input-group { flex-direction: column; }
     .phone-prefix { width: 100%; }
   }
+
+  /* ── PREMIUM PAGE ── */
+  #premiumPage {
+    display: none;
+    min-height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .premium-page-card {
+    background: var(--card);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 24px;
+    padding: 48px 40px;
+    max-width: 460px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 25px 50px rgba(0,0,0,0.35);
+  }
+
+  .premium-page-card::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:4px;
+    border-radius: 24px 24px 0 0;
+    background: linear-gradient(90deg, #7c3aed, var(--premium), #7c3aed);
+    background-size: 200%;
+    animation: shimmer 2.5s infinite linear;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+  }
+
+  .premium-page-icon { font-size: 52px; margin-bottom: 12px; }
+
+  .premium-page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #a78bfa, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .premium-page-sub {
+    font-size: 14px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+
+  .premium-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+    text-align: left;
+  }
+
+  .premium-feat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--premium-dim);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 10px;
+    font-size: 14px;
+  }
+
+  .premium-price-tag {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--premium);
+    margin-bottom: 24px;
+  }
+  .premium-price-tag span {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .premium-code-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .premium-code-label {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: left;
+    font-weight: 500;
+  }
+
+  .premium-code-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text);
+    outline: none;
+    text-align: center;
+    transition: border-color 0.2s;
+  }
+  .premium-code-input:focus { border-color: var(--premium); }
+  .premium-code-input::placeholder { letter-spacing: 0; font-weight: 400; font-size: 14px; font-family: 'DM Sans',sans-serif; }
+
+  .premium-activate-btn {
+    width: 100%;
+    padding: 15px 24px;
+    background: linear-gradient(135deg, #7c3aed, var(--premium));
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+  .premium-activate-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.35); }
+  .premium-activate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .premium-back-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .premium-back-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  .premium-code-error {
+    font-size: 13px;
+    color: var(--red);
+    display: none;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* Cancel premium button */
+  .cancel-premium-btn {
+    background: none;
+    border: none;
+    color: var(--red);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 7px 12px;
+    border-radius: 8px;
+    text-align: left;
+    transition: all 0.2s;
+    display: block;
+  }
+  .cancel-premium-btn.hidden-free { display: none !important; }
+  .cancel-premium-btn:hover { background: rgba(239,68,68,0.08); }
+
+  @media (max-width: 480px) {
+    .login-card {
+      padding: 32px 20px;
+      border-radius: 18px;
+    }
+    .login-logo { font-size: 28px; }
+    .login-hero { font-size: 21px; }
+    .login-desc { font-size: 13px; }
+    .lang-btn { font-size: 12px; padding: 4px 10px; }
+    #loginPage { padding: 20px 14px; }
+    #linkPage { padding: 20px 14px; }
+    .link-card { padding: 32px 20px; border-radius: 18px; }
+    .header-inner { padding: 0 14px; }
+    .stats-row { gap: 10px; }
+    .stat-card { padding: 14px 12px; }
+    .stat-val { font-size: 22px; }
+    .main-content { padding: 14px; }
+    .tab-btn { font-size: 12px; padding: 6px 10px; }
+    .txn-item { padding: 10px 12px; }
+    .google-btn { font-size: 14px; padding: 13px 20px; }
+  }
+
+  /* ── NEW LAYOUT ── */
+  #app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px 16px;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .sidebar-logo span { color: var(--green); }
+
+  .sidebar-plan {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 20px;
+  }
+
+  .sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--card2);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .sidebar-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
+  .sidebar-username { font-size: 13px; font-weight: 600; }
+  .sidebar-usersub { font-size: 11px; color: var(--muted); }
+
+  .sidebar-month {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 10px;
+    margin-bottom: 20px;
+  }
+  .sidebar-month .month-label { font-size: 12px; font-weight: 700; }
+  .sidebar-month .month-nav { font-size: 11px; padding: 2px 6px; }
+
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .snav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    position: relative;
+  }
+  .snav-btn:hover { background: var(--card2); color: var(--text); }
+  .snav-btn.active { background: var(--green-dim); color: var(--green); font-weight: 600; }
+  .snav-btn.snav-premium.active { background: var(--premium-dim); color: var(--premium); }
+  .snav-icon { font-size: 16px; }
+  .snav-badge {
+    margin-left: auto;
+    font-size: 9px;
+    font-weight: 700;
+    background: var(--premium);
+    color: #000;
+    padding: 2px 6px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  .sidebar-bottom { margin-top: 16px; }
+  .sidebar-actions { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+  .saction-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 7px 12px;
+    border-radius: 8px;
+    text-align: left;
+    transition: all 0.2s;
+  }
+  .saction-btn:hover { background: var(--card2); color: var(--text); }
+  .sidebar-footer { font-size: 11px; color: var(--muted); padding: 0 12px; }
+
+  /* MAIN */
+  .app-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .tab-content {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    padding: 24px;
+  }
+  .tab-content.active { display: flex; }
+
+  .tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+  .tab-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  /* RESUMEN TAB */
+  .resumen-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto 1fr;
+    gap: 14px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .resumen-full { grid-column: 1 / -1; }
+  .resumen-txs { overflow-y: auto; }
+
+  .ver-mas-btn {
+    background: none;
+    border: none;
+    color: var(--green);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    padding: 8px 0;
+    font-weight: 600;
+  }
+  .ver-mas-btn:hover { text-decoration: underline; }
+
+  /* CATEGORÍAS TAB */
+  .cat-grid-full {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    overflow-y: auto;
+  }
+
+  /* TRANSACCIONES TAB */
+  .tx-list-full {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* PREMIUM TAB */
+  .premium-tab-scroll {
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 4px;
+  }
+
+  /* ── PREMIUM DASHBOARD GRID ── */
+  #tab-premium {
+    overflow: hidden;
+  }
+
+  #tab-premium > #premiumSection {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-right: 4px;
+  }
+
+  .pdash-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .pdash-kpi {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 14px;
+    transition: transform 0.2s;
+  }
+  .pdash-kpi:hover { transform: translateY(-2px); }
+  .pdash-kpi.pkpi-green { border-color: rgba(34,197,94,0.25); }
+  .pdash-kpi.pkpi-red { border-color: rgba(239,68,68,0.25); }
+  .pdash-kpi.pkpi-blue { border-color: rgba(59,130,246,0.25); }
+  .pdash-kpi.pkpi-amber { border-color: rgba(245,158,11,0.25); }
+  .pdash-kpi.pkpi-purple { border-color: rgba(167,139,250,0.25); }
+
+  .pdash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pdash-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+  }
+
+  .pdash-card {
+    background: var(--card);
+    border: 1px solid rgba(167,139,250,0.2);
+    border-radius: 14px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .pdash-card::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, #7c3aed, var(--premium));
+  }
+  .pdash-card-tall {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .pdash-card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--premium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    flex-shrink: 0;
+  }
+
+  .pdash-kpi-mini-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .pdash-kpi-mini {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+  }
+  .pdash-kpi-mini.pkpi-purple { border-color: rgba(167,139,250,0.25); }
+  .pdash-kpi-mini.pkpi-green { border-color: rgba(34,197,94,0.25); }
+
+  /* Mobile: premium en cascada */
+  @media (max-width: 768px) {
+    .pdash-kpi-row { grid-template-columns: 1fr 1fr; }
+    .pdash-grid { grid-template-columns: 1fr; }
+    .pdash-kpi-mini-row { grid-template-columns: 1fr 1fr; }
+    #tab-premium > #premiumSection { overflow-y: auto; }
+  }
+  @media (max-width: 480px) {
+    .pdash-kpi-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .pdash-kpi { padding: 12px 10px; gap: 10px; }
+    .pkpi-value { font-size: 18px !important; }
+  }
+
+  /* FAB */
+  .fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--green);
+    color: #000;
+    font-size: 28px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+    z-index: 100;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fab:hover { transform: scale(1.1); box-shadow: 0 8px 28px rgba(34,197,94,0.5); }
+
+  /* QUICK ADD MODAL */
+  .quick-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .quick-modal-overlay.open { display: flex; }
+  .quick-modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 24px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .quick-modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .quick-close {
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  /* MOBILE TAB BAR */
+  .mobile-tab-bar {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 8px 0 12px;
+    z-index: 50;
+    justify-content: space-around;
+  }
+  .mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 8px;
+    transition: color 0.2s;
+  }
+  .mobile-tab span:first-child { font-size: 20px; }
+  .mobile-tab.active { color: var(--green); }
+  .mobile-tab.mobile-tab-premium.active { color: var(--premium); }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .mobile-tab-bar { display: flex; }
+    #app { height: calc(100vh - 65px); }
+    .app-main { height: calc(100vh - 65px); }
+    .tab-content { padding: 16px 14px; }
+    .resumen-grid { grid-template-columns: 1fr 1fr; }
+    .cat-grid-full { grid-template-columns: repeat(3, 1fr); }
+    .fab { bottom: 80px; right: 18px; }
+  }
+
+  @media (max-width: 480px) {
+    .resumen-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .cat-grid-full { grid-template-columns: repeat(2, 1fr); }
+    .tab-content { padding: 12px; }
+    .tab-title { font-size: 18px; }
+  }
+
+  /* ── PROFILE DROPDOWN ── */
+  .profile-dropdown-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+  }
+  .profile-dropdown-overlay.open { display: block; }
+
+  .profile-dropdown {
+    position: fixed;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(300px, 92vw);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+    z-index: 501;
+    overflow: hidden;
+    animation: dropIn 0.18s ease;
+  }
+
+  @keyframes dropIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .profile-dropdown-header {
+    padding: 20px;
+    background: var(--card2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .profile-dropdown-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--premium);
+  }
+
+  .profile-dropdown-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .profile-dropdown-plan {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .profile-dropdown-plan.is-premium { color: var(--premium); }
+
+  .profile-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .profile-dropdown-item:hover { background: var(--card2); }
+  .profile-dropdown-item.danger { color: var(--red); }
+  .profile-dropdown-item .item-icon { font-size: 18px; width: 24px; text-align: center; }
+
+  .profile-dropdown-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  .sidebar-user { cursor: pointer; transition: all 0.2s; }
+  .sidebar-user:hover { border-color: var(--premium); }
+
+  @media (min-width: 769px) {
+    .profile-dropdown {
+      position: absolute;
+      bottom: auto;
+      top: 0;
+      left: 230px;
+      transform: none;
+      width: 260px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1220,93 +2122,176 @@
   </div>
 </div>
 
-<!-- ── APP ── -->
-<div id="app">
-  <header>
-    <div class="logo">Hormi<span>cash</span></div>
-    <div class="plan-chip" id="planChip">Free</div>
-    <div class="header-right">
-      <span class="user-name" id="userName"></span>
-      <img class="user-avatar" id="userAvatar" src="" alt="">
-      <select class="theme-btn" id="appLangSelect" onchange="setLangFromSelect(this.value)" style="cursor:pointer;padding:6px 10px">
-        <option value="es">🇪🇸 ES</option>
-        <option value="en">🇺🇸 EN</option>
-        <option value="pt">🇧🇷 PT</option>
-      </select>
-      <span class="theme-btn" id="currencyChip" style="font-weight:600;color:var(--accent)">S/</span>
-      <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">☀️ Claro</button>
-      <a href="mailto:hormicash@corp.com" class="theme-btn" style="text-decoration:none">🛟 Soporte</a>
-      <button class="upgrade-btn" id="upgradeBtn" onclick="showUpgrade()">⭐ Premium</button>
-      <button class="logout-btn" id="txt-logout" onclick="logout()">Salir</button>
-    </div>
-  </header>
+<!-- ── PREMIUM PAGE ── -->
+<div id="premiumPage">
+  <div class="bg-grid"></div>
+  <div class="bg-glow" style="background:radial-gradient(circle, rgba(167,139,250,0.1) 0%, transparent 70%)"></div>
+  <div class="premium-page-card">
+    <div class="premium-page-icon">⭐</div>
+    <div class="premium-page-title">Hormicash Premium</div>
+    <div class="premium-page-sub">Desbloquea análisis avanzado, gráficos, proyecciones y seguimiento de tarjeta de crédito.</div>
 
-  <!-- Ad banner (solo free) -->
-  <div class="ad-banner" id="adBanner">
-    <span class="ad-label">Anuncio</span>
-    <div class="ad-content">
-      <span>💳 <strong>BCP</strong> — Abre tu cuenta de ahorros y gana 4% de interés anual</span>
-      <a href="#" class="ad-cta">Ver más</a>
+    <div class="premium-features-list">
+      <div class="premium-feat-item">📊 KPIs en tiempo real y proyecciones mensuales</div>
+      <div class="premium-feat-item">🍩 Gráficos de distribución y balance histórico</div>
+      <div class="premium-feat-item">🏅 Ranking de categorías de gasto</div>
+      <div class="premium-feat-item">💳 Seguimiento de tarjeta de crédito</div>
+      <div class="premium-feat-item">🚫 Sin anuncios</div>
     </div>
+
+    <div class="premium-price-tag">$4 <span>/ mes</span></div>
+
+    <div class="premium-code-section">
+      <div class="premium-code-label">🔑 Ingresa tu código de acceso</div>
+      <input
+        type="text"
+        class="premium-code-input"
+        id="premiumCodeInput"
+        placeholder="Código Premium"
+        maxlength="20"
+        autocomplete="off"
+        oninput="this.value = this.value.toUpperCase()"
+      >
+      <div class="premium-code-error" id="premiumCodeError">❌ Código incorrecto. Verifica e intenta de nuevo.</div>
+    </div>
+
+    <button class="premium-activate-btn" id="premiumActivateBtn" onclick="activatePremiumCode()">
+      ⭐ Activar Premium
+    </button>
+    <button class="premium-back-btn" onclick="closePremiumPage()">← Volver al dashboard</button>
   </div>
+</div>
 
-  <div class="dashboard">
-    <div class="dash-header">
-      <div class="dash-title" id="dashTitle">Tu resumen</div>
-      <div class="month-selector">
-        <button class="month-nav" id="monthPrev" onclick="changeMonth(-1)">◀</button>
-        <span class="month-label" id="monthLabel">Abril 2026</span>
-        <button class="month-nav" id="monthNext" onclick="changeMonth(1)">▶</button>
+<!-- ── APP ── -->
+<!-- ── APP ── -->
+<div id="app" style="display:none">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">Hormi<span>cash</span></div>
+    <div class="sidebar-plan" id="sidebarPlan">Free</div>
+
+    <div class="sidebar-user" id="sidebarUser" onclick="toggleProfileDropdown()">
+      <img class="sidebar-avatar" id="sidebarAvatar" src="" alt="">
+      <div>
+        <div class="sidebar-username" id="sidebarName">—</div>
+        <div class="sidebar-usersub" id="sidebarSub">Mi cuenta</div>
       </div>
     </div>
 
-    <!-- Quick Add Form -->
-    <div class="quick-add-card">
-      <div class="quick-add-title" id="quickTitle">⚡ Registro rápido</div>
-      <div class="quick-add-row">
-        <div class="quick-add-type">
-          <button class="type-btn active" id="typeGasto" onclick="setType('gasto')">🐜 Gasto</button>
-          <button class="type-btn" id="typeIngreso" onclick="setType('ingreso')">💰 Ingreso</button>
+
+    <div class="sidebar-month">
+      <button class="month-nav" onclick="changeMonth(-1)">◀</button>
+      <span class="month-label" id="monthLabel">Abril 2026</span>
+      <button class="month-nav" onclick="changeMonth(1)">▶</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="snav-btn active" id="snav-resumen" onclick="showTab('resumen')">
+        <span class="snav-icon">📊</span><span class="snav-label" id="txt-nav-resumen">Resumen</span>
+      </button>
+      <button class="snav-btn" id="snav-categorias" onclick="showTab('categorias')">
+        <span class="snav-icon">🗂️</span><span class="snav-label" id="txt-nav-categorias">Categorías</span>
+      </button>
+      <button class="snav-btn" id="snav-transacciones" onclick="showTab('transacciones')">
+        <span class="snav-icon">📋</span><span class="snav-label" id="txt-nav-transacciones">Transacciones</span>
+      </button>
+      <button class="snav-btn" id="snav-tarjeta" onclick="showTab('tarjeta')">
+        <span class="snav-icon">💳</span><span class="snav-label">Tarjeta</span>
+      </button>
+      <button class="snav-btn snav-premium" id="snav-premium" onclick="showTab('premium')">
+        <span class="snav-icon">⭐</span><span class="snav-label">Premium</span>
+        <span class="snav-badge" id="snavPremiumBadge">PRO</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-actions">
+        <button class="saction-btn" onclick="toggleTheme()" id="themeBtn">☀️ Claro</button>
+        <select class="saction-btn" id="appLangSelect" onchange="setLangFromSelect(this.value)">
+          <option value="es">🇪🇸 ES</option>
+          <option value="en">🇺🇸 EN</option>
+          <option value="pt">🇧🇷 PT</option>
+        </select>
+        <button class="saction-btn" id="upgradeBtn" onclick="showUpgrade()" style="color:var(--accent)">⭐ Upgrade</button>
+        <button class="saction-btn" onclick="logout()" id="txt-logout">🚪 Salir</button>
+      </div>
+      <div class="sidebar-footer">© 2026 Hormicash</div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="app-main" id="appMain">
+
+    <!-- Ad banner (solo free) -->
+    <div class="ad-banner" id="adBanner">
+      <span class="ad-label">Anuncio</span>
+      <div class="ad-content">
+        <span>💳 <strong>BCP</strong> — Abre tu cuenta y gana 4% de interés anual</span>
+        <a href="#" class="ad-cta">Ver más</a>
+      </div>
+    </div>
+
+    <!-- TAB: RESUMEN -->
+    <div class="tab-content active" id="tab-resumen">
+      <div class="tab-header">
+        <div class="tab-title" id="dashTitle">Tu resumen</div>
+      </div>
+      <div class="resumen-grid">
+        <!-- KPI cards -->
+        <div class="stat-card" id="cardIngresos">
+          <div class="stat-label" id="labelIngresos">💰 INGRESOS</div>
+          <div class="stat-value" style="color:var(--green)"><span class="cur">S/</span><span id="ingresosNum">0.00</span></div>
+          <div class="stat-sub" id="ingresosSub">Sin ingresos aún</div>
+        </div>
+        <div class="stat-card" id="cardGastos">
+          <div class="stat-label" id="labelGastos">🐜 GASTOS</div>
+          <div class="stat-value" style="color:var(--red)"><span class="cur">S/</span><span id="gastosNum">0.00</span></div>
+          <div class="stat-sub" id="gastosSub">Sin gastos aún</div>
+        </div>
+        <div class="stat-card" id="cardBalance">
+          <div class="stat-label" id="labelBalance">📊 BALANCE</div>
+          <div class="stat-value"><span class="cur">S/</span><span id="balanceNum">0.00</span></div>
+          <div class="stat-sub" id="balanceSub">—</div>
+        </div>
+        <!-- Barras -->
+        <div class="budget-card resumen-full">
+          <div class="budget-card-header">
+            <span class="budget-card-title">📊 Resumen del mes</span>
+            <button class="config-btn" onclick="openConfigModal()">⚙️ Configurar</button>
+          </div>
+          <div class="bar-block">
+            <div class="budget-row">
+              <span>Gasto vs Ingreso</span>
+              <span class="budget-pct" id="budgetPct" style="color:var(--green)">0%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" id="budgetBar" style="width:0%"></div></div>
+            <div class="budget-msg" id="budgetMsg">Cargando...</div>
+          </div>
+          <div class="bar-block">
+            <div class="budget-row">
+              <span>🐜 Gastos hormiga <span id="hormigaUmbral" style="color:var(--muted);font-size:11px"></span></span>
+              <span class="budget-pct" id="hormigaPct" style="color:var(--accent)">0%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill-hormiga" id="hormigaBar" style="width:0%"></div></div>
+            <div class="budget-msg" id="hormigaMsg">Cargando...</div>
+          </div>
+        </div>
+        <!-- Últimas transacciones (preview) -->
+        <div class="resumen-txs resumen-full">
+          <div class="section-title" id="labelTransaccionesPreview">ÚLTIMAS TRANSACCIONES</div>
+          <div class="tx-list" id="txListPreview"></div>
+          <button class="ver-mas-btn" onclick="showTab('transacciones')">Ver todas →</button>
         </div>
       </div>
-      <div class="quick-add-row">
-        <input type="text" class="quick-input" id="quickDesc" placeholder="Ej: Almuerzo, Café, Sueldo..." autocomplete="off">
-        <input type="number" class="quick-input quick-monto" id="quickMonto" placeholder="S/" min="0" step="0.01">
-        <button class="quick-submit" id="quickSubmit" onclick="quickAdd()">+</button>
-      </div>
-      <div class="quick-feedback" id="quickFeedback"></div>
     </div>
 
-    <div class="stats-row">
-      <div class="stat-card" id="cardIngresos">
-        <div class="stat-label" id="labelIngresos">💰 INGRESOS</div>
-        <div class="stat-value" style="color:var(--green)"><span class="cur">S/</span><span id="ingresosNum">0.00</span></div>
-        <div class="stat-sub" id="ingresosSub">Sin ingresos aún</div>
+    <!-- TAB: CATEGORÍAS -->
+    <div class="tab-content" id="tab-categorias">
+      <div class="tab-header">
+        <div class="tab-title" id="labelCategorias">Categorías</div>
       </div>
-      <div class="stat-card" id="cardGastos">
-        <div class="stat-label" id="labelGastos">🐜 GASTOS</div>
-        <div class="stat-value" style="color:var(--red)"><span class="cur">S/</span><span id="gastosNum">0.00</span></div>
-        <div class="stat-sub" id="gastosSub">Sin gastos aún</div>
-      </div>
-      <div class="stat-card" id="cardBalance">
-        <div class="stat-label" id="labelBalance">📊 BALANCE</div>
-        <div class="stat-value"><span class="cur">S/</span><span id="balanceNum">0.00</span></div>
-        <div class="stat-sub" id="balanceSub">—</div>
-      </div>
-    </div>
-
-    <div class="budget-card">
-      <div class="budget-row">
-        <span id="budgetLabel">Presupuesto mensual <strong>S/ 1500</strong></span>
-        <span class="budget-pct" id="budgetPct">0%</span>
-      </div>
-      <div class="bar-track"><div class="bar-fill" id="budgetBar" style="width:0%"></div></div>
-      <div class="budget-msg" id="budgetMsg">Cargando...</div>
-    </div>
-
-    <div>
-      <div class="section-title" id="labelCategorias">CATEGORÍAS</div>
-      <div class="cat-grid">
+      <div class="cat-grid-full">
         <div class="cat-item"><div class="cat-icon">🍱</div><div class="cat-name" id="cat-name-comida">Comida</div><div class="cat-amount" id="cat-comida">S/ 0</div></div>
         <div class="cat-item"><div class="cat-icon">☕</div><div class="cat-name" id="cat-name-cafe">Café</div><div class="cat-amount" id="cat-cafe">S/ 0</div></div>
         <div class="cat-item"><div class="cat-icon">🚌</div><div class="cat-name" id="cat-name-transporte">Transporte</div><div class="cat-amount" id="cat-transporte">S/ 0</div></div>
@@ -1320,69 +2305,159 @@
       </div>
     </div>
 
-    <!-- Premium section -->
-    <div id="premiumSection"></div>
-
-    <div>
-      <div class="section-title" id="labelTransacciones">Últimas transacciones</div>
-      <div class="tx-list" id="txList">
+    <!-- TAB: TRANSACCIONES -->
+    <div class="tab-content" id="tab-transacciones">
+      <div class="tab-header">
+        <div class="tab-title" id="labelTransacciones">Transacciones</div>
+      </div>
+      <div class="tx-list-full" id="txList">
         <div class="empty-state">📲 Envía tu primer gasto por WhatsApp para verlo aquí</div>
       </div>
     </div>
 
-    <!-- Edit Modal -->
-    <div class="modal-overlay" id="editModal" style="display:none" onclick="if(event.target===this)closeEditModal()">
-      <div class="modal-card">
-        <div class="modal-title" id="modalTitle">✏️ Editar movimiento</div>
-        <input type="hidden" id="editId">
+    <!-- TAB: TARJETA -->
+    <div class="tab-content" id="tab-tarjeta">
+      <div class="tab-header">
+        <div class="tab-title">💳 Tarjeta de crédito</div>
+      </div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--muted)">
+        <div style="font-size:48px">💳</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text)">Próximamente</div>
+        <div style="font-size:14px;text-align:center;max-width:280px;line-height:1.6">Seguimiento de gastos con tarjeta de crédito, fecha de corte, límite disponible y alertas de pago.</div>
+      </div>
+    </div>
 
-        <label class="modal-label" id="modalLabelDesc">Descripción</label>
-        <input type="text" class="modal-input" id="editLabel">
+    <!-- TAB: PREMIUM -->
+    <div class="tab-content" id="tab-premium">
+      <div class="tab-header">
+        <div class="tab-title">⭐ Panel Premium</div>
+      </div>
+      <div id="premiumSection"></div>
+    </div>
 
-        <label class="modal-label" id="modalLabelMonto">Monto (S/)</label>
-        <input type="number" class="modal-input" id="editMonto" step="0.01" min="0">
-
-        <label class="modal-label" id="modalLabelTipo">Tipo</label>
-        <select class="modal-input" id="editTipo">
-          <option value="gasto" id="editTipoGasto">💸 Gasto</option>
-          <option value="ingreso" id="editTipoIngreso">💰 Ingreso</option>
-        </select>
-
-        <label class="modal-label" id="modalLabelCat">Categoría</label>
-        <select class="modal-input" id="editCategoria">
-          <option value="comida" id="editCat-comida">🍱 Comida</option>
-          <option value="cafe" id="editCat-cafe">☕ Café</option>
-          <option value="transporte" id="editCat-transporte">🚌 Transporte</option>
-          <option value="telecom" id="editCat-telecom">📱 Telecom</option>
-          <option value="compras" id="editCat-compras">🛍️ Compras</option>
-          <option value="entretenimiento" id="editCat-ocio">🎮 Ocio</option>
-          <option value="hogar" id="editCat-hogar">🏠 Hogar</option>
-          <option value="salud" id="editCat-salud">💊 Salud</option>
-          <option value="educacion" id="editCat-educacion">📚 Educación</option>
-          <option value="otros" id="editCat-otros">💸 Otros</option>
-          <option value="ingreso" id="editCat-ingreso">💰 Ingreso</option>
-        </select>
-
-        <div class="modal-actions">
-          <button class="modal-btn modal-btn-delete" id="modalBtnDelete" onclick="deleteTx()">🗑️ Eliminar</button>
-          <button class="modal-btn modal-btn-cancel" id="modalBtnCancel" onclick="closeEditModal()">Cancelar</button>
-          <button class="modal-btn modal-btn-save" id="modalBtnSave" onclick="saveTx()">Guardar</button>
+    <!-- TAB: CUENTA (mobile only) -->
+    <div class="tab-content" id="tab-cuenta">
+      <div class="tab-header">
+        <div class="tab-title">👤 Mi cuenta</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;align-items:center;gap:14px">
+          <img id="cuentaAvatar" src="" style="width:52px;height:52px;border-radius:50%;object-fit:cover">
+          <div>
+            <div id="cuentaNombre" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700"></div>
+            <div id="cuentaPlan" style="font-size:12px;color:var(--premium);font-weight:600;margin-top:2px">Free</div>
+          </div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+          <button class="saction-btn" onclick="toggleTheme()" style="width:100%;padding:14px 16px;font-size:14px" id="themeBtnMobile">☀️ Modo claro</button>
+          <div style="height:1px;background:var(--border)"></div>
+          <button class="saction-btn" id="upgradeBtnMobile" onclick="showUpgrade()" style="width:100%;padding:14px 16px;font-size:14px;color:var(--accent)">⭐ Upgrade a Premium</button>
+          <div style="height:1px;background:var(--border)" id="cancelDivMobile"></div>
+          <button class="cancel-premium-btn hidden-free" id="cancelPremiumBtnMobile" onclick="cancelPremium()" style="width:100%;padding:14px 16px;font-size:14px">✕ Cancelar Premium</button>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+          <button onclick="logout()" style="width:100%;padding:14px 16px;background:none;border:none;color:var(--red);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;text-align:left;padding-left:16px">🚪 Salir / Cambiar cuenta</button>
         </div>
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="app-footer">
-      <div class="footer-brand">Hormi<span>cash</span> · <span id="footerTagline">Controla tus gastos hormiga 🐜</span></div>
-      <div class="footer-links">
-        <a href="mailto:hormicash@corp.com" class="footer-link">📧 hormicash@corp.com</a>
-        <a href="https://wa.me/14155238886?text=join%20worse-lying" target="_blank" class="footer-link" id="footerWa">📲 Bot WhatsApp</a>
-        <span class="footer-link" id="footerSupport">💬 Soporte</span>
-      </div>
-      <div class="footer-copy" id="footerCopy">© 2026 Hormicash. Todos los derechos reservados.</div>
-    </div>
+  </main>
 
+  <!-- Botón flotante (+) -->
+  <button class="fab" id="fabBtn" onclick="openQuickAdd()" title="Registrar gasto">+</button>
+
+  <!-- Quick Add Modal -->
+  <div class="quick-modal-overlay" id="quickModal" onclick="if(event.target===this)closeQuickAdd()">
+    <div class="quick-modal">
+      <div class="quick-modal-title" id="quickTitle">⚡ Registro rápido</div>
+      <div class="quick-add-row" style="margin-bottom:12px">
+        <div class="quick-add-type">
+          <button class="type-btn active" id="typeGasto" onclick="setType('gasto')">🐜 Gasto</button>
+          <button class="type-btn" id="typeIngreso" onclick="setType('ingreso')">💰 Ingreso</button>
+        </div>
+      </div>
+      <div class="quick-add-row">
+        <input type="text" class="quick-input" id="quickDesc" placeholder="Ej: Almuerzo, Café, Sueldo..." autocomplete="off">
+        <input type="number" class="quick-input quick-monto" id="quickMonto" placeholder="S/" min="0" step="0.01">
+        <button class="quick-submit" id="quickSubmit" onclick="quickAdd()">+</button>
+      </div>
+      <div class="quick-feedback" id="quickFeedback"></div>
+      <button class="quick-close" onclick="closeQuickAdd()">✕ Cerrar</button>
+    </div>
   </div>
+
+  <!-- Config Modal -->
+  <div class="config-modal-overlay" id="configModal" onclick="if(event.target===this)closeConfigModal()">
+    <div class="config-modal">
+      <div class="config-modal-title">⚙️ Configuración</div>
+      <div class="config-field">
+        <label class="config-label">Umbral de gasto hormiga (S/)</label>
+        <input type="number" class="config-input" id="configUmbral" placeholder="Ej: 15" min="1" step="1">
+        <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">Gastos menores a este monto se consideran gastos hormiga</span>
+      </div>
+      <div class="config-actions">
+        <button class="config-cancel" onclick="closeConfigModal()">Cancelar</button>
+        <button class="config-save" onclick="saveConfig()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal" style="display:none" onclick="if(event.target===this)closeEditModal()">
+    <div class="modal-card">
+      <div class="modal-title" id="modalTitle">✏️ Editar movimiento</div>
+      <input type="hidden" id="editId">
+      <label class="modal-label" id="modalLabelDesc">Descripción</label>
+      <input type="text" class="modal-input" id="editLabel">
+      <label class="modal-label" id="modalLabelMonto">Monto (S/)</label>
+      <input type="number" class="modal-input" id="editMonto" step="0.01" min="0">
+      <label class="modal-label" id="modalLabelTipo">Tipo</label>
+      <select class="modal-input" id="editTipo">
+        <option value="gasto" id="editTipoGasto">💸 Gasto</option>
+        <option value="ingreso" id="editTipoIngreso">💰 Ingreso</option>
+      </select>
+      <label class="modal-label" id="modalLabelCat">Categoría</label>
+      <select class="modal-input" id="editCategoria">
+        <option value="comida" id="editCat-comida">🍱 Comida</option>
+        <option value="cafe" id="editCat-cafe">☕ Café</option>
+        <option value="transporte" id="editCat-transporte">🚌 Transporte</option>
+        <option value="telecom" id="editCat-telecom">📱 Telecom</option>
+        <option value="compras" id="editCat-compras">🛍️ Compras</option>
+        <option value="entretenimiento" id="editCat-ocio">🎮 Ocio</option>
+        <option value="hogar" id="editCat-hogar">🏠 Hogar</option>
+        <option value="salud" id="editCat-salud">💊 Salud</option>
+        <option value="educacion" id="editCat-educacion">📚 Educación</option>
+        <option value="otros" id="editCat-otros">💸 Otros</option>
+        <option value="ingreso" id="editCat-ingreso">💰 Ingreso</option>
+      </select>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-delete" id="modalBtnDelete" onclick="deleteTx()">🗑️ Eliminar</button>
+        <button class="modal-btn modal-btn-cancel" id="modalBtnCancel" onclick="closeEditModal()">Cancelar</button>
+        <button class="modal-btn modal-btn-save" id="modalBtnSave" onclick="saveTx()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar móvil -->
+  <nav class="mobile-tab-bar">
+    <button class="mobile-tab active" id="mtab-resumen" onclick="showTab('resumen')">
+      <span>📊</span><span>Resumen</span>
+    </button>
+    <button class="mobile-tab" id="mtab-categorias" onclick="showTab('categorias')">
+      <span>🗂️</span><span>Cats</span>
+    </button>
+    <button class="mobile-tab" id="mtab-transacciones" onclick="showTab('transacciones')">
+      <span>📋</span><span>Movs</span>
+    </button>
+    <button class="mobile-tab mobile-tab-premium" id="mtab-premium" onclick="showTab('premium')">
+      <span>⭐</span><span>Premium</span>
+    </button>
+    <button class="mobile-tab" id="mtab-perfil" onclick="toggleProfileDropdown()">
+      <span><img id="mobileTabAvatar" src="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;display:none"><span id="mobileTabAvatarFallback" style="font-size:20px">👤</span></span>
+      <span id="mobileTabName">Yo</span>
+    </button>
+  </nav>
+
 </div>
 
 <script type="module">
@@ -1422,16 +2497,14 @@
   let unsubscribeData = null; // Para limpiar el listener anterior
 
   function updateMonthLabel() {
-    document.getElementById('monthLabel').textContent = `${MESES[currentMonth]} ${currentYear}`;
+    const label = document.getElementById('monthLabel');
+    if (label) label.textContent = `${MESES[currentMonth]} ${currentYear}`;
 
-    // Deshabilitar ◀ si estamos en abril 2026
-    const prevBtn = document.getElementById('monthPrev');
-    prevBtn.disabled = (currentYear === MIN_YEAR && currentMonth <= MIN_MONTH);
-
-    // Deshabilitar ▶ si estamos en el mes actual
     const now = new Date();
+    const prevBtn = document.getElementById('monthPrev');
+    if (prevBtn) prevBtn.disabled = (currentYear === MIN_YEAR && currentMonth <= MIN_MONTH);
     const nextBtn = document.getElementById('monthNext');
-    nextBtn.disabled = (currentYear === now.getFullYear() && currentMonth >= now.getMonth());
+    if (nextBtn) nextBtn.disabled = (currentYear === now.getFullYear() && currentMonth >= now.getMonth());
   }
 
   window.changeMonth = (dir) => {
@@ -1455,12 +2528,35 @@
     document.getElementById('loginPage').style.display = 'none';
     document.getElementById('linkPage').style.display = 'none';
     document.getElementById('welcomeBotPage').style.display = 'none';
+    document.getElementById('premiumPage').style.display = 'none';
     document.getElementById('app').style.display = 'none';
     if (page === 'login') document.getElementById('loginPage').style.display = 'flex';
     else if (page === 'link') document.getElementById('linkPage').style.display = 'flex';
     else if (page === 'welcomeBot') document.getElementById('welcomeBotPage').style.display = 'flex';
-    else if (page === 'app') document.getElementById('app').style.display = 'block';
+    else if (page === 'premium') document.getElementById('premiumPage').style.display = 'flex';
+    else if (page === 'app') document.getElementById('app').style.display = 'flex';
   }
+
+  window.showTab = function(tab) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
+    const tc = document.getElementById('tab-' + tab);
+    if (tc) tc.classList.add('active');
+    const snav = document.getElementById('snav-' + tab);
+    if (snav) snav.classList.add('active');
+    const mtab = document.getElementById('mtab-' + tab);
+    if (mtab) mtab.classList.add('active');
+  };
+
+  window.openQuickAdd = function() {
+    document.getElementById('quickModal').classList.add('open');
+    setTimeout(() => document.getElementById('quickDesc').focus(), 100);
+  };
+
+  window.closeQuickAdd = function() {
+    document.getElementById('quickModal').classList.remove('open');
+  };
 
   // ── AUTH ──
   window.loginWithGoogle = async () => {
@@ -1527,9 +2623,18 @@
   // ── AUTH STATE ──
   onAuthStateChanged(auth, async (user) => {
     if (user) {
-      // Info usuario
-      document.getElementById('userName').textContent = user.displayName?.split(' ')[0] || '';
-      if (user.photoURL) document.getElementById('userAvatar').src = user.photoURL;
+      // Info usuario — sidebar
+      const firstName = user.displayName?.split(' ')[0] || '';
+      const sidebarNameEl = document.getElementById('sidebarName');
+      const sidebarAvatarEl = document.getElementById('sidebarAvatar');
+      if (sidebarNameEl) sidebarNameEl.textContent = firstName;
+      if (sidebarAvatarEl && user.photoURL) sidebarAvatarEl.src = user.photoURL;
+      setTimeout(updateDropdownUI, 200);
+      // Mobile cuenta tab
+      const cuentaAvatarEl = document.getElementById('cuentaAvatar');
+      const cuentaNombreEl = document.getElementById('cuentaNombre');
+      if (cuentaAvatarEl && user.photoURL) cuentaAvatarEl.src = user.photoURL;
+      if (cuentaNombreEl) cuentaNombreEl.textContent = user.displayName || '';
 
       // Buscar datos del usuario en Firestore
       try {
@@ -1550,10 +2655,12 @@
               window.userCurrencyCode = 'PEN';
             }
 
+            // Cargar umbral hormiga
+            window.userUmbralHormiga = data.umbralHormiga || 15;
+
             // ¿Es premium?
             if (data.plan === 'premium') {
               window.userPlan = 'premium';
-              setPremiumUI();
             }
 
             renderPremiumSection();
@@ -1561,9 +2668,14 @@
             window._auth = auth;
             window._loadData = loadData;
             window._userPhone = () => userPhone;
-            applyLang(window.currentLang); // aplicar idioma con datos ya cargados
+            applyLang(window.currentLang);
             updateCurrencyDisplay();
             loadData(user);
+
+            // Aplicar UI premium con delay para garantizar DOM visible
+            if (data.plan === 'premium') {
+              setTimeout(() => { setPremiumUI(); updateDropdownUI(); }, 100);
+            }
           } else {
             // No tiene teléfono → pedir vinculación
             showPage('link');
@@ -1582,75 +2694,252 @@
   });
 
   function setPremiumUI() {
-    document.getElementById('adBanner').style.display = 'none';
-    document.getElementById('upgradeBtn').style.display = 'none';
-    const chip = document.getElementById('planChip');
-    chip.textContent = '⭐ Premium';
-    chip.className = 'plan-chip chip-premium';
+    const adBanner = document.getElementById('adBanner');
+    if (adBanner) adBanner.style.display = 'none';
+    const upgradeBtn = document.getElementById('upgradeBtn');
+    if (upgradeBtn) upgradeBtn.style.display = 'none';
+    const cancelBtn = document.getElementById('cancelPremiumBtn');
+    if (cancelBtn) cancelBtn.style.display = 'block';
+    const cancelBtnMobile = document.getElementById('cancelPremiumBtnMobile');
+    if (cancelBtnMobile) cancelBtnMobile.classList.remove('hidden-free');
+    const cancelDivMobile = document.getElementById('cancelDivMobile');
+    if (cancelDivMobile) cancelDivMobile.style.display = 'block';
+    const upgradeBtnMobile = document.getElementById('upgradeBtnMobile');
+    if (upgradeBtnMobile) upgradeBtnMobile.style.display = 'none';
+    // Update cuenta tab info
+    const cuentaPlan = document.getElementById('cuentaPlan');
+    if (cuentaPlan) { cuentaPlan.textContent = '⭐ Premium'; cuentaPlan.style.color = 'var(--premium)'; }
+    const sidebarPlan = document.getElementById('sidebarPlan');
+    if (sidebarPlan) { sidebarPlan.textContent = '⭐ Premium'; sidebarPlan.style.color = 'var(--premium)'; }
+    const badge = document.getElementById('snavPremiumBadge');
+    if (badge) { badge.style.background = 'var(--premium)'; }
+    // Habilitar tab tarjeta (reemplazar "Próximamente" con contenido real)
+    renderTarjetaTab();
+    updateDropdownUI();
   }
+
+  function renderTarjetaTab() {
+    const tab = document.getElementById('tab-tarjeta');
+    if (!tab) return;
+    if (window.userPlan === 'premium') {
+      tab.innerHTML = `
+        <div class="tab-header">
+          <div class="tab-title">💳 Tarjeta de crédito</div>
+        </div>
+        <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:4px">
+
+          <!-- Card visual -->
+          <div style="background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:18px;padding:24px 26px;color:white;position:relative;overflow:hidden;min-height:160px;flex-shrink:0">
+            <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.07)"></div>
+            <div style="position:absolute;bottom:-40px;left:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>
+            <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:28px">Hormicash Premium</div>
+            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;letter-spacing:3px;margin-bottom:20px" id="cardNumberDisplay">•••• •••• •••• ••••</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end">
+              <div>
+                <div style="font-size:10px;opacity:0.6;text-transform:uppercase;letter-spacing:0.5px">Límite disponible</div>
+                <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800" id="cardLimiteDisp">S/ —</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;opacity:0.6;text-transform:uppercase;letter-spacing:0.5px">Corte</div>
+                <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700" id="cardCorteDisplay">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Config campos -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px">
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--premium);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">⚙️ Configurar tarjeta</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Límite total (S/)</label>
+                <input type="number" class="config-input" id="cardLimite" placeholder="Ej: 2000" oninput="updateCardPreview()">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Gasto actual (S/)</label>
+                <input type="number" class="config-input" id="cardGasto" placeholder="Ej: 450" oninput="updateCardPreview()">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Día de corte</label>
+                <input type="number" class="config-input" id="cardCorte" placeholder="Ej: 15" min="1" max="31" oninput="updateCardPreview()">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Últimos 4 dígitos</label>
+                <input type="text" class="config-input" id="cardDigits" placeholder="1234" maxlength="4" oninput="updateCardPreview()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra de uso -->
+          <div style="background:var(--card);border:1px solid rgba(167,139,250,0.2);border-radius:14px;padding:20px;position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#7c3aed,var(--premium))"></div>
+            <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--premium);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">📊 Uso de crédito</div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+              <span>Utilizado</span>
+              <span id="cardUsoPct" style="font-weight:700;color:var(--premium)">—</span>
+            </div>
+            <div class="bar-track" style="margin-bottom:10px"><div id="cardUsoBar" class="bar-fill" style="width:0%;background:linear-gradient(90deg,#7c3aed,#a78bfa)"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+              <span>Gastado: <strong id="cardGastadoAmt" style="color:var(--text)">S/ 0</strong></span>
+              <span>Disponible: <strong id="cardDispAmt" style="color:var(--green)">S/ 0</strong></span>
+            </div>
+          </div>
+
+        </div>
+      `;
+    } else {
+      tab.innerHTML = `
+        <div class="tab-header">
+          <div class="tab-title">💳 Tarjeta de crédito</div>
+        </div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--muted)">
+          <div style="font-size:48px">🔒</div>
+          <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text)">Solo Premium</div>
+          <div style="font-size:14px;text-align:center;max-width:280px;line-height:1.6">Seguimiento de tarjeta de crédito disponible en el plan Premium.</div>
+          <button class="upgrade-cta" onclick="showUpgrade()">⭐ Upgrade a Premium</button>
+        </div>
+      `;
+    }
+  }
+
+  window.updateCardPreview = () => {
+    const limite = parseFloat(document.getElementById('cardLimite')?.value) || 0;
+    const gasto = parseFloat(document.getElementById('cardGasto')?.value) || 0;
+    const corte = document.getElementById('cardCorte')?.value || '—';
+    const digits = document.getElementById('cardDigits')?.value || '';
+
+    const disp = Math.max(limite - gasto, 0);
+    const pct = limite > 0 ? Math.min((gasto / limite) * 100, 100) : 0;
+
+    const cardNum = document.getElementById('cardNumberDisplay');
+    if (cardNum) cardNum.textContent = digits ? `•••• •••• •••• ${digits.padStart(4,'•')}` : '•••• •••• •••• ••••';
+
+    const cardLimiteDisp = document.getElementById('cardLimiteDisp');
+    if (cardLimiteDisp) cardLimiteDisp.textContent = limite > 0 ? `S/ ${disp.toFixed(0)}` : 'S/ —';
+
+    const cardCorteDisplay = document.getElementById('cardCorteDisplay');
+    if (cardCorteDisplay) cardCorteDisplay.textContent = corte !== '—' && corte ? `Día ${corte}` : '—';
+
+    const usoBar = document.getElementById('cardUsoBar');
+    if (usoBar) usoBar.style.width = pct + '%';
+    const usoPct = document.getElementById('cardUsoPct');
+    if (usoPct) { usoPct.textContent = pct.toFixed(0) + '%'; usoPct.style.color = pct >= 80 ? 'var(--red)' : 'var(--premium)'; }
+    const gastadoAmt = document.getElementById('cardGastadoAmt');
+    if (gastadoAmt) gastadoAmt.textContent = `S/ ${gasto.toFixed(0)}`;
+    const dispAmt = document.getElementById('cardDispAmt');
+    if (dispAmt) { dispAmt.textContent = `S/ ${disp.toFixed(0)}`; dispAmt.style.color = pct >= 80 ? 'var(--red)' : 'var(--green)'; }
+  };
 
   function renderPremiumSection() {
     const section = document.getElementById('premiumSection');
     if (window.userPlan === 'premium') {
       section.innerHTML = `
-        <div class="premium-header">
-          <div class="section-title">⭐ Panel Premium</div>
-        </div>
-
-        <!-- Donut Chart -->
-        <div class="chart-card">
-          <div class="chart-card-title">Gastos por categoría</div>
-          <div class="donut-container">
-            <canvas id="donutChart" width="220" height="220"></canvas>
-            <div class="donut-center">
-              <div class="donut-total-label">Total gastos</div>
-              <div class="donut-total-value" id="donutTotal">S/ 0</div>
+        <!-- FILA KPIs: 4 cards arriba -->
+        <div class="pdash-kpi-row">
+          <div class="pdash-kpi pkpi-green">
+            <div class="pkpi-icon-circle green">💰</div>
+            <div class="pkpi-info">
+              <div class="pkpi-label">Ingresos del mes</div>
+              <div class="pkpi-value" id="kpiIngresos" style="color:var(--green)">S/ —</div>
+              <div class="pkpi-sub" id="kpiIngresosSub">Este mes</div>
             </div>
           </div>
-          <div class="donut-legend" id="donutLegend"></div>
-        </div>
-
-        <!-- Bar Chart (mes a mes) -->
-        <div class="chart-card">
-          <div class="chart-card-title">Balance por mes</div>
-          <div class="bar-chart-container">
-            <canvas id="barChart" width="600" height="250"></canvas>
+          <div class="pdash-kpi pkpi-red">
+            <div class="pkpi-icon-circle red">🐜</div>
+            <div class="pkpi-info">
+              <div class="pkpi-label">Gastos del mes</div>
+              <div class="pkpi-value" id="kpiGastos" style="color:var(--red)">S/ —</div>
+              <div class="pkpi-sub">Este mes</div>
+            </div>
           </div>
-          <div class="bar-legend">
-            <span class="bar-legend-item"><span class="bar-dot" style="background:var(--green)"></span> Balance positivo</span>
-            <span class="bar-legend-item"><span class="bar-dot" style="background:var(--red)"></span> Balance negativo</span>
+          <div class="pdash-kpi pkpi-blue">
+            <div class="pkpi-icon-circle blue">📈</div>
+            <div class="pkpi-info">
+              <div class="pkpi-label">Proyección fin de mes</div>
+              <div class="pkpi-value" id="proyeccion" style="color:var(--blue)">S/ —</div>
+              <div class="pkpi-sub">Basado en ritmo actual</div>
+            </div>
           </div>
-        </div>
-
-        <!-- Insights -->
-        <div class="insights-grid">
-          <div class="insight-card">
-            <div class="insight-title">Proyección mensual</div>
-            <div class="insight-value" id="proyeccion">S/ —</div>
-            <div class="insight-desc">Basado en tu ritmo actual</div>
-          </div>
-          <div class="insight-card">
-            <div class="insight-title">Potencial de ahorro</div>
-            <div class="insight-value" id="ahorro">S/ —</div>
-            <div class="insight-desc">Si reduces gastos hormiga</div>
-          </div>
-          <div class="insight-card">
-            <div class="insight-title">Gasto diario promedio</div>
-            <div class="insight-value" id="promedioDiario">S/ —</div>
-            <div class="insight-desc">Este mes</div>
-          </div>
-          <div class="insight-card">
-            <div class="insight-title">Categoría top</div>
-            <div class="insight-value" id="catTop">—</div>
-            <div class="insight-desc" id="catTopDesc">Donde más gastas</div>
+          <div class="pdash-kpi pkpi-amber">
+            <div class="pkpi-icon-circle amber">⚡</div>
+            <div class="pkpi-info">
+              <div class="pkpi-label">Gasto diario</div>
+              <div class="pkpi-value" id="promedioDiario" style="color:var(--accent)">S/ —</div>
+              <div class="pkpi-sub">Promedio este mes</div>
+            </div>
           </div>
         </div>
 
-        <div class="tip-card" style="margin-top:12px">
-          <div class="tip-icon">💡</div>
-          <div>
-            <div class="tip-title">Consejo personalizado</div>
-            <div class="tip-desc" id="tipDesc">Cargando...</div>
+        <!-- GRID PRINCIPAL: 2 columnas -->
+        <div class="pdash-grid">
+
+          <!-- Columna izquierda -->
+          <div class="pdash-col">
+
+            <!-- Balance por mes (bar chart) -->
+            <div class="pdash-card pdash-card-tall">
+              <div class="pdash-card-title">📊 Balance por mes</div>
+              <div class="bar-chart-container" style="flex:1;min-height:0">
+                <canvas id="barChart"></canvas>
+              </div>
+              <div class="bar-legend" style="margin-top:10px">
+                <span class="bar-legend-item"><span class="bar-dot" style="background:var(--green)"></span> Positivo</span>
+                <span class="bar-legend-item"><span class="bar-dot" style="background:var(--red)"></span> Negativo</span>
+              </div>
+            </div>
+
+            <!-- KPI extra: ahorro + balance -->
+            <div class="pdash-kpi-mini-row">
+              <div class="pdash-kpi-mini pkpi-purple">
+                <div class="pkpi-icon-circle purple" style="width:40px;height:40px;font-size:18px">🏆</div>
+                <div class="pkpi-info">
+                  <div class="pkpi-label">Potencial ahorro</div>
+                  <div class="pkpi-value" id="ahorro" style="color:var(--premium);font-size:20px">S/ —</div>
+                  <div class="pkpi-sub">Reduciendo hormiga</div>
+                </div>
+              </div>
+              <div class="pdash-kpi-mini pkpi-green">
+                <div class="pkpi-icon-circle green" style="width:40px;height:40px;font-size:18px">📊</div>
+                <div class="pkpi-info">
+                  <div class="pkpi-label">Balance neto</div>
+                  <div class="pkpi-value" id="kpiBalance" style="color:var(--green);font-size:20px">S/ —</div>
+                  <div class="pkpi-sub" id="kpiBalanceSub">Este mes</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Columna derecha -->
+          <div class="pdash-col">
+
+            <!-- Top 3 categorías con ranking -->
+            <div class="pdash-card">
+              <div class="pdash-card-title">🏅 Top categorías de gasto</div>
+              <div id="topCatsList" style="margin-top:8px"></div>
+            </div>
+
+            <!-- Donut distribución -->
+            <div class="pdash-card">
+              <div class="pdash-card-title">🍩 Distribución por categoría</div>
+              <div class="donut-container">
+                <canvas id="donutChart" width="180" height="180"></canvas>
+                <div class="donut-center">
+                  <div class="donut-total-label">Total</div>
+                  <div class="donut-total-value" id="donutTotal">S/ 0</div>
+                </div>
+              </div>
+              <div class="donut-legend" id="donutLegend"></div>
+            </div>
+
+            <!-- Consejo personalizado -->
+            <div class="tip-card">
+              <div class="tip-icon">💡</div>
+              <div>
+                <div class="tip-title">Consejo personalizado</div>
+                <div class="tip-desc" id="tipDesc">Cargando...</div>
+              </div>
+            </div>
+
           </div>
         </div>
       `;
@@ -1659,8 +2948,8 @@
         <div class="premium-locked">
           <div class="lock-icon">🔒</div>
           <div class="lock-title">Análisis avanzado — Premium</div>
-          <div class="lock-desc">Gráficos de categorías, comparación mensual, proyecciones de gasto y consejos personalizados para mejorar tus finanzas.</div>
-          <button class="upgrade-cta" onclick="showUpgrade()">⭐ Upgrade a Premium — $2/mes</button>
+          <div class="lock-desc">KPIs en tiempo real, top categorías, gráficos de distribución, proyecciones y consejos personalizados.</div>
+          <button class="upgrade-cta" onclick="showUpgrade()">⭐ Upgrade a Premium — $4/mes</button>
         </div>
       `;
     }
@@ -1742,13 +3031,14 @@
     if (!canvas || !userPhone) return;
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = 600 * dpr;
-    canvas.height = 250 * dpr;
+    const container = canvas.parentElement;
+    const w = container ? container.clientWidth || 500 : 500;
+    const h = 220;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
     canvas.style.width = '100%';
-    canvas.style.height = '250px';
+    canvas.style.height = h + 'px';
     ctx.scale(dpr, dpr);
-
-    const w = 600, h = 250;
     ctx.clearRect(0, 0, w, h);
 
     // Obtener datos de los últimos 6 meses
@@ -1867,30 +3157,118 @@
     ctx.quadraticCurveTo(x, y, x + r, y);
   }
 
-  window.showUpgrade = async () => {
-    const clave = prompt('🔑 Ingresa tu código Premium:');
-    if (!clave) return;
+  window.showUpgrade = () => {
+    // Limpiar estado anterior
+    const codeInput = document.getElementById('premiumCodeInput');
+    const codeError = document.getElementById('premiumCodeError');
+    const activateBtn = document.getElementById('premiumActivateBtn');
+    if (codeInput) codeInput.value = '';
+    if (codeError) codeError.style.display = 'none';
+    if (activateBtn) activateBtn.disabled = false;
+    showPage('premium');
+  };
 
-    if (clave.trim().toUpperCase() === 'HORMI2026') {
-      const user = auth.currentUser;
-      if (!user) return;
+  window.closePremiumPage = () => {
+    showPage('app');
+  };
 
-      try {
-        await setDoc(doc(db, 'usuarios', user.uid), {
-          plan: 'premium'
-        }, { merge: true });
+  window.activatePremiumCode = async () => {
+    const codeInput = document.getElementById('premiumCodeInput');
+    const codeError = document.getElementById('premiumCodeError');
+    const activateBtn = document.getElementById('premiumActivateBtn');
+    const code = codeInput.value.trim().replace(/\s+/g, '');
 
-        window.userPlan = 'premium';
-        setPremiumUI();
-        renderPremiumSection();
-        loadData(user);
-        alert('🎉 ¡Premium activado! Disfruta de Hormicash sin límites.');
-      } catch(e) {
-        console.error(e);
-        alert('❌ Error al activar. Intenta de nuevo.');
-      }
-    } else {
-      alert('❌ Código incorrecto. Verifica e intenta de nuevo.');
+    if (!code) {
+      codeError.textContent = '⚠️ Ingresa un código.';
+      codeError.style.display = 'block';
+      return;
+    }
+
+    if (code !== 'HORMI2026') {
+      codeError.textContent = '❌ Código incorrecto. Verifica e intenta de nuevo.';
+      codeError.style.display = 'block';
+      codeInput.select();
+      return;
+    }
+
+    // Código correcto
+    codeError.style.display = 'none';
+    activateBtn.disabled = true;
+    activateBtn.textContent = 'Activando...';
+
+    const user = auth.currentUser;
+    if (!user) {
+      activateBtn.disabled = false;
+      activateBtn.textContent = '⭐ Activar Premium';
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'usuarios', user.uid), { plan: 'premium' }, { merge: true });
+      window.userPlan = 'premium';
+      setPremiumUI();
+      renderPremiumSection();
+      loadData(user);
+      showPage('app');
+      showTab('premium');
+    } catch(e) {
+      console.error(e);
+      codeError.textContent = '❌ Error al activar. Intenta de nuevo.';
+      codeError.style.display = 'block';
+      activateBtn.disabled = false;
+      activateBtn.textContent = '⭐ Activar Premium';
+    }
+  };
+
+  // Enter key en el input del código
+  document.getElementById('premiumCodeInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') window.activatePremiumCode();
+  });
+
+  window.cancelPremium = async () => {
+    const cur = window.userCurrency || 'S/';
+    const msg = `⚠️ ¿Seguro que quieres cancelar Premium?\n\n` +
+      `Perderás acceso a:\n` +
+      `• Gráficos y proyecciones mensuales\n` +
+      `• Top categorías y distribución\n` +
+      `• Seguimiento de tarjeta de crédito\n` +
+      `• Sin anuncios\n\n` +
+      `Por solo $4/mes estás ahorrando tiempo y tomando mejores decisiones con tu dinero. ¿Estás seguro?`;
+    if (!confirm(msg)) return;
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'usuarios', user.uid), { plan: 'free' }, { merge: true });
+      window.userPlan = 'free';
+
+      // Restaurar UI free
+      const adBanner = document.getElementById('adBanner');
+      if (adBanner) adBanner.style.display = '';
+      const upgradeBtn = document.getElementById('upgradeBtn');
+      if (upgradeBtn) upgradeBtn.style.display = '';
+      const cancelBtn = document.getElementById('cancelPremiumBtn');
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      const cancelBtnMobile = document.getElementById('cancelPremiumBtnMobile');
+      if (cancelBtnMobile) cancelBtnMobile.classList.add('hidden-free');
+      const cancelDivMobile = document.getElementById('cancelDivMobile');
+      if (cancelDivMobile) cancelDivMobile.style.display = 'none';
+      const upgradeBtnMobile = document.getElementById('upgradeBtnMobile');
+      if (upgradeBtnMobile) upgradeBtnMobile.style.display = '';
+      const cuentaPlan = document.getElementById('cuentaPlan');
+      if (cuentaPlan) { cuentaPlan.textContent = 'Free'; cuentaPlan.style.color = ''; }
+      renderTarjetaTab();
+      const sidebarPlan = document.getElementById('sidebarPlan');
+      if (sidebarPlan) { sidebarPlan.textContent = 'Free'; sidebarPlan.style.color = ''; }
+      const badge = document.getElementById('snavPremiumBadge');
+      if (badge) { badge.style.background = ''; }
+
+      // Habilitar tab tarjeta locked
+      renderPremiumSection();
+      loadData(user);
+      showTab('resumen');
+    } catch(e) {
+      console.error(e);
+      alert('Error al cancelar. Intenta de nuevo.');
     }
   };
 
@@ -1969,6 +3347,8 @@
       feedback.className = 'quick-feedback success';
       descInput.value = '';
       montoInput.value = '';
+      // Cerrar modal después de 1.2s
+      setTimeout(() => { window.closeQuickAdd(); feedback.textContent = ''; }, 1200);
     } catch(e) {
       console.error(e);
       feedback.textContent = '❌ Error al registrar. Intenta de nuevo.';
@@ -2062,19 +3442,31 @@
       document.getElementById('balanceSub').textContent = balance >= 0 ? t.balance_pos : t.balance_neg;
       document.getElementById('balanceSub').className = 'stat-sub ' + (balance >= 0 ? 'ok' : 'warn');
 
-      // Presupuesto (mensual: diario * días del mes)
-      const diasEnMes = new Date(currentYear, currentMonth + 1, 0).getDate();
-      const budgetMensual = BUDGET * diasEnMes;
-      const pct = Math.min((totalGastos/budgetMensual)*100, 100);
+      // Barra 1: Gasto vs Ingreso
+      const pct = totalIngresos > 0 ? Math.min((totalGastos / totalIngresos) * 100, 100) : 0;
       document.getElementById('budgetBar').style.width = pct + '%';
-      document.getElementById('budgetBar').className = 'bar-fill' + (pct >= 100 ? ' danger' : '');
+      document.getElementById('budgetBar').className = 'bar-fill' + (pct >= 90 ? ' danger' : '');
       document.getElementById('budgetPct').textContent = Math.round(pct) + '%';
-      const rem = budgetMensual - totalGastos;
-      document.getElementById('budgetMsg').innerHTML = rem >= 0
-        ? `${t.budget_left} <strong>${cur} ${rem.toFixed(2)}</strong> ${t.this_month}`
-        : `<span style="color:var(--red)">${t.budget_over} <strong>${cur} ${Math.abs(rem).toFixed(2)}</strong></span>`;
+      document.getElementById('budgetPct').style.color = pct >= 90 ? 'var(--red)' : 'var(--green)';
+      const rem = totalIngresos - totalGastos;
+      if (totalIngresos === 0) {
+        document.getElementById('budgetMsg').innerHTML = `<span style="color:var(--muted)">Registra ingresos para ver tu progreso</span>`;
+      } else {
+        document.getElementById('budgetMsg').innerHTML = rem >= 0
+          ? `Gastaste <strong>${cur} ${totalGastos.toFixed(0)}</strong> de <strong>${cur} ${totalIngresos.toFixed(0)}</strong> — te quedan <strong style="color:var(--green)">${cur} ${rem.toFixed(0)}</strong>`
+          : `<span style="color:var(--red)">Excediste tu ingreso en <strong>${cur} ${Math.abs(rem).toFixed(0)}</strong></span>`;
+      }
 
-      document.getElementById('budgetLabel').innerHTML = `${t.monthly_budget} <strong>${cur} ${budgetMensual}</strong>`;
+      // Barra 2: Gastos hormiga
+      const umbral = window.userUmbralHormiga || 15;
+      document.getElementById('hormigaUmbral').textContent = `(≤ ${cur}${umbral})`;
+      const gastosHormiga = mesActual.filter(tx => tx.tipo === 'gasto' && tx.monto <= umbral).reduce((s, tx) => s + tx.monto, 0);
+      const hormigaPct = totalGastos > 0 ? Math.min((gastosHormiga / totalGastos) * 100, 100) : 0;
+      document.getElementById('hormigaBar').style.width = hormigaPct + '%';
+      document.getElementById('hormigaPct').textContent = Math.round(hormigaPct) + '%';
+      document.getElementById('hormigaMsg').innerHTML = gastosHormiga > 0
+        ? `<strong style="color:var(--accent)">${cur} ${gastosHormiga.toFixed(0)}</strong> en gastos hormiga este mes — ${Math.round(hormigaPct)}% de tus gastos totales`
+        : `Sin gastos hormiga registrados este mes`;
 
       for (const [cat, amt] of Object.entries(cats)) {
         const el = document.getElementById('cat-' + cat);
@@ -2083,29 +3475,43 @@
 
       // Premium insights
       if (window.userPlan === 'premium') {
+        const diasEnMes = new Date(currentYear, currentMonth + 1, 0).getDate();
         const diasPasados = Math.min(new Date().getDate(), diasEnMes);
         const proy = diasPasados > 0 ? (totalGastos / diasPasados) * diasEnMes : 0;
         const promedio = diasPasados > 0 ? totalGastos / diasPasados : 0;
-
-        const proyEl = document.getElementById('proyeccion');
-        const ahorroEl = document.getElementById('ahorro');
-        const promedioEl = document.getElementById('promedioDiario');
-        const catTopEl = document.getElementById('catTop');
-        const catTopDescEl = document.getElementById('catTopDesc');
-        const tipEl = document.getElementById('tipDesc');
-
-        if (proyEl) proyEl.textContent = cur + ' ' + proy.toFixed(0);
-        if (promedioEl) promedioEl.textContent = cur + ' ' + promedio.toFixed(0);
-
-        const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
-        if (ahorroEl) ahorroEl.textContent = cur + ' ' + (topCat[1] * 0.3).toFixed(0);
-
+        const topCats = Object.entries(cats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+        const topCat = topCats[0] || ['otros', 0];
         const catLabels = { comida:'🍱 '+t.cats[0], cafe:'☕ '+t.cats[1], transporte:'🚌 '+t.cats[2], telecom:'📱 '+t.cats[3], compras:'🛍️ '+t.cats[4], entretenimiento:'🎮 '+t.cats[5], hogar:'🏠 '+t.cats[6], salud:'💊 '+t.cats[7], educacion:'📚 '+t.cats[8], otros:'💸 '+t.cats[9] };
-        if (catTopEl && topCat[1] > 0) {
-          catTopEl.textContent = catLabels[topCat[0]] || topCat[0];
-          if (catTopDescEl) catTopDescEl.textContent = cur + ' ' + topCat[1].toFixed(0) + ' ' + t.this_month;
+
+        // KPI cards
+        const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+        set('kpiIngresos', cur + ' ' + totalIngresos.toFixed(0));
+        set('kpiGastos', cur + ' ' + totalGastos.toFixed(0));
+        set('proyeccion', cur + ' ' + proy.toFixed(0));
+        set('promedioDiario', cur + ' ' + promedio.toFixed(0));
+        set('ahorro', cur + ' ' + (topCat[1] * 0.3).toFixed(0));
+        const balEl = document.getElementById('kpiBalance');
+        if (balEl) { balEl.textContent = cur + ' ' + balance.toFixed(0); balEl.style.color = balance >= 0 ? 'var(--green)' : 'var(--red)'; }
+        set('kpiBalanceSub', balance >= 0 ? '✅ Positivo' : '⚠️ Negativo');
+
+        // Top 3 categorías
+        const topList = document.getElementById('topCatsList');
+        if (topList) {
+          const top3 = topCats.slice(0, 3);
+          const maxAmt = top3[0]?.[1] || 1;
+          topList.innerHTML = top3.map(([cat, amt], i) => `
+            <div class="top-cat-item">
+              <div class="top-cat-rank rank-${i+1}">${i+1}°</div>
+              <div class="top-cat-info">
+                <div class="top-cat-name">${catLabels[cat] || cat}</div>
+                <div class="top-cat-bar-track"><div class="top-cat-bar-fill" style="width:${Math.round((amt/maxAmt)*100)}%"></div></div>
+              </div>
+              <div class="top-cat-amount">${cur} ${amt.toFixed(0)}</div>
+            </div>
+          `).join('') || '<div style="color:var(--muted);font-size:13px">Sin gastos este mes</div>';
         }
 
+        const tipEl = document.getElementById('tipDesc');
         if (tipEl) {
           const tips = [
             `${t.tip1a} ${cur} ${totalGastos.toFixed(0)} ${t.tip1b} ${cur} ${totalIngresos.toFixed(0)}.`,
@@ -2123,9 +3529,12 @@
 
       // Transacciones
       const list = document.getElementById('txList');
+      const listPreview = document.getElementById('txListPreview');
       list.innerHTML = '';
+      if (listPreview) listPreview.innerHTML = '';
       if (mesActual.length === 0) {
         list.innerHTML = `<div class="empty-state">${t.emptyState}</div>`;
+        if (listPreview) listPreview.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin movimientos este mes</div>`;
         return;
       }
       mesActual.slice(0, 30).forEach((tx, i) => {
@@ -2150,6 +3559,12 @@
         `;
         div.addEventListener('click', () => openEditModal(tx));
         list.appendChild(div);
+        // Preview: solo las últimas 3
+        if (i < 3 && listPreview) {
+          const divP = div.cloneNode(true);
+          divP.addEventListener('click', () => openEditModal(tx));
+          listPreview.appendChild(divP);
+        }
       });
 
       ['cardIngresos','cardGastos','cardBalance'].forEach(id => {
@@ -2198,6 +3613,54 @@
     }
   };
 
+
+  // ── PROFILE DROPDOWN ──
+  window.toggleProfileDropdown = () => {
+    const overlay = document.getElementById('profileDropdownOverlay');
+    overlay.classList.toggle('open');
+  };
+
+  window.closeProfileDropdown = () => {
+    document.getElementById('profileDropdownOverlay')?.classList.remove('open');
+  };
+
+  window.cancelPremiumFromDropdown = () => {
+    closeProfileDropdown();
+    cancelPremium();
+  };
+
+  window.updateDropdownUI = function() {
+    const avatar = document.getElementById('dropdownAvatar');
+    const name = document.getElementById('dropdownName');
+    const plan = document.getElementById('dropdownPlan');
+    const cancelBtn = document.getElementById('dropdownCancelPremium');
+    const divider = document.getElementById('dropdownDivider1');
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+    const sidebarName = document.getElementById('sidebarName');
+
+    if (avatar && sidebarAvatar) avatar.src = sidebarAvatar.src;
+    if (name && sidebarName) name.textContent = sidebarName.textContent;
+
+    // Update mobile tab bar avatar + name
+    const mobileAvatar = document.getElementById('mobileTabAvatar');
+    const mobileFallback = document.getElementById('mobileTabAvatarFallback');
+    const mobileName = document.getElementById('mobileTabName');
+    if (sidebarAvatar && sidebarAvatar.src && sidebarAvatar.src !== window.location.href) {
+      if (mobileAvatar) { mobileAvatar.src = sidebarAvatar.src; mobileAvatar.style.display = 'block'; }
+      if (mobileFallback) mobileFallback.style.display = 'none';
+    }
+    if (mobileName && sidebarName) mobileName.textContent = sidebarName.textContent || 'Yo';
+
+    if (window.userPlan === 'premium') {
+      if (plan) { plan.textContent = '⭐ Premium'; plan.classList.add('is-premium'); }
+      if (cancelBtn) cancelBtn.style.display = 'flex';
+      if (divider) divider.style.display = 'block';
+    } else {
+      if (plan) { plan.textContent = 'Free'; plan.classList.remove('is-premium'); }
+      if (cancelBtn) cancelBtn.style.display = 'none';
+      if (divider) divider.style.display = 'none';
+    }
+  }
   window.deleteTx = async () => {
     if (!confirm('¿Seguro que quieres eliminar este movimiento?')) return;
     const id = document.getElementById('editId').value;
@@ -2211,6 +3674,38 @@
       alert('Error al eliminar. Intenta de nuevo.');
     }
   };
+</script>
+
+<script>
+  // ── CONFIG MODAL ──
+  function openConfigModal() {
+    const modal = document.getElementById('configModal');
+    document.getElementById('configUmbral').value = window.userUmbralHormiga || 15;
+    modal.classList.add('open');
+  }
+
+  function closeConfigModal() {
+    document.getElementById('configModal').classList.remove('open');
+  }
+
+  async function saveConfig() {
+    const umbral = parseFloat(document.getElementById('configUmbral').value);
+    if (!umbral || umbral <= 0) return alert('Ingresa un monto válido');
+    window.userUmbralHormiga = umbral;
+    // Guardar en Firestore
+    try {
+      const { getFirestore, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+      const user = window._auth?.currentUser;
+      if (user) {
+        const db = getFirestore();
+        await updateDoc(doc(db, 'usuarios', user.uid), { umbralHormiga: umbral });
+      }
+    } catch(e) { console.error(e); }
+    closeConfigModal();
+    // Recargar datos para reflejar nuevo umbral
+    const user = window._auth?.currentUser;
+    if (user && window._loadData) window._loadData(user);
+  }
 </script>
 
 <script>
@@ -2578,5 +4073,35 @@
   // Init
   document.addEventListener('DOMContentLoaded', () => renderCountries(COUNTRIES));
 </script>
+    <!-- Profile Dropdown -->
+    <div class="profile-dropdown-overlay" id="profileDropdownOverlay" onclick="closeProfileDropdown()">
+      <div class="profile-dropdown" id="profileDropdown" onclick="event.stopPropagation()">
+        <div class="profile-dropdown-header">
+          <img class="profile-dropdown-avatar" id="dropdownAvatar" src="" alt="">
+          <div>
+            <div class="profile-dropdown-name" id="dropdownName">—</div>
+            <div class="profile-dropdown-plan" id="dropdownPlan">Free</div>
+          </div>
+        </div>
+
+        <button class="profile-dropdown-item" id="dropdownCancelPremium" onclick="cancelPremiumFromDropdown()" style="display:none">
+          <span class="item-icon">✕</span>
+          <span>Cancelar Premium</span>
+        </button>
+        <div class="profile-dropdown-divider" id="dropdownDivider1" style="display:none"></div>
+
+        <div class="profile-dropdown-divider"></div>
+        <a class="profile-dropdown-item" href="https://wa.me/14155238886?text=join%20worse-lying" target="_blank" onclick="closeProfileDropdown()" style="text-decoration:none;color:var(--text)">
+          <span class="item-icon">💬</span>
+          <span>Registrar en WhatsApp</span>
+        </a>
+        <div class="profile-dropdown-divider"></div>
+        <button class="profile-dropdown-item danger" onclick="closeProfileDropdown(); logout()">
+          <span class="item-icon">🚪</span>
+          <span>Salir / Cambiar cuenta</span>
+        </button>
+      </div>
+    </div>
+
 </body>
 </html>
