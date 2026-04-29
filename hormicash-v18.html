@@ -2001,6 +2001,23 @@
       width: 260px;
     }
   }
+  /* ── META DE AHORRO ── */
+  .meta-card { background:var(--card); border:1px solid rgba(124,58,237,0.25); border-radius:16px; padding:20px; position:relative; overflow:hidden; margin-bottom:14px; }
+  .meta-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#7c3aed,#a78bfa); }
+  .meta-progress-track { background:var(--border); border-radius:999px; height:10px; margin:10px 0; overflow:hidden; }
+  .meta-progress-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#7c3aed,#a78bfa); transition:width 0.5s ease; }
+  .meta-stats { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px; }
+  /* ── LÍMITES DE GASTO ── */
+  .limite-item { display:flex; flex-direction:column; gap:6px; padding:14px 16px; background:var(--card); border:1px solid var(--border); border-radius:12px; }
+  .limite-header { display:flex; justify-content:space-between; align-items:center; }
+  .limite-cat { font-size:13px; font-weight:600; }
+  .limite-monto { font-size:13px; color:var(--muted); }
+  .limite-track { background:var(--border); border-radius:999px; height:6px; overflow:hidden; }
+  .limite-fill { height:100%; border-radius:999px; transition:width 0.4s ease; }
+  .limite-fill.ok { background:var(--green); }
+  .limite-fill.warn { background:var(--accent); }
+  .limite-fill.over { background:var(--red); }
+  .limite-edit-input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:6px 10px; color:var(--text); font-size:13px; font-family:'Inter Tight',sans-serif; }
 </style>
 </head>
 <body>
@@ -2402,6 +2419,31 @@
     </div>
   </div>
 
+  <!-- Modal Meta de Ahorro -->
+  <div class="modal-overlay" id="metaModal" style="display:none" onclick="if(event.target===this)cerrarMetaModal()">
+    <div class="modal-card">
+      <div class="modal-title">🎯 Meta de ahorro mensual</div>
+      <label class="modal-label">¿Cuánto quieres ahorrar este mes? (S/)</label>
+      <input type="number" class="modal-input" id="metaInput" placeholder="Ej: 500" min="0" step="10">
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button onclick="cerrarMetaModal()" style="flex:1;padding:10px;background:var(--border);border:none;border-radius:10px;color:var(--text);font-family:'Inter Tight',sans-serif;cursor:pointer">Cancelar</button>
+        <button onclick="guardarMeta()" style="flex:1;padding:10px;background:var(--premium);border:none;border-radius:10px;color:white;font-family:'Inter Tight',sans-serif;font-weight:700;cursor:pointer">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Límites de Gasto -->
+  <div class="modal-overlay" id="limitesModal" style="display:none" onclick="if(event.target===this)cerrarLimitesModal()">
+    <div class="modal-card" style="max-height:80vh;overflow-y:auto">
+      <div class="modal-title">⚠️ Límites de gasto mensual</div>
+      <div id="limitesEditForm" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+      <div style="display:flex;gap:10px">
+        <button onclick="cerrarLimitesModal()" style="flex:1;padding:10px;background:var(--border);border:none;border-radius:10px;color:var(--text);font-family:'Inter Tight',sans-serif;cursor:pointer">Cancelar</button>
+        <button onclick="guardarLimites()" style="flex:1;padding:10px;background:var(--premium);border:none;border-radius:10px;color:white;font-family:'Inter Tight',sans-serif;font-weight:700;cursor:pointer">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Modal -->
   <div class="modal-overlay" id="editModal" style="display:none" onclick="if(event.target===this)closeEditModal()">
     <div class="modal-card">
@@ -2671,6 +2713,7 @@
             applyLang(window.currentLang);
             updateCurrencyDisplay();
             loadData(user);
+            if (window.cargarMetaYLimites) window.cargarMetaYLimites(user.uid);
 
             // Aplicar UI premium con delay para garantizar DOM visible
             if (data.plan === 'premium') {
@@ -2929,6 +2972,29 @@
                 </div>
               </div>
               <div class="donut-legend" id="donutLegend"></div>
+            </div>
+
+            <!-- Meta de ahorro -->
+            <div class="meta-card" id="metaAhorroCard">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div style="font-family:'Instrument Serif',serif;font-size:14px;font-weight:700;color:var(--premium)">🎯 Meta de ahorro mensual</div>
+                <button onclick="editarMeta()" style="background:none;border:none;color:var(--premium);font-size:12px;cursor:pointer;font-family:'Inter Tight',sans-serif">✏️ Editar</button>
+              </div>
+              <div id="metaContenido">
+                <div style="color:var(--muted);font-size:13px;margin:8px 0">Sin meta configurada</div>
+                <button onclick="editarMeta()" style="background:rgba(124,58,237,0.15);border:none;color:var(--premium);padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Inter Tight',sans-serif;margin-top:4px">+ Configurar meta</button>
+              </div>
+            </div>
+
+            <!-- Límites por categoría -->
+            <div class="pdash-card" id="limitesCard">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div class="pdash-card-title" style="margin-bottom:0">⚠️ Límites de gasto</div>
+                <button onclick="editarLimites()" style="background:none;border:none;color:var(--premium);font-size:12px;cursor:pointer;font-family:'Inter Tight',sans-serif">✏️ Editar</button>
+              </div>
+              <div id="limitesContenido" style="display:flex;flex-direction:column;gap:10px">
+                <div style="color:var(--muted);font-size:13px">Sin límites configurados</div>
+              </div>
             </div>
 
             <!-- Consejo personalizado -->
@@ -3505,6 +3571,10 @@
         const balEl = document.getElementById('kpiBalance');
         if (balEl) { balEl.textContent = cur + ' ' + balance.toFixed(0); balEl.style.color = balance >= 0 ? 'var(--green)' : 'var(--red)'; }
         set('kpiBalanceSub', balance >= 0 ? '✅ Positivo' : '⚠️ Negativo');
+
+        // Actualizar meta de ahorro y límites
+        if (window.actualizarMetaUI) window.actualizarMetaUI(balance);
+        if (window.actualizarLimitesUI) window.actualizarLimitesUI(cats);
 
         // Top 3 categorías
         const topList = document.getElementById('topCatsList');
@@ -4084,6 +4154,141 @@
 
   // Init
   document.addEventListener('DOMContentLoaded', () => renderCountries(COUNTRIES));
+</script>
+
+<script>
+// ── META DE AHORRO ──────────────────────────────────────────────
+const CATS_DISPLAY = {
+  comida:'🍔 Comida', cafe:'☕ Café', transporte:'🚌 Transporte', telecom:'📱 Telecom',
+  entretenimiento:'🎬 Entretenimiento', salud:'💊 Salud', educacion:'📚 Educación',
+  ropa:'👕 Ropa', hogar:'🏠 Hogar', otros:'📦 Otros'
+};
+
+window.editarMeta = () => {
+  const metaGuardada = window._metaAhorro || 0;
+  document.getElementById('metaInput').value = metaGuardada || '';
+  document.getElementById('metaModal').style.display = 'flex';
+};
+
+window.cerrarMetaModal = () => {
+  document.getElementById('metaModal').style.display = 'none';
+};
+
+window.guardarMeta = async () => {
+  const meta = parseFloat(document.getElementById('metaInput').value);
+  if (isNaN(meta) || meta <= 0) return;
+  const user = window._auth?.currentUser;
+  if (!user) return;
+  try {
+    const { doc, setDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+    const db = getFirestore();
+    await setDoc(doc(db, 'usuarios', user.uid), { meta_ahorro: meta }, { merge: true });
+    window._metaAhorro = meta;
+    cerrarMetaModal();
+    actualizarMetaUI(window._balanceMes || 0);
+  } catch(e) { console.error(e); }
+};
+
+window.actualizarMetaUI = (balanceMes) => {
+  window._balanceMes = balanceMes;
+  const meta = window._metaAhorro || 0;
+  const el = document.getElementById('metaContenido');
+  if (!el) return;
+  if (!meta) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;margin:8px 0">Sin meta configurada</div>
+    <button onclick="editarMeta()" style="background:rgba(124,58,237,0.15);border:none;color:var(--premium);padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Inter Tight',sans-serif;margin-top:4px">+ Configurar meta</button>`;
+    return;
+  }
+  const ahorro = Math.max(balanceMes, 0);
+  const pct = Math.min((ahorro / meta) * 100, 100);
+  const falta = Math.max(meta - ahorro, 0);
+  const color = pct >= 100 ? 'var(--green)' : pct >= 60 ? 'var(--accent)' : 'var(--red)';
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin:8px 0 4px">
+      <span style="font-size:24px;font-weight:800;font-family:'Inter Tight',sans-serif;color:${color}">S/ ${ahorro.toFixed(0)}</span>
+      <span style="font-size:13px;color:var(--muted)">meta: S/ ${meta.toFixed(0)}</span>
+    </div>
+    <div class="meta-progress-track"><div class="meta-progress-fill" style="width:${pct}%;background:${pct>=100?'var(--green)':pct>=60?'linear-gradient(90deg,#7c3aed,#a78bfa)':'var(--red)'}"></div></div>
+    <div class="meta-stats">
+      <span>${pct.toFixed(0)}% completado</span>
+      <span>${pct >= 100 ? '🎉 ¡Meta alcanzada!' : `Falta S/ ${falta.toFixed(0)}`}</span>
+    </div>`;
+};
+
+// ── LÍMITES DE GASTO ─────────────────────────────────────────────
+window.editarLimites = () => {
+  const limites = window._limites || {};
+  const form = document.getElementById('limitesEditForm');
+  form.innerHTML = Object.keys(CATS_DISPLAY).map(cat => `
+    <div>
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">${CATS_DISPLAY[cat]}</label>
+      <input type="number" class="limite-edit-input" id="lim_${cat}" placeholder="Sin límite" value="${limites[cat] || ''}" min="0" step="10">
+    </div>
+  `).join('');
+  document.getElementById('limitesModal').style.display = 'flex';
+};
+
+window.cerrarLimitesModal = () => {
+  document.getElementById('limitesModal').style.display = 'none';
+};
+
+window.guardarLimites = async () => {
+  const user = window._auth?.currentUser;
+  if (!user) return;
+  const limites = {};
+  Object.keys(CATS_DISPLAY).forEach(cat => {
+    const val = parseFloat(document.getElementById(`lim_${cat}`)?.value);
+    if (!isNaN(val) && val > 0) limites[cat] = val;
+  });
+  try {
+    const { doc, setDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+    const db = getFirestore();
+    await setDoc(doc(db, 'usuarios', user.uid), { limites }, { merge: true });
+    window._limites = limites;
+    cerrarLimitesModal();
+    actualizarLimitesUI(window._gastosCategoria || {});
+  } catch(e) { console.error(e); }
+};
+
+window.actualizarLimitesUI = (gastosCategoria) => {
+  window._gastosCategoria = gastosCategoria;
+  const limites = window._limites || {};
+  const el = document.getElementById('limitesContenido');
+  if (!el) return;
+  const cats = Object.keys(limites);
+  if (cats.length === 0) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px">Sin límites configurados</div>
+    <button onclick="editarLimites()" style="background:rgba(124,58,237,0.15);border:none;color:var(--premium);padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'Inter Tight',sans-serif;margin-top:8px">+ Configurar límites</button>`;
+    return;
+  }
+  el.innerHTML = cats.map(cat => {
+    const limite = limites[cat];
+    const gastado = gastosCategoria[cat] || 0;
+    const pct = Math.min((gastado / limite) * 100, 100);
+    const cls = pct >= 100 ? 'over' : pct >= 80 ? 'warn' : 'ok';
+    return `<div class="limite-item">
+      <div class="limite-header">
+        <span class="limite-cat">${CATS_DISPLAY[cat] || cat}</span>
+        <span class="limite-monto">S/ ${gastado.toFixed(0)} / ${limite}</span>
+      </div>
+      <div class="limite-track"><div class="limite-fill ${cls}" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+};
+
+// ── CARGAR META Y LÍMITES DESDE FIRESTORE ────────────────────────
+window.cargarMetaYLimites = async (uid) => {
+  try {
+    const { doc, getDoc, getFirestore } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+    const db = getFirestore();
+    const snap = await getDoc(doc(db, 'usuarios', uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      window._metaAhorro = data.meta_ahorro || 0;
+      window._limites = data.limites || {};
+    }
+  } catch(e) { console.error(e); }
+};
 </script>
     <!-- Profile Dropdown -->
     <div class="profile-dropdown-overlay" id="profileDropdownOverlay" onclick="closeProfileDropdown()">

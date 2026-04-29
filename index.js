@@ -122,6 +122,93 @@ function mensajeAlerta(alerta, catDisplay) {
     : `\n\n⚠️ *Llevas el ${Math.round(alerta.porcentaje)}% de tu límite en ${catDisplay}*\nS/ ${alerta.totalMes.toFixed(2)} de S/ ${alerta.limite}`;
 }
 
+// ── RESUMEN SEMANAL AUTOMÁTICO (lunes 8am Perú) ──────────────────
+async function enviarResumenSemanal() {
+  console.log('📅 Enviando resumen semanal...');
+  const ahora = new Date();
+  const inicioSemana = new Date(ahora);
+  inicioSemana.setDate(ahora.getDate() - 7);
+  inicioSemana.setHours(0,0,0,0);
+
+  try {
+    const usuariosSnap = await db.collection('usuarios_whatsapp').where('activo','==',true).get();
+    for (const userDoc of usuariosSnap.docs) {
+      const { telefono } = userDoc.data();
+      const snapshot = await db.collection('gastos')
+        .where('telefono','==',telefono)
+        .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioSemana))
+        .get();
+
+      if (snapshot.empty) continue;
+
+      let totalGastos=0, totalIngresos=0;
+      const cats={};
+      snapshot.forEach(doc => {
+        const d=doc.data();
+        if(d.tipo==='ingreso'){totalIngresos+=d.monto;}
+        else{totalGastos+=d.monto; cats[d.categoria]=(cats[d.categoria]||0)+d.monto;}
+      });
+
+      const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+      const balance = totalIngresos - totalGastos;
+      const emoji = balance >= 0 ? '🟢' : '🔴';
+
+      let msg = `📅 *Resumen semanal Hormicash*\n━━━━━━━━━━━━━━\n`;
+      msg += `💸 Gastos: S/ ${totalGastos.toFixed(2)}\n`;
+      msg += `💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n`;
+      msg += `${emoji} Balance: S/ ${balance.toFixed(2)}\n`;
+      if (topCat) msg += `\n🏆 Mayor gasto: *${CATEGORIAS_DISPLAY[topCat[0]]||topCat[0]}* (S/ ${topCat[1].toFixed(2)})\n`;
+      msg += `\n_¡Sigue así! Registra tus gastos esta semana 💪_`;
+
+      try {
+        await twilioClient.messages.create({
+          from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+          to: telefono, body: msg
+        });
+      } catch(e) { console.error(`Error resumen semanal ${telefono}:`, e.message); }
+    }
+  } catch(e) { console.error('Error resumen semanal:', e); }
+}
+
+// ── CONSEJO IA CON GEMINI ────────────────────────────────────────
+async function generarConsejoIA(telefono) {
+  try {
+    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+    const snapshot = await db.collection('gastos')
+      .where('telefono','==',telefono)
+      .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes))
+      .get();
+
+    if (snapshot.empty) return null;
+
+    let totalGastos=0, totalIngresos=0, count=0;
+    const cats={};
+    snapshot.forEach(doc => {
+      const d=doc.data();
+      if(d.tipo==='ingreso'){totalIngresos+=d.monto;}
+      else{totalGastos+=d.monto; count++; cats[d.categoria]=(cats[d.categoria]||0)+d.monto;}
+    });
+
+    const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+    const balance = totalIngresos - totalGastos;
+
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+    const prompt = `Eres un asesor financiero personal amigable para peruanos jóvenes. 
+Datos del usuario este mes:
+- Total gastos: S/ ${totalGastos.toFixed(2)}
+- Total ingresos: S/ ${totalIngresos.toFixed(2)}
+- Balance: S/ ${balance.toFixed(2)}
+- Categoría con más gastos: ${topCat ? `${topCat[0]} (S/ ${topCat[1].toFixed(2)})` : 'N/A'}
+- Número de transacciones: ${count}
+
+Da UN consejo financiero corto, personalizado, práctico y motivador en español peruano. 
+Máximo 2 oraciones. Sin asteriscos ni emojis excesivos. Solo el texto del consejo.`;
+
+    const result = await model.generateContent(prompt);
+    return result.response.text().trim();
+  } catch(e) { return null; }
+}
+
 async function enviarAvisosNocturno() {
   console.log('🌙 Ejecutando aviso nocturno...');
   const ahora = new Date();
@@ -145,7 +232,12 @@ async function enviarAvisosNocturno() {
 
 setInterval(() => {
   const ahora = new Date();
-  if (ahora.getUTCHours() === 2 && ahora.getUTCMinutes() === 0) enviarAvisosNocturno();
+  const horaUTC = ahora.getUTCHours();
+  const minUTC = ahora.getUTCMinutes();
+  // 9pm Perú = 2am UTC → aviso nocturno diario
+  if (horaUTC === 2 && minUTC === 0) enviarAvisosNocturno();
+  // 8am Perú lunes = 1pm UTC lunes → resumen semanal
+  if (ahora.getUTCDay() === 1 && horaUTC === 13 && minUTC === 0) enviarResumenSemanal();
 }, 60000);
 
 app.post('/webhook', async (req, res) => {
@@ -184,6 +276,19 @@ app.post('/webhook', async (req, res) => {
     } else {
       delete estadoUsuario[telefono];
       twiml.message(`¡Perfecto! Edita tus límites cuando quieras en:\nhttps://hormicash.web.app\n\nEscribe _"Almuerzo 15"_ para empezar 🐜`);
+    }
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── META DE AHORRO ───────────────────────────────────────────────
+  if (estadoUsuario[telefono]?.esperando === 'meta_ahorro') {
+    delete estadoUsuario[telefono];
+    const meta = parseFloat(mensaje.replace(',','.'));
+    if (isNaN(meta) || meta <= 0) {
+      twiml.message('❌ Monto inválido. Escribe /meta para intentar de nuevo.');
+    } else {
+      await db.collection('usuarios_whatsapp').doc(telefono).set({ meta_ahorro: meta }, { merge:true });
+      twiml.message(`🎯 *¡Meta configurada!*\n\nQuieres ahorrar *S/ ${meta.toFixed(0)}* este mes.\n\nVe tu progreso en: https://hormicash.web.app\n\n💪 ¡Tú puedes lograrlo!`);
     }
     return res.type('text/xml').send(twiml.toString());
   }
@@ -270,10 +375,35 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
+  if (mensaje.toLowerCase() === '/consejo') {
+    const premium = await esPremium(telefono);
+    if (!premium) { twiml.message(`⭐ *Función Premium*\n\nActívala en: https://hormicash.web.app`); return res.type('text/xml').send(twiml.toString()); }
+    twiml.message('💡 Analizando tus gastos...');
+    res.type('text/xml').send(twiml.toString());
+    // Enviar consejo en mensaje separado
+    const consejo = await generarConsejoIA(telefono);
+    if (consejo) {
+      await twilioClient.messages.create({
+        from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+        to: telefono,
+        body: `💡 *Consejo personalizado*\n\n${consejo}`
+      });
+    }
+    return;
+  }
+
+  if (mensaje.toLowerCase() === '/meta') {
+    const premium = await esPremium(telefono);
+    if (!premium) { twiml.message(`⭐ *Función Premium*\n\nActívala en: https://hormicash.web.app`); return res.type('text/xml').send(twiml.toString()); }
+    estadoUsuario[telefono] = { esperando:'meta_ahorro' };
+    twiml.message(`🎯 *Meta de ahorro mensual*\n\n¿Cuánto quieres ahorrar este mes?\nEscribe el monto en soles:`);
+    return res.type('text/xml').send(twiml.toString());
+  }
+
   // ── TEXTO ────────────────────────────────────────────────────────
   const mov = parsearMovimiento(mensaje);
   if (!mov) {
-    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n*Límites:* /limites\n*Resumen:* /resumen');
+    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA');
   } else {
     await db.collection('gastos').add({ telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria, label:mov.label, fuente:'texto_whatsapp', mensaje, fecha:admin.firestore.FieldValue.serverTimestamp() });
     let resp = mov.tipo==='ingreso' ? `💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance` : `✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`;
