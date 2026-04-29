@@ -71,6 +71,45 @@ async function verificarLimite(telefono, categoria, montoNuevo) {
   } catch(e) { return null; }
 }
 
+// ── ALERTA CONTEXTUAL: comparar con promedio diario ──────────────
+async function verificarAlertaContextual(telefono, categoria, montoNuevo) {
+  try {
+    const inicioMes = new Date();
+    inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+    const hoy = new Date();
+    const inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const diasTranscurridos = Math.max(hoy.getDate(), 1);
+
+    const snapshot = await db.collection('gastos')
+      .where('telefono','==',telefono)
+      .where('categoria','==',categoria)
+      .where('tipo','==','gasto')
+      .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes))
+      .get();
+
+    let totalMes = 0;
+    let totalHoy = 0;
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      totalMes += d.monto;
+      const fecha = d.fecha?.toDate ? d.fecha.toDate() : new Date(d.fecha);
+      if (fecha >= inicioDia) totalHoy += d.monto;
+    });
+
+    totalHoy += montoNuevo;
+    const promedioDiario = totalMes / diasTranscurridos;
+
+    if (promedioDiario > 0 && totalHoy > promedioDiario * 1.5) {
+      return {
+        catDisplay: CATEGORIAS_DISPLAY[categoria] || categoria,
+        totalHoy: totalHoy.toFixed(2),
+        promedio: promedioDiario.toFixed(2)
+      };
+    }
+    return null;
+  } catch(e) { return null; }
+}
+
 async function downloadTwilioMedia(mediaUrl) {
   const response = await axios.get(mediaUrl, {
     auth: { username: process.env.TWILIO_ACCOUNT_SID, password: process.env.TWILIO_AUTH_TOKEN },
@@ -98,6 +137,38 @@ Si no hay monto: {"error":"no_monto"}`;
   return JSON.parse(result.response.text().trim().replace(/```json|```/g,'').trim());
 }
 
+// ── MEJORA 1: Label limpio sin texto recortado ───────────────────
+function limpiarLabel(texto) {
+  // Eliminar montos, "soles", conectores y limpiar
+  let label = texto
+    .replace(/\d+(?:[.,]\d{1,2})?\s*(?:soles?|sol|s\/)?/gi, '')
+    .replace(/\b(y|e|de|en|al|el|la|los|las|un|una|con|para|por)\b/gi, ' ')
+    .replace(/[^\w\sáéíóúñü]/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (label.length < 2) label = 'Gasto';
+  // Capitalizar primera letra, máximo 25 chars
+  label = label.charAt(0).toUpperCase() + label.slice(1);
+  return label.length > 25 ? label.substring(0, 25).trim() : label;
+}
+
+// ── MEJORA 2: Separar gastos múltiples ──────────────────────────
+function parsearMultiplesMovimientos(texto) {
+  // Detectar patrones: "Almuerzo 15 y taxi 8" o "Almuerzo 15, café 5"
+  const separadores = /\s+(?:y|e|,)\s+/gi;
+  const partes = texto.split(separadores);
+  
+  if (partes.length <= 1) return null; // no es múltiple
+  
+  const movimientos = [];
+  for (const parte of partes) {
+    const mov = parsearMovimiento(parte.trim());
+    if (mov) movimientos.push({ ...mov, textoOriginal: parte.trim() });
+  }
+  
+  return movimientos.length >= 2 ? movimientos : null;
+}
+
 function parsearMovimiento(texto) {
   const lower = texto.toLowerCase();
   const match = lower.match(/(\d+(?:[.,]\d{1,2})?)/);
@@ -106,8 +177,7 @@ function parsearMovimiento(texto) {
   if (isNaN(monto) || monto <= 0) return null;
   const ingresosKeywords = ['ingreso','sueldo','salario','pago','transferencia','depósito','deposito','freelance','propina','bono','regalo','cobro','cobré','cobre','me pagaron','ganancia'];
   if (ingresosKeywords.some(k => lower.includes(k))) {
-    const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g,'').replace(/soles?|sol|s\//gi,'').trim();
-    return { monto, tipo:'ingreso', categoria:'ingreso', label: desc.length > 2 ? desc.charAt(0).toUpperCase()+desc.slice(1) : 'Ingreso' };
+    return { monto, tipo:'ingreso', categoria:'ingreso', label: limpiarLabel(texto) };
   }
   const cats = { 
     comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada','salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho','chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc','bembos','norky','pardos','la lucha','helado'], 
@@ -123,8 +193,7 @@ function parsearMovimiento(texto) {
   };
   let categoria = 'otros';
   for (const [cat,kws] of Object.entries(cats)) { if (kws.some(k=>lower.includes(k))) { categoria=cat; break; } }
-  const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g,'').replace(/soles?|sol|s\//gi,'').trim();
-  return { monto, tipo:'gasto', categoria, label: desc.length > 2 ? desc.charAt(0).toUpperCase()+desc.slice(1) : 'Gasto' };
+  return { monto, tipo:'gasto', categoria, label: limpiarLabel(texto) };
 }
 
 function mensajeAlerta(alerta, catDisplay) {
@@ -133,14 +202,12 @@ function mensajeAlerta(alerta, catDisplay) {
     : `\n\n⚠️ *Llevas el ${Math.round(alerta.porcentaje)}% de tu límite en ${catDisplay}*\nS/ ${alerta.totalMes.toFixed(2)} de S/ ${alerta.limite}`;
 }
 
-// ── RESUMEN SEMANAL AUTOMÁTICO (lunes 8am Perú) ──────────────────
 async function enviarResumenSemanal() {
   console.log('📅 Enviando resumen semanal...');
   const ahora = new Date();
   const inicioSemana = new Date(ahora);
   inicioSemana.setDate(ahora.getDate() - 7);
   inicioSemana.setHours(0,0,0,0);
-
   try {
     const usuariosSnap = await db.collection('usuarios_whatsapp').where('activo','==',true).get();
     for (const userDoc of usuariosSnap.docs) {
@@ -149,9 +216,7 @@ async function enviarResumenSemanal() {
         .where('telefono','==',telefono)
         .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioSemana))
         .get();
-
       if (snapshot.empty) continue;
-
       let totalGastos=0, totalIngresos=0;
       const cats={};
       snapshot.forEach(doc => {
@@ -159,39 +224,23 @@ async function enviarResumenSemanal() {
         if(d.tipo==='ingreso'){totalIngresos+=d.monto;}
         else{totalGastos+=d.monto; cats[d.categoria]=(cats[d.categoria]||0)+d.monto;}
       });
-
       const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
       const balance = totalIngresos - totalGastos;
-      const emoji = balance >= 0 ? '🟢' : '🔴';
-
-      let msg = `📅 *Resumen semanal Hormicash*\n━━━━━━━━━━━━━━\n`;
-      msg += `💸 Gastos: S/ ${totalGastos.toFixed(2)}\n`;
-      msg += `💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n`;
-      msg += `${emoji} Balance: S/ ${balance.toFixed(2)}\n`;
+      let msg = `📅 *Resumen semanal Hormicash*\n━━━━━━━━━━━━━━\n💸 Gastos: S/ ${totalGastos.toFixed(2)}\n💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n${balance>=0?'🟢':'🔴'} Balance: S/ ${balance.toFixed(2)}\n`;
       if (topCat) msg += `\n🏆 Mayor gasto: *${CATEGORIAS_DISPLAY[topCat[0]]||topCat[0]}* (S/ ${topCat[1].toFixed(2)})\n`;
       msg += `\n_¡Sigue así! Registra tus gastos esta semana 💪_`;
-
       try {
-        await twilioClient.messages.create({
-          from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-          to: telefono, body: msg
-        });
+        await twilioClient.messages.create({ from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`, to: telefono, body: msg });
       } catch(e) { console.error(`Error resumen semanal ${telefono}:`, e.message); }
     }
   } catch(e) { console.error('Error resumen semanal:', e); }
 }
 
-// ── CONSEJO IA CON GEMINI ────────────────────────────────────────
 async function generarConsejoIA(telefono) {
   try {
     const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
-    const snapshot = await db.collection('gastos')
-      .where('telefono','==',telefono)
-      .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes))
-      .get();
-
+    const snapshot = await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes)).get();
     if (snapshot.empty) return null;
-
     let totalGastos=0, totalIngresos=0, count=0;
     const cats={};
     snapshot.forEach(doc => {
@@ -199,10 +248,8 @@ async function generarConsejoIA(telefono) {
       if(d.tipo==='ingreso'){totalIngresos+=d.monto;}
       else{totalGastos+=d.monto; count++; cats[d.categoria]=(cats[d.categoria]||0)+d.monto;}
     });
-
     const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
     const balance = totalIngresos - totalGastos;
-
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
     const prompt = `Eres un asesor financiero personal amigable para peruanos jóvenes. 
 Datos del usuario este mes:
@@ -211,10 +258,8 @@ Datos del usuario este mes:
 - Balance: S/ ${balance.toFixed(2)}
 - Categoría con más gastos: ${topCat ? `${topCat[0]} (S/ ${topCat[1].toFixed(2)})` : 'N/A'}
 - Número de transacciones: ${count}
-
 Da UN consejo financiero corto, personalizado, práctico y motivador en español peruano. 
 Máximo 2 oraciones. Sin asteriscos ni emojis excesivos. Solo el texto del consejo.`;
-
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
   } catch(e) { return null; }
@@ -245,9 +290,7 @@ setInterval(() => {
   const ahora = new Date();
   const horaUTC = ahora.getUTCHours();
   const minUTC = ahora.getUTCMinutes();
-  // 9pm Perú = 2am UTC → aviso nocturno diario
   if (horaUTC === 2 && minUTC === 0) enviarAvisosNocturno();
-  // 8am Perú lunes = 1pm UTC lunes → resumen semanal
   if (ahora.getUTCDay() === 1 && horaUTC === 13 && minUTC === 0) enviarResumenSemanal();
 }, 60000);
 
@@ -259,21 +302,12 @@ app.post('/webhook', async (req, res) => {
 
   const esNuevo = await registrarUsuario(telefono);
 
-  // ── BIENVENIDA ───────────────────────────────────────────────────
   if (esNuevo) {
     estadoUsuario[telefono] = { esperando: 'bienvenida_limites' };
-    twiml.message(
-      `🐜 *¡Bienvenido a Hormicash!*\n\n` +
-      `Soy tu asistente de gastos hormiga. Registra tus gastos por:\n\n` +
-      `📸 Foto de voucher\n🎙️ Mensaje de voz\n💬 Texto: _"Almuerzo 15"_\n\n` +
-      `─────────────────\n` +
-      `¿Quieres configurar *límites de gasto* mensuales? ⭐ Premium\n\n` +
-      `1️⃣ Sí, configurar ahora\n2️⃣ Lo haré después`
-    );
+    twiml.message(`🐜 *¡Bienvenido a Hormicash!*\n\nSoy tu asistente de gastos hormiga. Registra tus gastos por:\n\n📸 Foto de voucher\n🎙️ Mensaje de voz\n💬 Texto: _"Almuerzo 15"_\n\n─────────────────\n¿Quieres configurar *límites de gasto* mensuales? ⭐ Premium\n\n1️⃣ Sí, configurar ahora\n2️⃣ Lo haré después`);
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── RESPUESTA A BIENVENIDA ───────────────────────────────────────
   if (estadoUsuario[telefono]?.esperando === 'bienvenida_limites') {
     if (mensaje === '1') {
       const premium = await esPremium(telefono);
@@ -291,7 +325,6 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── META DE AHORRO ───────────────────────────────────────────────
   if (estadoUsuario[telefono]?.esperando === 'meta_ahorro') {
     delete estadoUsuario[telefono];
     const meta = parseFloat(mensaje.replace(',','.'));
@@ -304,7 +337,6 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── CONFIGURACIÓN DE LÍMITES ─────────────────────────────────────
   if (estadoUsuario[telefono]?.esperando === 'limite_categoria') {
     const estado = estadoUsuario[telefono];
     if (mensaje.toLowerCase() !== 'saltar') {
@@ -323,7 +355,6 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── MEDIA ────────────────────────────────────────────────────────
   if (numMedia > 0) {
     const mediaUrl = req.body.MediaUrl0;
     const mediaMime = req.body.MediaContentType0 || 'image/jpeg';
@@ -335,24 +366,31 @@ app.post('/webhook', async (req, res) => {
         if (audio.error === 'no_monto') { twiml.message('🎙️ No pude identificar un monto.\nIntenta: "Almuerzo en La Lucha, veinte soles"'); return res.type('text/xml').send(twiml.toString()); }
         const esIngreso = audio.tipo === 'ingreso';
         const cat = audio.categoria?.toLowerCase() || 'otros';
-        await db.collection('gastos').add({ telefono, monto:audio.monto, tipo:audio.tipo||'gasto', categoria:cat, label:audio.negocio||audio.descripcion||(esIngreso?'Ingreso por voz':'Gasto por voz'), descripcion:audio.descripcion, fuente:'audio_whatsapp', mensaje:'[audio]', fecha:admin.firestore.FieldValue.serverTimestamp() });
-        let resp = esIngreso ? `💰 *Ingreso por voz*\n\n💵 S/ ${audio.monto.toFixed(2)}\n📝 ${audio.descripcion}\n\nEscribe /resumen para ver tu balance` : `✅ *Gasto por voz*\n\n🏪 ${audio.negocio||'Sin negocio'}\n💰 S/ ${audio.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n\nEscribe /resumen para ver tu balance`;
-        if (!esIngreso) { const a = await verificarLimite(telefono,cat,audio.monto); if(a) resp += mensajeAlerta(a, CATEGORIAS_DISPLAY[cat]||cat); }
+        const labelAudio = audio.negocio || audio.descripcion || (esIngreso?'Ingreso por voz':'Gasto por voz');
+        await db.collection('gastos').add({ telefono, monto:audio.monto, tipo:audio.tipo||'gasto', categoria:cat, label:labelAudio, descripcion:audio.descripcion, fuente:'audio_whatsapp', mensaje:'[audio]', fecha:admin.firestore.FieldValue.serverTimestamp() });
+        let resp = esIngreso ? `💰 *Ingreso por voz*\n\n💵 S/ ${audio.monto.toFixed(2)}\n📝 ${labelAudio}\n\nEscribe /resumen para ver tu balance` : `✅ *Gasto por voz*\n\n🏪 ${labelAudio}\n💰 S/ ${audio.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n\nEscribe /resumen para ver tu balance`;
+        if (!esIngreso) {
+          const a = await verificarLimite(telefono,cat,audio.monto); if(a) resp += mensajeAlerta(a, CATEGORIAS_DISPLAY[cat]||cat);
+          const alerta = await verificarAlertaContextual(telefono,cat,audio.monto);
+          if(alerta) resp += `\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;
+        }
         twiml.message(resp);
       } else {
         const voucher = await extractVoucherData(base64, mime);
         if (voucher.error === 'no_voucher') { twiml.message('📸 No pude identificar un voucher.\nEnvía una foto clara de tu ticket.'); return res.type('text/xml').send(twiml.toString()); }
         const cat = voucher.categoria?.toLowerCase() || 'otros';
-        await db.collection('gastos').add({ telefono, monto:voucher.monto, tipo:'gasto', categoria:cat, label:voucher.negocio||'Voucher', descripcion:voucher.descripcion, fecha_voucher:voucher.fecha, fuente:'voucher_whatsapp', mensaje:'[imagen]', fecha:admin.firestore.FieldValue.serverTimestamp() });
-        let resp = `✅ *Voucher registrado*\n\n🏪 ${voucher.negocio}\n💰 S/ ${voucher.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n📝 ${voucher.descripcion}\n\nEscribe /resumen para ver tu balance`;
+        const labelVoucher = voucher.negocio || 'Voucher';
+        await db.collection('gastos').add({ telefono, monto:voucher.monto, tipo:'gasto', categoria:cat, label:labelVoucher, descripcion:voucher.descripcion, fecha_voucher:voucher.fecha, fuente:'voucher_whatsapp', mensaje:'[imagen]', fecha:admin.firestore.FieldValue.serverTimestamp() });
+        let resp = `✅ *Voucher registrado*\n\n🏪 ${labelVoucher}\n💰 S/ ${voucher.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n📝 ${voucher.descripcion}\n\nEscribe /resumen para ver tu balance`;
         const a = await verificarLimite(telefono,cat,voucher.monto); if(a) resp += mensajeAlerta(a, CATEGORIAS_DISPLAY[cat]||cat);
+        const alerta = await verificarAlertaContextual(telefono,cat,voucher.monto);
+        if(alerta) resp += `\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;
         twiml.message(resp);
       }
     } catch(err) { console.error('Error media:', err); twiml.message('❌ No pude procesar el archivo. Intenta de nuevo.'); }
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── RESUMEN ──────────────────────────────────────────────────────
   if (estadoUsuario[telefono]?.esperando === 'resumen') {
     const opcion = mensaje;
     delete estadoUsuario[telefono];
@@ -391,14 +429,9 @@ app.post('/webhook', async (req, res) => {
     if (!premium) { twiml.message(`⭐ *Función Premium*\n\nActívala en: https://hormicash.web.app`); return res.type('text/xml').send(twiml.toString()); }
     twiml.message('💡 Analizando tus gastos...');
     res.type('text/xml').send(twiml.toString());
-    // Enviar consejo en mensaje separado
     const consejo = await generarConsejoIA(telefono);
     if (consejo) {
-      await twilioClient.messages.create({
-        from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
-        to: telefono,
-        body: `💡 *Consejo personalizado*\n\n${consejo}`
-      });
+      await twilioClient.messages.create({ from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`, to: telefono, body: `💡 *Consejo personalizado*\n\n${consejo}` });
     }
     return;
   }
@@ -411,14 +444,32 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── TEXTO ────────────────────────────────────────────────────────
+  // ── MEJORA 2: Gastos múltiples ────────────────────────────────
+  const multiples = parsearMultiplesMovimientos(mensaje);
+  if (multiples) {
+    let respuesta = `✅ *${multiples.length} gastos registrados*\n\n`;
+    for (const mov of multiples) {
+      await db.collection('gastos').add({ telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria, label:mov.label, fuente:'texto_whatsapp', mensaje:mov.textoOriginal, fecha:admin.firestore.FieldValue.serverTimestamp() });
+      respuesta += `${mov.tipo==='ingreso'?'💰':'🐜'} *${mov.label}* — S/ ${mov.monto.toFixed(2)} (${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria})\n`;
+    }
+    respuesta += `\nEscribe /resumen para ver tu balance`;
+    twiml.message(respuesta);
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── GASTO/INGRESO SIMPLE ─────────────────────────────────────
   const mov = parsearMovimiento(mensaje);
   if (!mov) {
-    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA');
+    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Múltiples:* "Almuerzo 15 y taxi 8"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA');
   } else {
     await db.collection('gastos').add({ telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria, label:mov.label, fuente:'texto_whatsapp', mensaje, fecha:admin.firestore.FieldValue.serverTimestamp() });
     let resp = mov.tipo==='ingreso' ? `💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance` : `✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`;
-    if (mov.tipo==='gasto') { const a=await verificarLimite(telefono,mov.categoria,mov.monto); if(a) resp+=mensajeAlerta(a, CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria); }
+    if (mov.tipo==='gasto') {
+      const a=await verificarLimite(telefono,mov.categoria,mov.monto); if(a) resp+=mensajeAlerta(a, CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria);
+      // ── MEJORA 3: Alerta contextual ──────────────────────────
+      const alerta = await verificarAlertaContextual(telefono, mov.categoria, mov.monto);
+      if (alerta) resp += `\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;
+    }
     twiml.message(resp);
   }
 
