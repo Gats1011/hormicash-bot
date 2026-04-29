@@ -2230,7 +2230,7 @@
           <option value="en">🇺🇸 EN</option>
           <option value="pt">🇧🇷 PT</option>
         </select>
-        <button class="saction-btn" id="upgradeBtn" onclick="showUpgrade()" style="color:var(--accent)">⭐ Upgrade</button>
+        <button class="saction-btn" id="upgradeBtn" onclick="window.showUpgrade()" style="color:var(--accent)">⭐ Upgrade</button>
         <button class="saction-btn" onclick="logout()" id="txt-logout">🚪 Salir</button>
       </div>
       <div class="sidebar-footer">© 2026 Hormicash</div>
@@ -2368,7 +2368,7 @@
         <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">
           <button class="saction-btn" onclick="toggleTheme()" style="width:100%;padding:14px 16px;font-size:14px" id="themeBtnMobile">☀️ Modo claro</button>
           <div style="height:1px;background:var(--border)"></div>
-          <button class="saction-btn" id="upgradeBtnMobile" onclick="showUpgrade()" style="width:100%;padding:14px 16px;font-size:14px;color:var(--accent)">⭐ Upgrade a Premium</button>
+          <button class="saction-btn" id="upgradeBtnMobile" onclick="window.showUpgrade()" style="width:100%;padding:14px 16px;font-size:14px;color:var(--accent)">⭐ Upgrade a Premium</button>
           <div style="height:1px;background:var(--border)" id="cancelDivMobile"></div>
           <button class="cancel-premium-btn hidden-free" id="cancelPremiumBtnMobile" onclick="cancelPremium()" style="width:100%;padding:14px 16px;font-size:14px">✕ Cancelar Premium</button>
         </div>
@@ -2409,7 +2409,7 @@
       <div class="config-modal-title">⚙️ Configuración</div>
       <div class="config-field">
         <label class="config-label">Umbral de gasto hormiga (S/)</label>
-        <input type="number" class="config-input" id="configUmbral" placeholder="Ej: 15" min="1" step="1">
+        <input type="number" class="config-input" id="configUmbral" placeholder="Ej: 50" min="1" step="1">
         <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block">Gastos menores a este monto se consideran gastos hormiga</span>
       </div>
       <div class="config-actions">
@@ -2698,7 +2698,7 @@
             }
 
             // Cargar umbral hormiga
-            window.userUmbralHormiga = data.umbralHormiga || 15;
+            window.userUmbralHormiga = data.umbralHormiga || 50;
 
             // ¿Es premium?
             if (data.plan === 'premium') {
@@ -2803,7 +2803,7 @@
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Día de corte</label>
-                <input type="number" class="config-input" id="cardCorte" placeholder="Ej: 15" min="1" max="31" oninput="updateCardPreview()">
+                <input type="number" class="config-input" id="cardCorte" placeholder="Ej: 50" min="1" max="31" oninput="updateCardPreview()">
               </div>
               <div>
                 <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:5px">Últimos 4 dígitos</label>
@@ -2838,7 +2838,7 @@
           <div style="font-size:48px">🔒</div>
           <div style="font-family:'Instrument Serif',serif;font-size:18px;font-weight:700;color:var(--text)">Solo Premium</div>
           <div style="font-size:14px;text-align:center;max-width:280px;line-height:1.6">Seguimiento de tarjeta de crédito disponible en el plan Premium.</div>
-          <button class="upgrade-cta" onclick="showUpgrade()">⭐ Upgrade a Premium</button>
+          <button class="upgrade-cta" onclick="window.showUpgrade()">⭐ Upgrade a Premium</button>
         </div>
       `;
     }
@@ -3015,7 +3015,7 @@
           <div class="lock-icon">🔒</div>
           <div class="lock-title">Análisis avanzado — Premium</div>
           <div class="lock-desc">KPIs en tiempo real, top categorías, gráficos de distribución, proyecciones y consejos personalizados.</div>
-          <button class="upgrade-cta" onclick="showUpgrade()">⭐ Upgrade a Premium — $4/mes</button>
+          <button class="upgrade-cta" onclick="window.showUpgrade()">⭐ Upgrade a Premium — $4/mes</button>
         </div>
       `;
     }
@@ -3389,15 +3389,16 @@
     if (quickType === 'gasto') {
       const lower = desc.toLowerCase();
       const categorias = {
-        comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','tacos','empanada','salchipapa','broaster','lomo','causa','sopa','guiso','tallarines','chaufa','anticucho','chicharron','tamales','fruta','ensalada','galleta','snack','lonche','merienda'],
-        cafe: ['café','cafe','cappuccino','latte','té','te','bebida','jugo','gaseosa','agua','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo'],
-        transporte: ['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','rappi','glovo','envío','envio','delivery','bicicleta'],
-        telecom: ['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono'],
-        compras: ['zapatillas','zapatilla','ropa','zapatos','zapato','tienda','regalo','camisa','polo','pantalón','pantalon','jean','short','falda','vestido','mochila','cartera','lentes','reloj','accesorio','mall','saga','ripley','oechsle','zara','nike','adidas','amazon','mercado libre','tottus','plaza vea','wong','vivanda','sodimac','promart'],
+        comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','tacos','empanada','salchipapa','broaster','lomo','causa','sopa','guiso','tallarines','chaufa','anticucho','chicharron','tamales','fruta','ensalada','galleta','snack','lonche','merienda','mcdonalds','kfc','bembos','norky','pardos','la lucha','sangucheria','heladería','helado'],
+        cafe: ['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
+        transporte: ['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','microbús','microbus','tren','aeropuerto','vuelo','bicicleta'],
+        telecom: ['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','google','dropbox','canva'],
+        compras: ['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','pantalon','jean','short','falda','vestido','mochila','cartera','lentes','reloj','accesorio','mall','saga','ripley','oechsle','zara','nike','adidas','amazon','mercado libre','tottus','plaza vea','wong','vivanda','sodimac','promart','perfume','cosméticos','cosmeticos','maquillaje'],
         entretenimiento: ['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','salida','juerga','cumpleaños','celebración'],
-        hogar: ['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','pintura','herramienta','lavandería'],
-        salud: ['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','jabón','higiene','terapia','consulta'],
-        educacion: ['libro','curso','universidad','copias','impresión','cuaderno','lapicero','útiles','matrícula','pensión','academia','tutoría','certificado','examen','material']
+        hogar: ['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','lavandería','detergente','escoba','trapeador'],
+        salud: ['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','jabón','higiene','terapia','consulta','botica','inkafarma','mifarma'],
+        educacion: ['libro','curso','universidad','pucp','upn','upc','ulima','usil','unmsm','udep','copias','impresión','impresion','cuaderno','lapicero','útiles','utiles','matrícula','matricula','pensión','pension','academia','tutoría','tutoria','certificado','examen','material','boleta pucp','recibo universidad','pago universidad','mensualidad colegio'],
+        otros: ['yape','plin','tunki','billetera','transferencia','deposito','depósito','lukita','agente','cajero','retiro','deuda','préstamo','prestamo']
       };
       for (const [cat, keywords] of Object.entries(categorias)) {
         if (keywords.some(k => lower.includes(k))) {
@@ -3536,7 +3537,7 @@
       }
 
       // Barra 2: Gastos hormiga
-      const umbral = window.userUmbralHormiga || 15;
+      const umbral = window.userUmbralHormiga || 50;
       document.getElementById('hormigaUmbral').textContent = `(≤ ${cur}${umbral})`;
       const gastosHormiga = mesActual.filter(tx => tx.tipo === 'gasto' && tx.monto <= umbral).reduce((s, tx) => s + tx.monto, 0);
       const hormigaPct = totalGastos > 0 ? Math.min((gastosHormiga / totalGastos) * 100, 100) : 0;
@@ -3762,7 +3763,7 @@
   // ── CONFIG MODAL ──
   function openConfigModal() {
     const modal = document.getElementById('configModal');
-    document.getElementById('configUmbral').value = window.userUmbralHormiga || 15;
+    document.getElementById('configUmbral').value = window.userUmbralHormiga || 50;
     modal.classList.add('open');
   }
 

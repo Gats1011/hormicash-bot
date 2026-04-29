@@ -109,7 +109,18 @@ function parsearMovimiento(texto) {
     const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g,'').replace(/soles?|sol|s\//gi,'').trim();
     return { monto, tipo:'ingreso', categoria:'ingreso', label: desc.length > 2 ? desc.charAt(0).toUpperCase()+desc.slice(1) : 'Ingreso' };
   }
-  const cats = { comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger'], cafe:['café','cafe','cappuccino','latte','té','te','bebida','jugo'], transporte:['pasaje','bus','taxi','uber','metro','combi','moto'], telecom:['recarga','celular','internet','datos','spotify','netflix'] };
+  const cats = { 
+    comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada','salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho','chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc','bembos','norky','pardos','la lucha','helado'], 
+    cafe:['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'], 
+    transporte:['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','tren','aeropuerto','vuelo'], 
+    telecom:['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','canva','google'],
+    compras:['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','jean','short','vestido','mochila','cartera','lentes','reloj','mall','saga','ripley','oechsle','zara','nike','adidas','tottus','plaza vea','wong','sodimac','perfume','maquillaje'],
+    entretenimiento:['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','juerga','cumpleaños'],
+    hogar:['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','lavandería','detergente'],
+    salud:['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','higiene','terapia','consulta','botica','inkafarma','mifarma'],
+    educacion:['libro','curso','universidad','pucp','upn','upc','ulima','usil','unmsm','copias','impresión','cuaderno','lapicero','útiles','matrícula','pensión','academia','tutoría','certificado','examen','material','boleta pucp','mensualidad'],
+    otros:['yape','plin','tunki','billetera','transferencia','deposito','depósito','lukita','agente','cajero','retiro','deuda','préstamo']
+  };
   let categoria = 'otros';
   for (const [cat,kws] of Object.entries(cats)) { if (kws.some(k=>lower.includes(k))) { categoria=cat; break; } }
   const desc = texto.replace(/\d+(?:[.,]\d{1,2})?/g,'').replace(/soles?|sol|s\//gi,'').trim();
