@@ -6,6 +6,16 @@ const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
+const nodemailer = require('nodemailer');
+
+// ── GMAIL TRANSPORTER ─────────────────────────────────────────────
+const gmailTransporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
+  }
+});
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
@@ -98,14 +108,13 @@ async function enviarEmailRecordatorio(email, nombre, diasSinRegistrar, totalMes
 </body>
 </html>`;
 
-  // Enviar via Resend API (sin nodemailer)
-  const response = await resend.emails.send({
-    from: `Hormicash <onboarding@resend.dev>`,
+  // Enviar via Gmail (hormicash@gmail.com)
+  await gmailTransporter.sendMail({
+    from: `"Hormicash 🐜" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: subjects[subjectIdx],
     html
   });
-  if (response.error) throw new Error(response.error.message);
 }
 
 const app = express();
