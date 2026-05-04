@@ -5,26 +5,42 @@ const admin = require('firebase-admin');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
 const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 
-// ── GMAIL TRANSPORTER ─────────────────────────────────────────────
-const gmailTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD
-  }
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// ── GMAIL OAUTH2 ──────────────────────────────────────────────────
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GMAIL_CLIENT_ID,
+  process.env.GMAIL_CLIENT_SECRET,
+  'https://hormicash-bot-production.up.railway.app/oauth2callback'
+);
+
+oauth2Client.setCredentials({
+  refresh_token: process.env.GMAIL_REFRESH_TOKEN
 });
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+async function getGmailTransporter() {
+  const { token } = await oauth2Client.getAccessToken();
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      type: 'OAuth2',
+      user: process.env.GMAIL_USER,
+      clientId: process.env.GMAIL_CLIENT_ID,
+      clientSecret: process.env.GMAIL_CLIENT_SECRET,
+      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+      accessToken: token
+    }
+  });
+}
 
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
-
 
 // ── OBTENER EMAIL DEL USUARIO POR TELÉFONO ───────────────────────
 async function obtenerEmailUsuario(telefono) {
@@ -55,14 +71,10 @@ async function enviarEmailRecordatorio(email, nombre, diasSinRegistrar, totalMes
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f6fb;font-family:'Inter',Arial,sans-serif">
   <div style="max-width:560px;margin:0 auto;padding:32px 16px">
-
-    <!-- Header -->
     <div style="text-align:center;margin-bottom:24px">
       <div style="font-size:28px;font-weight:800;color:#f59e0b">Hormi<span style="color:#22c55e">cash</span></div>
       <div style="font-size:13px;color:#8492a6;margin-top:4px">Controla tus gastos hormiga 🐜</div>
     </div>
-
-    <!-- Card principal -->
     <div style="background:#ffffff;border-radius:16px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.06);margin-bottom:16px">
       <div style="font-size:22px;font-weight:800;color:#1a1f36;margin-bottom:8px">
         ${diasSinRegistrar === 0
@@ -78,28 +90,21 @@ async function enviarEmailRecordatorio(email, nombre, diasSinRegistrar, totalMes
           ? `Llevas ${diasSinRegistrar + 1} días sin registrar tus gastos. Este mes ya llevas <strong>${cur} ${totalMes.toFixed(0)}</strong> registrado, pero podrías estar perdiendo el rastro de mucho más.`
           : `Han pasado más de 7 días sin que registres ningún gasto. Sin datos, no puedes saber en qué se va tu dinero. Retoma el control hoy.`}
       </div>
-
       ${totalMes > 0 ? `
       <div style="background:#f4f6fb;border-radius:10px;padding:14px 16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:13px;color:#8492a6">Registrado este mes</div>
         <div style="font-size:20px;font-weight:800;color:#ef4444">${cur} ${totalMes.toFixed(0)}</div>
       </div>` : ''}
-
-      <!-- Ejemplos de registro -->
       <div style="font-size:13px;color:#8492a6;margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Regístralo por WhatsApp:</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
         <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600">"Almuerzo 15"</span>
         <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600">"Taxi 8"</span>
         <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;padding:6px 12px;border-radius:20px;font-size:13px;font-weight:600">"Café 5"</span>
       </div>
-
-      <!-- CTA -->
       <a href="https://hormicash.web.app" style="display:block;text-align:center;background:linear-gradient(135deg,#f59e0b,#22c55e);color:white;text-decoration:none;padding:14px 24px;border-radius:12px;font-size:15px;font-weight:700">
         Ver mi dashboard →
       </a>
     </div>
-
-    <!-- Footer -->
     <div style="text-align:center;font-size:12px;color:#8492a6;line-height:1.6">
       Recibes este email porque estás registrado en Hormicash.<br>
       <a href="https://hormicash.web.app" style="color:#a78bfa;text-decoration:none">hormicash.web.app</a>
@@ -108,8 +113,8 @@ async function enviarEmailRecordatorio(email, nombre, diasSinRegistrar, totalMes
 </body>
 </html>`;
 
-  // Enviar via Gmail (hormicash@gmail.com)
-  await gmailTransporter.sendMail({
+  const transporter = await getGmailTransporter();
+  await transporter.sendMail({
     from: `"Hormicash 🐜" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: subjects[subjectIdx],
@@ -130,13 +135,11 @@ const CATEGORIAS_DISPLAY = {
   ropa:'👕 Ropa', hogar:'🏠 Hogar', otros:'📦 Otros'
 };
 
-// ── KEYWORDS TARJETA DE CRÉDITO ──────────────────────────────────
 const TC_KEYWORDS = ['tc', 'credito', 'crédito', 'tarjeta', 'visa', 'mastercard', 'amex', 'credit'];
 
 function detectarTarjeta(texto) {
   const lower = texto.toLowerCase();
   return TC_KEYWORDS.some(k => {
-    // Buscar como palabra separada: "taxi 30 tc" o "taxi 30 - tc" o "taxi 30 credito"
     const regex = new RegExp(`(^|\\s|[-,])${k}(\\s|[-,]|$)`, 'i');
     return regex.test(lower);
   });
@@ -144,9 +147,7 @@ function detectarTarjeta(texto) {
 
 function limpiarTextoTC(texto) {
   let limpio = texto;
-  // Primero remover TC al inicio: "tc taxi 30" → "taxi 30"
   limpio = limpio.replace(/^(tc|credito|crédito|tarjeta|visa|mastercard|amex|credit)\s+/gi, '');
-  // Luego remover TC al final o en medio con separadores
   TC_KEYWORDS.forEach(k => {
     const regex = new RegExp(`\\s*[-,]?\\s*\\b${k}\\b\\s*[-,]?\\s*`, 'gi');
     limpio = limpio.replace(regex, ' ');
@@ -207,14 +208,12 @@ async function verificarAlertaContextual(telefono, categoria, montoNuevo) {
     const hoy = new Date();
     const inicioDia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
     const diasTranscurridos = Math.max(hoy.getDate(), 1);
-
     const snapshot = await db.collection('gastos')
       .where('telefono','==',telefono)
       .where('categoria','==',categoria)
       .where('tipo','==','gasto')
       .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes))
       .get();
-
     let totalMes = 0, totalHoy = 0;
     snapshot.forEach(doc => {
       const d = doc.data();
@@ -222,10 +221,8 @@ async function verificarAlertaContextual(telefono, categoria, montoNuevo) {
       const fecha = d.fecha?.toDate ? d.fecha.toDate() : new Date(d.fecha);
       if (fecha >= inicioDia) totalHoy += d.monto;
     });
-
     totalHoy += montoNuevo;
     const promedioDiario = totalMes / diasTranscurridos;
-
     if (promedioDiario > 0 && totalHoy > promedioDiario * 1.5) {
       return {
         catDisplay: CATEGORIAS_DISPLAY[categoria] || categoria,
@@ -237,15 +234,12 @@ async function verificarAlertaContextual(telefono, categoria, montoNuevo) {
   } catch(e) { return null; }
 }
 
-// ── ACTUALIZAR GASTO DE TARJETA EN FIRESTORE ─────────────────────
 async function actualizarGastoTarjeta(telefono, monto) {
   try {
-    // Buscar si el usuario tiene uid vinculado
     const userDoc = await db.collection('usuarios_whatsapp').doc(telefono).get();
     if (!userDoc.exists) return;
     const uid = userDoc.data().uid;
     if (!uid) return;
-    // Sumar al gasto_actual de la tarjeta
     const userRef = db.collection('usuarios').doc(uid);
     const snap = await userRef.get();
     if (!snap.exists) return;
@@ -406,33 +400,23 @@ async function enviarAvisosNocturno() {
   console.log('🌙 Ejecutando aviso nocturno...');
   const ahora = new Date();
   const inicioDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-  const hace2dias = new Date(inicioDia); hace2dias.setDate(hace2dias.getDate() - 2);
   const hace7dias = new Date(inicioDia); hace7dias.setDate(hace7dias.getDate() - 7);
-
   try {
     const usuariosSnap = await db.collection('usuarios_whatsapp').where('activo','==',true).get();
     for (const userDoc of usuariosSnap.docs) {
       const { telefono } = userDoc.data();
-
-      // Contar días sin registrar (últimos 7 días)
       const gastosRecientes = await db.collection('gastos')
         .where('telefono','==',telefono)
         .where('fecha','>=',admin.firestore.Timestamp.fromDate(hace7dias))
         .get();
-
-      // Agrupar por día
       const diasConGastos = new Set();
       gastosRecientes.forEach(d => {
         const f = d.data().fecha?.toDate ? d.data().fecha.toDate() : new Date(d.data().fecha);
         diasConGastos.add(`${f.getFullYear()}-${f.getMonth()}-${f.getDate()}`);
       });
-
-      // Ver si registró hoy
       const hoyKey = `${ahora.getFullYear()}-${ahora.getMonth()}-${ahora.getDate()}`;
       const registroHoy = diasConGastos.has(hoyKey);
-      if (registroHoy) continue; // Ya registró hoy, no molestar
-
-      // Calcular días consecutivos sin registrar
+      if (registroHoy) continue;
       let diasSinRegistrar = 0;
       for (let i = 1; i <= 7; i++) {
         const d = new Date(inicioDia); d.setDate(d.getDate() - i);
@@ -440,8 +424,6 @@ async function enviarAvisosNocturno() {
         if (!diasConGastos.has(key)) diasSinRegistrar++;
         else break;
       }
-
-      // Mensaje personalizado según días sin registrar
       let msg;
       if (diasSinRegistrar === 0) {
         msg = `🐜 *Hormicash — Recordatorio*\n\n¡Hola! Hoy no registraste ningún gasto todavía.\n\nRecuerda que los pequeños gastos son los que más se acumulan 💸\n\nEscríbeme: _"Almuerzo 15"_ o _"Taxi 8 soles"_`;
@@ -452,8 +434,6 @@ async function enviarAvisosNocturno() {
       } else {
         msg = `🔥 *Hormicash — Más de una semana sin registrar*\n\nTus finanzas te necesitan. Retoma el control hoy 💪\n\nEmpieza de nuevo con un gasto simple:\n_"Cualquier cosa + monto"_\n\nVe tu dashboard: https://hormicash.web.app`;
       }
-
-      // Calcular total del mes para incluir en email
       const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
       const gastosDelMes = await db.collection('gastos')
         .where('telefono','==',telefono)
@@ -461,11 +441,8 @@ async function enviarAvisosNocturno() {
         .get();
       let totalMes = 0;
       gastosDelMes.forEach(d => { if(d.data().tipo !== 'ingreso') totalMes += d.data().monto || 0; });
-
       try {
         console.log(`✅ Recordatorio enviado a ${telefono} (${diasSinRegistrar + 1} días sin registrar)`);
-
-        // También enviar email si tiene correo registrado
         const userData = await obtenerEmailUsuario(telefono);
         if (userData?.email) {
           await enviarEmailRecordatorio(userData.email, userData.nombre, diasSinRegistrar, totalMes);
@@ -480,11 +457,31 @@ setInterval(() => {
   const ahora = new Date();
   const horaUTC = ahora.getUTCHours();
   const minUTC = ahora.getUTCMinutes();
-  // 9pm Lima = 2am UTC | 8pm Lima = 1am UTC (horario verano)
   if ((horaUTC === 2 || horaUTC === 1) && minUTC === 0) enviarAvisosNocturno();
   if (ahora.getUTCDay() === 1 && horaUTC === 13 && minUTC === 0) enviarResumenSemanal();
 }, 60000);
 
+// ── OAUTH2 ENDPOINTS (obtener refresh token) ──────────────────────
+app.get('/auth/gmail', (req, res) => {
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: ['https://www.googleapis.com/auth/gmail.send'],
+    prompt: 'consent'
+  });
+  res.redirect(url);
+});
+
+app.get('/oauth2callback', async (req, res) => {
+  const { code } = req.query;
+  try {
+    const { tokens } = await oauth2Client.getToken(code);
+    res.send(`<pre>REFRESH TOKEN:\n${tokens.refresh_token}</pre>`);
+  } catch(e) {
+    res.send(`Error: ${e.message}`);
+  }
+});
+
+// ── WEBHOOK WHATSAPP ──────────────────────────────────────────────
 app.post('/webhook', async (req, res) => {
   const mensaje = req.body.Body?.trim() || '';
   const telefono = req.body.From || '';
@@ -648,11 +645,9 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── DETECCIÓN TARJETA DE CRÉDITO ─────────────────────────────
   const esTarjeta = detectarTarjeta(mensaje);
   const mensajeLimpio = esTarjeta ? limpiarTextoTC(mensaje) : mensaje;
 
-  // ── GASTOS MÚLTIPLES ─────────────────────────────────────────
   const multiples = parsearMultiplesMovimientos(mensajeLimpio);
   if (multiples) {
     let respuesta = `✅ *${multiples.length} gastos registrados*${esTarjeta ? ' 💳' : ''}\n\n`;
@@ -672,7 +667,6 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── GASTO/INGRESO SIMPLE ─────────────────────────────────────
   const mov = parsearMovimiento(mensajeLimpio);
   if (!mov) {
     twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Tarjeta:* "Taxi 30 TC" o "Netflix 45 CREDITO"\n*Múltiples:* "Almuerzo 15 y taxi 8"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA');
@@ -687,7 +681,6 @@ app.post('/webhook', async (req, res) => {
 
     let resp;
     if (esTarjeta) {
-      // Actualizar acumulado de tarjeta en Firestore
       await actualizarGastoTarjeta(telefono, mov.monto);
       resp = `💳 *Gasto con tarjeta registrado*\n\n🏪 ${mov.label}\n💰 S/ ${mov.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria}\n\n_Registrado en tu tarjeta de crédito_\nEscribe /resumen para ver tu balance`;
     } else if (mov.tipo === 'ingreso') {
@@ -711,7 +704,6 @@ app.post('/webhook', async (req, res) => {
 
 app.get('/', (req, res) => res.send('🐜 Hormicash Bot corriendo'));
 
-// ── ENDPOINT DE PRUEBA DE EMAIL ───────────────────────────────────
 app.get('/test-email', async (req, res) => {
   const email = req.query.email;
   if (!email) return res.send('Falta ?email=tucorreo@gmail.com');
@@ -723,7 +715,6 @@ app.get('/test-email', async (req, res) => {
   }
 });
 
-// ── LISTAR TODOS LOS USUARIOS CON EMAIL ──────────────────────────
 app.get('/usuarios-emails', async (req, res) => {
   try {
     const snap = await db.collection('usuarios').get();
@@ -743,7 +734,6 @@ app.get('/usuarios-emails', async (req, res) => {
   }
 });
 
-// ── ENVIAR EMAIL A TODOS LOS USUARIOS ────────────────────────────
 app.get('/enviar-recordatorio-todos', async (req, res) => {
   const clave = req.query.clave;
   if (clave !== process.env.ADMIN_SECRET) return res.send('❌ No autorizado');
@@ -759,7 +749,6 @@ app.get('/enviar-recordatorio-todos', async (req, res) => {
         await enviarEmailRecordatorio(data.email, nombre, 1, 0);
         enviados++;
         resultados.push({ email: data.email, status: '✅' });
-        // Pequeño delay para no saturar Resend
         await new Promise(r => setTimeout(r, 200));
       } catch(e) {
         errores++;
