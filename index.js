@@ -5,7 +5,6 @@ const admin = require('firebase-admin');
 const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Resend } = require('resend');
-const nodemailer = require('nodemailer');
 const { google } = require('googleapis');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -21,19 +20,27 @@ oauth2Client.setCredentials({
   refresh_token: process.env.GMAIL_REFRESH_TOKEN
 });
 
-async function getGmailTransporter() {
+async function enviarConGmailAPI(to, subject, html) {
   const { token } = await oauth2Client.getAccessToken();
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      type: 'OAuth2',
-      user: process.env.GMAIL_USER,
-      clientId: process.env.GMAIL_CLIENT_ID,
-      clientSecret: process.env.GMAIL_CLIENT_SECRET,
-      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-      accessToken: token
-    }
-  });
+
+  const message = [
+    `To: ${to}`,
+    `From: "Hormicash 🐜" <${process.env.GMAIL_USER}>`,
+    `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/html; charset=UTF-8`,
+    ``,
+    html
+  ].join('\n');
+
+  const encoded = Buffer.from(message).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  await axios.post(
+    `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`,
+    { raw: encoded },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
 }
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -113,13 +120,7 @@ async function enviarEmailRecordatorio(email, nombre, diasSinRegistrar, totalMes
 </body>
 </html>`;
 
-  const transporter = await getGmailTransporter();
-  await transporter.sendMail({
-    from: `"Hormicash 🐜" <${process.env.GMAIL_USER}>`,
-    to: email,
-    subject: subjects[subjectIdx],
-    html
-  });
+  await enviarConGmailAPI(email, subjects[subjectIdx], html);
 }
 
 const app = express();
@@ -461,7 +462,7 @@ setInterval(() => {
   if (ahora.getUTCDay() === 1 && horaUTC === 13 && minUTC === 0) enviarResumenSemanal();
 }, 60000);
 
-// ── OAUTH2 ENDPOINTS (obtener refresh token) ──────────────────────
+// ── OAUTH2 ENDPOINTS ──────────────────────────────────────────────
 app.get('/auth/gmail', (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
