@@ -6,6 +6,16 @@ const axios = require('axios');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
+const nodemailer = require('nodemailer');
+
+// ── GMAIL TRANSPORTER para envíos a clientes ─────────────────────
+const gmailTransporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD
+  }
+});
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
@@ -98,8 +108,9 @@ async function enviarEmailRecordatorio(email, nombre, diasSinRegistrar, totalMes
 </body>
 </html>`;
 
-  await resend.emails.send({
-    from: 'Hormicash <onboarding@resend.dev>',
+  // Usar Gmail para enviar a cualquier correo
+  await gmailTransporter.sendMail({
+    from: `"Hormicash 🐜" <${process.env.GMAIL_USER}>`,
     to: email,
     subject: subjects[subjectIdx],
     html
@@ -709,6 +720,55 @@ app.get('/test-email', async (req, res) => {
     res.send(`✅ Email enviado a ${email}`);
   } catch(e) {
     res.send(`❌ Error: ${e.message}`);
+  }
+});
+
+// ── LISTAR TODOS LOS USUARIOS CON EMAIL ──────────────────────────
+app.get('/usuarios-emails', async (req, res) => {
+  try {
+    const snap = await db.collection('usuarios').get();
+    const usuarios = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.email) usuarios.push({
+        nombre: data.nombre?.split(' ')[0] || 'Usuario',
+        email: data.email,
+        plan: data.plan || 'free',
+        telefono: data.telefono || ''
+      });
+    });
+    res.json({ total: usuarios.length, usuarios });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
+
+// ── ENVIAR EMAIL A TODOS LOS USUARIOS ────────────────────────────
+app.get('/enviar-recordatorio-todos', async (req, res) => {
+  const clave = req.query.clave;
+  if (clave !== process.env.ADMIN_SECRET) return res.send('❌ No autorizado');
+  try {
+    const snap = await db.collection('usuarios').get();
+    let enviados = 0, errores = 0;
+    const resultados = [];
+    for (const d of snap.docs) {
+      const data = d.data();
+      if (!data.email) continue;
+      const nombre = data.nombre?.split(' ')[0] || 'Usuario';
+      try {
+        await enviarEmailRecordatorio(data.email, nombre, 1, 0);
+        enviados++;
+        resultados.push({ email: data.email, status: '✅' });
+        // Pequeño delay para no saturar Resend
+        await new Promise(r => setTimeout(r, 200));
+      } catch(e) {
+        errores++;
+        resultados.push({ email: data.email, status: `❌ ${e.message}` });
+      }
+    }
+    res.json({ enviados, errores, resultados });
+  } catch(e) {
+    res.json({ error: e.message });
   }
 });
 
