@@ -25,6 +25,30 @@ const CATEGORIAS_DISPLAY = {
   ropa:'👕 Ropa', hogar:'🏠 Hogar', otros:'📦 Otros'
 };
 
+// ── KEYWORDS TARJETA DE CRÉDITO ──────────────────────────────────
+const TC_KEYWORDS = ['tc', 'credito', 'crédito', 'tarjeta', 'visa', 'mastercard', 'amex', 'credit'];
+
+function detectarTarjeta(texto) {
+  const lower = texto.toLowerCase();
+  return TC_KEYWORDS.some(k => {
+    // Buscar como palabra separada: "taxi 30 tc" o "taxi 30 - tc" o "taxi 30 credito"
+    const regex = new RegExp(`(^|\\s|[-,])${k}(\\s|[-,]|$)`, 'i');
+    return regex.test(lower);
+  });
+}
+
+function limpiarTextoTC(texto) {
+  let limpio = texto;
+  // Primero remover TC al inicio: "tc taxi 30" → "taxi 30"
+  limpio = limpio.replace(/^(tc|credito|crédito|tarjeta|visa|mastercard|amex|credit)\s+/gi, '');
+  // Luego remover TC al final o en medio con separadores
+  TC_KEYWORDS.forEach(k => {
+    const regex = new RegExp(`\\s*[-,]?\\s*\\b${k}\\b\\s*[-,]?\\s*`, 'gi');
+    limpio = limpio.replace(regex, ' ');
+  });
+  return limpio.trim();
+}
+
 async function esPremium(telefono) {
   try {
     const doc = await db.collection('usuarios_whatsapp').doc(telefono).get();
@@ -71,7 +95,6 @@ async function verificarLimite(telefono, categoria, montoNuevo) {
   } catch(e) { return null; }
 }
 
-// ── ALERTA CONTEXTUAL: comparar con promedio diario ──────────────
 async function verificarAlertaContextual(telefono, categoria, montoNuevo) {
   try {
     const inicioMes = new Date();
@@ -87,8 +110,7 @@ async function verificarAlertaContextual(telefono, categoria, montoNuevo) {
       .where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes))
       .get();
 
-    let totalMes = 0;
-    let totalHoy = 0;
+    let totalMes = 0, totalHoy = 0;
     snapshot.forEach(doc => {
       const d = doc.data();
       totalMes += d.monto;
@@ -108,6 +130,24 @@ async function verificarAlertaContextual(telefono, categoria, montoNuevo) {
     }
     return null;
   } catch(e) { return null; }
+}
+
+// ── ACTUALIZAR GASTO DE TARJETA EN FIRESTORE ─────────────────────
+async function actualizarGastoTarjeta(telefono, monto) {
+  try {
+    // Buscar si el usuario tiene uid vinculado
+    const userDoc = await db.collection('usuarios_whatsapp').doc(telefono).get();
+    if (!userDoc.exists) return;
+    const uid = userDoc.data().uid;
+    if (!uid) return;
+    // Sumar al gasto_actual de la tarjeta
+    const userRef = db.collection('usuarios').doc(uid);
+    const snap = await userRef.get();
+    if (!snap.exists) return;
+    const tarjeta = snap.data().tarjeta || {};
+    const gastoActual = (tarjeta.gasto_actual || 0) + monto;
+    await userRef.update({ 'tarjeta.gasto_actual': gastoActual });
+  } catch(e) { console.error('Error actualizando gasto tarjeta:', e.message); }
 }
 
 async function downloadTwilioMedia(mediaUrl) {
@@ -137,9 +177,7 @@ Si no hay monto: {"error":"no_monto"}`;
   return JSON.parse(result.response.text().trim().replace(/```json|```/g,'').trim());
 }
 
-// ── MEJORA 1: Label limpio sin texto recortado ───────────────────
 function limpiarLabel(texto) {
-  // Eliminar montos, "soles", conectores y limpiar
   let label = texto
     .replace(/\d+(?:[.,]\d{1,2})?\s*(?:soles?|sol|s\/)?/gi, '')
     .replace(/\b(y|e|de|en|al|el|la|los|las|un|una|con|para|por)\b/gi, ' ')
@@ -147,25 +185,19 @@ function limpiarLabel(texto) {
     .replace(/\s+/g, ' ')
     .trim();
   if (label.length < 2) label = 'Gasto';
-  // Capitalizar primera letra, máximo 25 chars
   label = label.charAt(0).toUpperCase() + label.slice(1);
   return label.length > 25 ? label.substring(0, 25).trim() : label;
 }
 
-// ── MEJORA 2: Separar gastos múltiples ──────────────────────────
 function parsearMultiplesMovimientos(texto) {
-  // Detectar patrones: "Almuerzo 15 y taxi 8" o "Almuerzo 15, café 5"
   const separadores = /\s+(?:y|e|,)\s+/gi;
   const partes = texto.split(separadores);
-  
-  if (partes.length <= 1) return null; // no es múltiple
-  
+  if (partes.length <= 1) return null;
   const movimientos = [];
   for (const parte of partes) {
     const mov = parsearMovimiento(parte.trim());
     if (mov) movimientos.push({ ...mov, textoOriginal: parte.trim() });
   }
-  
   return movimientos.length >= 2 ? movimientos : null;
 }
 
@@ -179,10 +211,10 @@ function parsearMovimiento(texto) {
   if (ingresosKeywords.some(k => lower.includes(k))) {
     return { monto, tipo:'ingreso', categoria:'ingreso', label: limpiarLabel(texto) };
   }
-  const cats = { 
-    comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada','salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho','chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc','bembos','norky','pardos','la lucha','helado'], 
-    cafe:['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'], 
-    transporte:['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','tren','aeropuerto','vuelo'], 
+  const cats = {
+    comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada','salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho','chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc','bembos','norky','pardos','la lucha','helado'],
+    cafe:['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
+    transporte:['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','tren','aeropuerto','vuelo'],
     telecom:['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','canva','google'],
     compras:['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','jean','short','vestido','mochila','cartera','lentes','reloj','mall','saga','ripley','oechsle','zara','nike','adidas','tottus','plaza vea','wong','sodimac','perfume','maquillaje'],
     entretenimiento:['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','juerga','cumpleaños'],
@@ -251,14 +283,14 @@ async function generarConsejoIA(telefono) {
     const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
     const balance = totalIngresos - totalGastos;
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
-    const prompt = `Eres un asesor financiero personal amigable para peruanos jóvenes. 
+    const prompt = `Eres un asesor financiero personal amigable para peruanos jóvenes.
 Datos del usuario este mes:
 - Total gastos: S/ ${totalGastos.toFixed(2)}
 - Total ingresos: S/ ${totalIngresos.toFixed(2)}
 - Balance: S/ ${balance.toFixed(2)}
 - Categoría con más gastos: ${topCat ? `${topCat[0]} (S/ ${topCat[1].toFixed(2)})` : 'N/A'}
 - Número de transacciones: ${count}
-Da UN consejo financiero corto, personalizado, práctico y motivador en español peruano. 
+Da UN consejo financiero corto, personalizado, práctico y motivador en español peruano.
 Máximo 2 oraciones. Sin asteriscos ni emojis excesivos. Solo el texto del consejo.`;
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
@@ -304,7 +336,7 @@ app.post('/webhook', async (req, res) => {
 
   if (esNuevo) {
     estadoUsuario[telefono] = { esperando: 'bienvenida_limites' };
-    twiml.message(`🐜 *¡Bienvenido a Hormicash!*\n\nSoy tu asistente de gastos hormiga. Registra tus gastos por:\n\n📸 Foto de voucher\n🎙️ Mensaje de voz\n💬 Texto: _"Almuerzo 15"_\n\n─────────────────\n¿Quieres configurar *límites de gasto* mensuales? ⭐ Premium\n\n1️⃣ Sí, configurar ahora\n2️⃣ Lo haré después`);
+    twiml.message(`🐜 *¡Bienvenido a Hormicash!*\n\nSoy tu asistente de gastos hormiga. Registra tus gastos por:\n\n📸 Foto de voucher\n🎙️ Mensaje de voz\n💬 Texto: _"Almuerzo 15"_\n💳 Tarjeta de crédito: _"Taxi 30 TC"_\n\n─────────────────\n¿Quieres configurar *límites de gasto* mensuales? ⭐ Premium\n\n1️⃣ Sí, configurar ahora\n2️⃣ Lo haré después`);
     return res.type('text/xml').send(twiml.toString());
   }
 
@@ -368,7 +400,9 @@ app.post('/webhook', async (req, res) => {
         const cat = audio.categoria?.toLowerCase() || 'otros';
         const labelAudio = audio.negocio || audio.descripcion || (esIngreso?'Ingreso por voz':'Gasto por voz');
         await db.collection('gastos').add({ telefono, monto:audio.monto, tipo:audio.tipo||'gasto', categoria:cat, label:labelAudio, descripcion:audio.descripcion, fuente:'audio_whatsapp', mensaje:'[audio]', fecha:admin.firestore.FieldValue.serverTimestamp() });
-        let resp = esIngreso ? `💰 *Ingreso por voz*\n\n💵 S/ ${audio.monto.toFixed(2)}\n📝 ${labelAudio}\n\nEscribe /resumen para ver tu balance` : `✅ *Gasto por voz*\n\n🏪 ${labelAudio}\n💰 S/ ${audio.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n\nEscribe /resumen para ver tu balance`;
+        let resp = esIngreso
+          ? `💰 *Ingreso por voz*\n\n💵 S/ ${audio.monto.toFixed(2)}\n📝 ${labelAudio}\n\nEscribe /resumen para ver tu balance`
+          : `✅ *Gasto por voz*\n\n🏪 ${labelAudio}\n💰 S/ ${audio.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n\nEscribe /resumen para ver tu balance`;
         if (!esIngreso) {
           const a = await verificarLimite(telefono,cat,audio.monto); if(a) resp += mensajeAlerta(a, CATEGORIAS_DISPLAY[cat]||cat);
           const alerta = await verificarAlertaContextual(telefono,cat,audio.monto);
@@ -401,12 +435,23 @@ app.post('/webhook', async (req, res) => {
     else if (opcion==='3') { desde=new Date(ahora.getFullYear(),ahora.getMonth(),1); periodo='Este mes'; }
     else { twiml.message('❌ Opción no válida.\nEscribe /resumen para intentar de nuevo.'); return res.type('text/xml').send(twiml.toString()); }
     const snapshot = await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(desde)).get();
-    let totalGastos=0, totalIngresos=0; const cats={};
-    snapshot.forEach(doc => { const d=doc.data(); if(d.tipo==='ingreso'){totalIngresos+=d.monto;}else{totalGastos+=d.monto; cats[d.categoria]=(cats[d.categoria]||0)+d.monto;} });
+    let totalGastos=0, totalIngresos=0, totalTarjeta=0;
+    const cats={};
+    snapshot.forEach(doc => {
+      const d=doc.data();
+      if(d.tipo==='ingreso'){totalIngresos+=d.monto;}
+      else{
+        totalGastos+=d.monto;
+        cats[d.categoria]=(cats[d.categoria]||0)+d.monto;
+        if(d.fuente_pago==='tarjeta') totalTarjeta+=d.monto;
+      }
+    });
     let resCats = '';
     for (const [c,m] of Object.entries(cats)) resCats += `  • ${CATEGORIAS_DISPLAY[c]||c}: S/ ${m.toFixed(2)}\n`;
     const balance = totalIngresos-totalGastos;
-    twiml.message(`📊 *Resumen - ${periodo}*\n━━━━━━━━━━━━━━\n💸 Gastos: S/ ${totalGastos.toFixed(2)}\n${resCats}💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n━━━━━━━━━━━━━━\n${balance>=0?'🟢':'🔴'} Balance: S/ ${balance.toFixed(2)}`);
+    let msg = `📊 *Resumen - ${periodo}*\n━━━━━━━━━━━━━━\n💸 Gastos: S/ ${totalGastos.toFixed(2)}\n${resCats}💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n━━━━━━━━━━━━━━\n${balance>=0?'🟢':'🔴'} Balance: S/ ${balance.toFixed(2)}`;
+    if (totalTarjeta > 0) msg += `\n\n💳 Tarjeta de crédito: S/ ${totalTarjeta.toFixed(2)}`;
+    twiml.message(msg);
     return res.type('text/xml').send(twiml.toString());
   }
 
@@ -444,13 +489,24 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
-  // ── MEJORA 2: Gastos múltiples ────────────────────────────────
-  const multiples = parsearMultiplesMovimientos(mensaje);
+  // ── DETECCIÓN TARJETA DE CRÉDITO ─────────────────────────────
+  const esTarjeta = detectarTarjeta(mensaje);
+  const mensajeLimpio = esTarjeta ? limpiarTextoTC(mensaje) : mensaje;
+
+  // ── GASTOS MÚLTIPLES ─────────────────────────────────────────
+  const multiples = parsearMultiplesMovimientos(mensajeLimpio);
   if (multiples) {
-    let respuesta = `✅ *${multiples.length} gastos registrados*\n\n`;
+    let respuesta = `✅ *${multiples.length} gastos registrados*${esTarjeta ? ' 💳' : ''}\n\n`;
     for (const mov of multiples) {
-      await db.collection('gastos').add({ telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria, label:mov.label, fuente:'texto_whatsapp', mensaje:mov.textoOriginal, fecha:admin.firestore.FieldValue.serverTimestamp() });
-      respuesta += `${mov.tipo==='ingreso'?'💰':'🐜'} *${mov.label}* — S/ ${mov.monto.toFixed(2)} (${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria})\n`;
+      const gastoData = {
+        telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria,
+        label:mov.label, fuente:'texto_whatsapp', mensaje:mov.textoOriginal,
+        fecha:admin.firestore.FieldValue.serverTimestamp()
+      };
+      if (esTarjeta) gastoData.fuente_pago = 'tarjeta';
+      await db.collection('gastos').add(gastoData);
+      if (esTarjeta) await actualizarGastoTarjeta(telefono, mov.monto);
+      respuesta += `${mov.tipo==='ingreso'?'💰':'🐜'}${esTarjeta?' 💳':''} *${mov.label}* — S/ ${mov.monto.toFixed(2)} (${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria})\n`;
     }
     respuesta += `\nEscribe /resumen para ver tu balance`;
     twiml.message(respuesta);
@@ -458,17 +514,34 @@ app.post('/webhook', async (req, res) => {
   }
 
   // ── GASTO/INGRESO SIMPLE ─────────────────────────────────────
-  const mov = parsearMovimiento(mensaje);
+  const mov = parsearMovimiento(mensajeLimpio);
   if (!mov) {
-    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Múltiples:* "Almuerzo 15 y taxi 8"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA');
+    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Tarjeta:* "Taxi 30 TC" o "Netflix 45 CREDITO"\n*Múltiples:* "Almuerzo 15 y taxi 8"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA');
   } else {
-    await db.collection('gastos').add({ telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria, label:mov.label, fuente:'texto_whatsapp', mensaje, fecha:admin.firestore.FieldValue.serverTimestamp() });
-    let resp = mov.tipo==='ingreso' ? `💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance` : `✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`;
-    if (mov.tipo==='gasto') {
-      const a=await verificarLimite(telefono,mov.categoria,mov.monto); if(a) resp+=mensajeAlerta(a, CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria);
-      // ── MEJORA 3: Alerta contextual ──────────────────────────
+    const gastoData = {
+      telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria,
+      label:mov.label, fuente:'texto_whatsapp', mensaje,
+      fecha:admin.firestore.FieldValue.serverTimestamp()
+    };
+    if (esTarjeta) gastoData.fuente_pago = 'tarjeta';
+    await db.collection('gastos').add(gastoData);
+
+    let resp;
+    if (esTarjeta) {
+      // Actualizar acumulado de tarjeta en Firestore
+      await actualizarGastoTarjeta(telefono, mov.monto);
+      resp = `💳 *Gasto con tarjeta registrado*\n\n🏪 ${mov.label}\n💰 S/ ${mov.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria}\n\n_Registrado en tu tarjeta de crédito_\nEscribe /resumen para ver tu balance`;
+    } else if (mov.tipo === 'ingreso') {
+      resp = `💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance`;
+    } else {
+      resp = `✅ S/ ${mov.monto.toFixed(2)} gasto registrado\n🐜 ${mov.label}\nEscribe /resumen para ver tu balance`;
+    }
+
+    if (mov.tipo === 'gasto') {
+      const a = await verificarLimite(telefono,mov.categoria,mov.monto);
+      if(a) resp += mensajeAlerta(a, CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria);
       const alerta = await verificarAlertaContextual(telefono, mov.categoria, mov.monto);
-      if (alerta) resp += `\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;
+      if(alerta) resp += `\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;
     }
     twiml.message(resp);
   }

@@ -3307,8 +3307,11 @@
     if (!tab) return;
     if (window.userPlan === 'premium') {
       tab.innerHTML = `
-        <div class="tab-header">
+        <div class="tab-header" style="display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
           <div class="tab-title">💳 Tarjeta de crédito</div>
+          <button id="btnVerDashTC" style="background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;border-radius:10px;padding:8px 16px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:white;cursor:pointer">
+            📊 Ver Dashboard
+          </button>
         </div>
         <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:4px">
 
@@ -3316,7 +3319,7 @@
           <div style="background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:18px;padding:24px 26px;color:white;position:relative;overflow:hidden;min-height:160px;flex-shrink:0">
             <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.07)"></div>
             <div style="position:absolute;bottom:-40px;left:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>
-            <div style="font-family:'Instrument Serif',serif;font-size:12px;font-weight:700;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:28px">Hormicash Premium</div>
+            <div style="font-size:12px;font-weight:700;opacity:0.7;text-transform:uppercase;letter-spacing:1px;margin-bottom:28px">Hormicash Premium</div>
             <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:800;letter-spacing:3px;margin-bottom:20px" id="cardNumberDisplay">•••• •••• •••• ••••</div>
             <div style="display:flex;justify-content:space-between;align-items:flex-end">
               <div>
@@ -3351,7 +3354,7 @@
                 <input type="text" class="config-input" id="cardDigits" placeholder="1234" maxlength="4" oninput="updateCardPreview()">
               </div>
             </div>
-            <button data-action="guardarTarjeta" style="width:100%;padding:12px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer;transition:all 0.2s" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            <button data-action="guardarTarjeta" style="width:100%;padding:12px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">
               💾 Guardar tarjeta
             </button>
             <div id="cardSaveMsg" style="text-align:center;font-size:12px;color:var(--green);margin-top:8px;display:none">✅ Guardado correctamente</div>
@@ -3359,8 +3362,8 @@
 
           <!-- Barra de uso -->
           <div style="background:var(--card);border:1px solid rgba(167,139,250,0.2);border-radius:14px;padding:20px;position:relative;overflow:hidden">
-            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#7c3aed,var(--premium))"></div>
-            <div style="font-family:'Instrument Serif',serif;font-size:13px;font-weight:700;color:var(--premium);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">📊 Uso de crédito</div>
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#7c3aed,var(--premium));border-radius:14px 14px 0 0"></div>
+            <div style="font-size:13px;font-weight:700;color:var(--premium);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">📊 Uso de crédito</div>
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
               <span>Utilizado</span>
               <span id="cardUsoPct" style="font-weight:700;color:var(--premium)">—</span>
@@ -3380,6 +3383,10 @@
 
         </div>
       `;
+      setTimeout(() => {
+        document.getElementById('btnVerDashTC')?.addEventListener('click', () => mostrarDashTC());
+        cargarDatosTarjeta();
+      }, 60);
     } else {
       tab.innerHTML = `
         <div class="tab-header">
@@ -3393,8 +3400,179 @@
         </div>
       `;
     }
-    // Cargar datos guardados
-    setTimeout(() => cargarDatosTarjeta(), 60);
+  }
+
+  // ── DASHBOARD TC ──────────────────────────────────────────────
+  async function mostrarDashTC() {
+    const tab = document.getElementById('tab-tarjeta');
+    if (!tab) return;
+    const cur = window.userCurrency || 'S/';
+
+    // Leer datos desde Firestore directamente
+    let limite=0, gasto=0, digitos='', corte='—';
+    const user = window._auth?.currentUser;
+    if (user) {
+      try {
+        const { doc:dcx, getDoc:gdcx, getFirestore:gfcx } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+        const snap = await gdcx(dcx(gfcx(),'usuarios',user.uid));
+        if (snap.exists()) {
+          const t = snap.data().tarjeta || {};
+          limite  = t.limite       || 0;
+          gasto   = t.gasto_actual || 0;
+          digitos = t.digitos      || '';
+          corte   = t.dia_corte    || '—';
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    const disp    = limite - gasto;
+    const pct     = limite > 0 ? Math.min((gasto/limite)*100,100) : 0;
+    let txTC = [];
+    if (userPhone) {
+      try {
+        const { collection:col2, query:q2, where:wh2, getDocs:gd2, getFirestore:gf2, Timestamp:TS2 } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+        const db2 = gf2();
+        const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+        const snap = await gd2(q2(col2(db2,'gastos'), wh2('telefono','==',userPhone), wh2('fuente_pago','==','tarjeta'), wh2('fecha','>=',TS2.fromDate(inicioMes))));
+        snap.forEach(d => txTC.push(d.data()));
+      } catch(e) { console.error(e); }
+    }
+    const porDia = {};
+    txTC.forEach(tx => {
+      const f = tx.fecha?.toDate ? tx.fecha.toDate() : new Date(tx.fecha);
+      const dia = f.getDate();
+      porDia[dia] = (porDia[dia]||0) + (tx.monto||0);
+    });
+    const catsTc = {};
+    txTC.forEach(tx => { catsTc[tx.categoria||'otros'] = (catsTc[tx.categoria||'otros']||0)+(tx.monto||0); });
+    const topCatsTc = Object.entries(catsTc).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    const maxCatTc = topCatsTc[0]?.[1]||1;
+    const catIcons = {comida:'🍔',cafe:'☕',transporte:'🚌',telecom:'📱',compras:'🛍️',entretenimiento:'🎮',hogar:'🏠',salud:'💊',educacion:'📚',otros:'💸'};
+    const catNames = {comida:'Comida',cafe:'Café',transporte:'Transporte',telecom:'Telecom',compras:'Compras',entretenimiento:'Ocio',hogar:'Hogar',salud:'Salud',educacion:'Educación',otros:'Otros'};
+    const dispColor = disp < 0 ? 'var(--red)' : '#22c55e';
+    const dispText  = disp < 0 ? `−${cur} ${Math.abs(disp).toFixed(0)} excedido` : `${cur} ${disp.toFixed(0)}`;
+    tab.innerHTML = `
+      <div class="tab-header" style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+        <button data-action="volverTarjeta" style="background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--text);cursor:pointer">
+          ← Volver
+        </button>
+        <div class="tab-title" style="margin:0">📊 Dashboard Tarjeta ${digitos?`••${digitos.slice(-4)}`:''}</div>
+      </div>
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding-right:4px">
+        <!-- KPIs -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex-shrink:0">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;box-shadow:var(--shadow)">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Gastado</div>
+            <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:var(--red)">${cur} ${gasto.toFixed(0)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">de ${cur} ${limite.toFixed(0)}</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;box-shadow:var(--shadow)">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Disponible</div>
+            <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:${dispColor}">${dispText}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">${pct.toFixed(0)}% utilizado</div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center;box-shadow:var(--shadow)">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Transacciones</div>
+            <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:var(--premium)">${txTC.length}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px">este mes</div>
+          </div>
+        </div>
+        <!-- Barra uso -->
+        <div style="background:var(--card);border:1px solid rgba(167,139,250,0.25);border-radius:14px;padding:20px;flex-shrink:0;position:relative;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:14px 14px 0 0"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:700;color:var(--premium);text-transform:uppercase;letter-spacing:0.5px">% Uso del crédito</div>
+            <div style="font-family:'Inter',sans-serif;font-size:24px;font-weight:800;color:${pct>=90?'var(--red)':pct>=70?'var(--accent)':'var(--premium)'}">${pct.toFixed(0)}%</div>
+          </div>
+          <div style="height:14px;background:var(--border);border-radius:10px;overflow:hidden;margin-bottom:10px">
+            <div style="height:100%;width:${pct}%;background:${pct>=90?'linear-gradient(90deg,#f97316,#ef4444)':pct>=70?'linear-gradient(90deg,#f59e0b,#f97316)':'linear-gradient(90deg,#7c3aed,#a78bfa)'};border-radius:10px"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+            <span>Corte: día ${corte}</span>
+            <span style="color:${pct>=90?'var(--red)':'var(--muted)'}">${pct>=90?'⚠️ Cerca del límite':pct>=70?'⚡ Uso alto':'✅ Uso normal'}</span>
+          </div>
+        </div>
+        <!-- Gráfico días -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;flex-shrink:0;box-shadow:var(--shadow)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">📈 Gastos diarios con tarjeta</div>
+          <canvas id="tcDayChart" style="width:100%;height:120px"></canvas>
+        </div>
+        <!-- Top categorías -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;flex-shrink:0;box-shadow:var(--shadow)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">🏅 Top categorías</div>
+          ${topCatsTc.length ? topCatsTc.map(([cat,amt]) => `
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+              <div style="font-size:18px;width:28px;text-align:center">${catIcons[cat]||'💸'}</div>
+              <div style="flex:1">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span style="font-size:13px;font-weight:600">${catNames[cat]||cat}</span>
+                  <span style="font-size:13px;font-weight:700;color:var(--red)">${cur} ${amt.toFixed(0)}</span>
+                </div>
+                <div style="height:5px;background:var(--border);border-radius:5px;overflow:hidden">
+                  <div style="height:100%;width:${((amt/maxCatTc)*100).toFixed(0)}%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:5px"></div>
+                </div>
+              </div>
+            </div>`).join('') : `<div style="color:var(--muted);font-size:13px">Sin gastos con tarjeta aún.<br><span style="font-size:12px">Escribe "Taxi 30 TC" en WhatsApp o usa el botón +</span></div>`}
+        </div>
+        <!-- Lista transacciones -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;flex-shrink:0;box-shadow:var(--shadow)">
+          <div style="font-size:13px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">🧾 Últimas transacciones</div>
+          ${txTC.length ? txTC.sort((a,b)=>{const fa=a.fecha?.toDate?a.fecha.toDate():new Date(a.fecha);const fb=b.fecha?.toDate?b.fecha.toDate():new Date(b.fecha);return fb-fa;}).map(tx=>{
+            const f=tx.fecha?.toDate?tx.fecha.toDate():new Date(tx.fecha);
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-size:13px;font-weight:600">${catIcons[tx.categoria]||'💸'} ${tx.label||'Gasto TC'}</div>
+                <div style="font-size:11px;color:var(--muted)">${f.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})} · ${f.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}</div>
+              </div>
+              <div style="font-size:14px;font-weight:700;color:var(--red)">−${cur} ${(tx.monto||0).toFixed(2)}</div>
+            </div>`;}).join('') : `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin transacciones</div>`}
+        </div>
+      </div>
+    `;
+    setTimeout(() => dibujarGraficoDiaTC(porDia, cur), 80);
+  }
+
+  function dibujarGraficoDiaTC(porDia, cur) {
+    const canvas = document.getElementById('tcDayChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.parentElement.clientWidth - 40;
+    const h = 120;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = '100%'; canvas.style.height = h + 'px';
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+    const diasMes = new Date().getDate();
+    const datos = Array.from({length: diasMes}, (_,i) => porDia[i+1]||0);
+    const maxVal = Math.max(...datos, 1);
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#6b7a8d' : '#9aa5b4';
+    const padL=8, padR=8, padT=16, padB=24;
+    const chartW=w-padL-padR, chartH=h-padT-padB;
+    const slotW = chartW/diasMes;
+    const barW = Math.max(Math.floor(slotW)-3, 4);
+    datos.forEach((val,i) => {
+      const x = padL + slotW*i + (slotW-barW)/2;
+      if (val > 0) {
+        const bh = Math.max((val/maxVal)*chartH, 4);
+        const y = padT+chartH-bh;
+        const grad = ctx.createLinearGradient(0,y,0,padT+chartH);
+        grad.addColorStop(0,'#a78bfa'); grad.addColorStop(1,'rgba(124,58,237,0.3)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); roundRect(ctx,x,y,barW,bh,3); ctx.fill();
+        if (bh > 20) {
+          ctx.fillStyle='#7c3aed'; ctx.font='bold 8px Inter,sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(val>=1000?(val/1000).toFixed(1)+'k':val.toFixed(0), x+barW/2, y-2);
+        }
+      }
+      if ((i+1)%5===0||i===0||i===diasMes-1) {
+        ctx.fillStyle=textColor; ctx.font='9px Inter,sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(i+1, x+barW/2, padT+chartH+4);
+      }
+    });
   }
 
   // ── CARGAR DATOS TARJETA DESDE FIRESTORE ─────────────────────
@@ -3487,14 +3665,25 @@
     const corte = document.getElementById('cardCorte')?.value || '—';
     const digits = document.getElementById('cardDigits')?.value || '';
 
-    const disp = Math.max(limite - gasto, 0);
+    const disp = limite - gasto; // puede ser negativo
     const pct = limite > 0 ? Math.min((gasto / limite) * 100, 100) : 0;
 
     const cardNum = document.getElementById('cardNumberDisplay');
     if (cardNum) cardNum.textContent = digits ? `•••• •••• •••• ${digits.padStart(4,'•')}` : '•••• •••• •••• ••••';
 
     const cardLimiteDisp = document.getElementById('cardLimiteDisp');
-    if (cardLimiteDisp) cardLimiteDisp.textContent = limite > 0 ? `S/ ${disp.toFixed(0)}` : 'S/ —';
+    if (cardLimiteDisp) {
+      if (!limite) {
+        cardLimiteDisp.textContent = 'S/ —';
+        cardLimiteDisp.style.color = 'white';
+      } else if (disp < 0) {
+        cardLimiteDisp.textContent = `−S/ ${Math.abs(disp).toFixed(0)} excedido`;
+        cardLimiteDisp.style.color = '#fca5a5';
+      } else {
+        cardLimiteDisp.textContent = `S/ ${disp.toFixed(0)}`;
+        cardLimiteDisp.style.color = 'white';
+      }
+    }
 
     const cardCorteDisplay = document.getElementById('cardCorteDisplay');
     if (cardCorteDisplay) cardCorteDisplay.textContent = corte !== '—' && corte ? `Día ${corte}` : '—';
@@ -3506,7 +3695,15 @@
     const gastadoAmt = document.getElementById('cardGastadoAmt');
     if (gastadoAmt) gastadoAmt.textContent = `S/ ${gasto.toFixed(0)}`;
     const dispAmt = document.getElementById('cardDispAmt');
-    if (dispAmt) { dispAmt.textContent = `S/ ${disp.toFixed(0)}`; dispAmt.style.color = pct >= 80 ? 'var(--red)' : 'var(--green)'; }
+    if (dispAmt) {
+      if (disp < 0) {
+        dispAmt.textContent = `−S/ ${Math.abs(disp).toFixed(0)} excedido`;
+        dispAmt.style.color = 'var(--red)';
+      } else {
+        dispAmt.textContent = `S/ ${disp.toFixed(0)}`;
+        dispAmt.style.color = pct >= 80 ? 'var(--red)' : 'var(--green)';
+      }
+    }
   };
 
   function renderPremiumSection() {
@@ -4114,29 +4311,66 @@
     }
 
     try {
-      const { addDoc, Timestamp } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
-      await addDoc(collection(db, 'gastos'), {
+      const { addDoc, setDoc, doc, getDoc, Timestamp } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+
+      // ── Detectar si es gasto con tarjeta de crédito ──
+      const tcKeywords = ['tc','credito','crédito','tarjeta','visa','mastercard'];
+      const descLower = desc.toLowerCase();
+      const esTarjeta = tcKeywords.some(k => {
+        const regex = new RegExp(`(^|\\s|[-,])${k}(\\s|[-,]|$)`, 'i');
+        return regex.test(descLower);
+      });
+
+      // Limpiar keywords TC del label
+      let descLimpia = desc;
+      if (esTarjeta) {
+        tcKeywords.forEach(k => {
+          descLimpia = descLimpia.replace(new RegExp(`\\s*[-,]?\\s*\\b${k}\\b\\s*[-,]?\\s*`, 'gi'), ' ').trim();
+        });
+      }
+
+      const gastoData = {
         telefono: userPhone,
         monto: monto,
         tipo: quickType,
         categoria: categoria,
         label: (() => {
-          let l = desc.replace(/\d+(?:[.,]\d{1,2})?\s*(?:soles?|sol|s\/)?/gi,'').replace(/\s+/g,' ').trim();
-          if(l.length < 2) l = desc.trim();
+          let l = descLimpia.replace(/\d+(?:[.,]\d{1,2})?\s*(?:soles?|sol|s\/)?/gi,'').replace(/\s+/g,' ').trim();
+          if(l.length < 2) l = descLimpia.trim();
           l = l.charAt(0).toUpperCase() + l.slice(1);
           return l.length > 25 ? l.substring(0,25).trim() : l;
         })(),
+        fuente: 'web_dashboard',
         mensaje: `${desc} ${monto} (web)`,
         fecha: Timestamp.now()
-      });
+      };
 
-      const emoji = quickType === 'ingreso' ? '💰' : '✅';
+      if (esTarjeta && quickType === 'gasto') {
+        gastoData.fuente_pago = 'tarjeta';
+      }
+
+      await addDoc(collection(db, 'gastos'), gastoData);
+
+      // Si es tarjeta, actualizar gasto_actual en usuarios/{uid}/tarjeta
+      if (esTarjeta && quickType === 'gasto') {
+        const user = window._auth?.currentUser;
+        if (user) {
+          const userRef = doc(db, 'usuarios', user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const tarjeta = userSnap.data().tarjeta || {};
+            const nuevoGasto = (tarjeta.gasto_actual || 0) + monto;
+            await setDoc(userRef, { tarjeta: { ...tarjeta, gasto_actual: nuevoGasto } }, { merge: true });
+          }
+        }
+      }
+
+      const emoji = esTarjeta ? '💳' : (quickType === 'ingreso' ? '💰' : '✅');
       const cur = window.userCurrency || 'S/';
-      feedback.textContent = `${emoji} ${cur} ${monto.toFixed(2)} registrado — ${desc}`;
+      feedback.textContent = `${emoji} ${cur} ${monto.toFixed(2)} registrado${esTarjeta ? ' en tarjeta' : ''} — ${descLimpia || desc}`;
       feedback.className = 'quick-feedback success';
       descInput.value = '';
       montoInput.value = '';
-      // Cerrar modal después de 1.2s
       setTimeout(() => { window.closeQuickAdd(); feedback.textContent = ''; }, 1200);
     } catch(e) {
       console.error(e);
@@ -4194,6 +4428,9 @@
       const cats = { comida:0, cafe:0, transporte:0, telecom:0, compras:0, entretenimiento:0, hogar:0, salud:0, educacion:0, otros:0 };
 
       mesActual.forEach(d => {
+        // ── Excluir gastos de tarjeta del dashboard común ──
+        if (d.fuente_pago === 'tarjeta') return;
+
         if (d.tipo === 'ingreso') {
           totalIngresos += d.monto || 0;
           countIngresos++;
@@ -4359,7 +4596,7 @@
         if (listPreview) listPreview.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin movimientos este mes</div>`;
         return;
       }
-      mesActual.slice(0, 30).forEach((tx, i) => {
+      mesActual.filter(tx => tx.fuente_pago !== 'tarjeta').slice(0, 30).forEach((tx, i) => {
         const fecha = tx.fecha?.toDate ? tx.fecha.toDate() : new Date();
         const locale = window.currentLang === 'pt' ? 'pt-BR' : currentLang === 'en' ? 'en-US' : 'es-PE';
         const dia = fecha.toLocaleDateString(locale, { day:'numeric', month:'short' });
@@ -5061,6 +5298,8 @@ window.showTab = function(tab) {
   _origShowTab(tab);
   if (tab === 'tarjeta') setTimeout(() => cargarDatosTarjeta?.(), 80);
 };
+
+window.cerrarMetaModal = () => {
   document.getElementById('metaModal').style.display = 'none';
 };
 
@@ -5222,6 +5461,7 @@ document.addEventListener('click', (e) => {
   if (action === 'editarMeta')       window.editarMeta?.();
   if (action === 'editarLimites')    window.editarLimites?.();
   if (action === 'guardarTarjeta')   window.guardarTarjeta?.();
+  if (action === 'volverTarjeta')    renderTarjetaTab?.();
 });
 
 window.cerrarModalPresupuesto = () => {
