@@ -402,6 +402,10 @@ async function enviarAvisosNocturno() {
   const ahora = new Date();
   const inicioDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
   const hace7dias = new Date(inicioDia); hace7dias.setDate(hace7dias.getDate() - 7);
+
+  // Aviso que se agrega al final de cada recordatorio
+  const avisoJoin = `\n\n_💡 ¿Dejaste de recibir mis mensajes? Escribe *join [tu-código]* al +1 415 523 8886 para reconectarte._`;
+
   try {
     const usuariosSnap = await db.collection('usuarios_whatsapp').where('activo','==',true).get();
     for (const userDoc of usuariosSnap.docs) {
@@ -427,13 +431,13 @@ async function enviarAvisosNocturno() {
       }
       let msg;
       if (diasSinRegistrar === 0) {
-        msg = `🐜 *Hormicash — Recordatorio*\n\n¡Hola! Hoy no registraste ningún gasto todavía.\n\nRecuerda que los pequeños gastos son los que más se acumulan 💸\n\nEscríbeme: _"Almuerzo 15"_ o _"Taxi 8 soles"_`;
+        msg = `🐜 *Hormicash — Recordatorio*\n\n¡Hola! Hoy no registraste ningún gasto todavía.\n\nRecuerda que los pequeños gastos son los que más se acumulan 💸\n\nEscríbeme: _"Almuerzo 15"_ o _"Taxi 8 soles"_${avisoJoin}`;
       } else if (diasSinRegistrar === 1) {
-        msg = `🐜 *Hormicash — ¿Todo bien?*\n\nLlevas 2 días sin registrar gastos. Los gastos hormiga se acumulan sin que te des cuenta 👀\n\nEscríbeme cualquier gasto del día, aunque sea pequeño:\n_"Café 5"_ o _"Bus 2.50"_`;
+        msg = `🐜 *Hormicash — ¿Todo bien?*\n\nLlevas 2 días sin registrar gastos. Los gastos hormiga se acumulan sin que te des cuenta 👀\n\nEscríbeme cualquier gasto del día, aunque sea pequeño:\n_"Café 5"_ o _"Bus 2.50"_${avisoJoin}`;
       } else if (diasSinRegistrar <= 3) {
-        msg = `⚠️ *Hormicash — Llevas ${diasSinRegistrar + 1} días sin registrar*\n\nEstás perdiendo el control de tus gastos hormiga 🐜\n\nVuelve a registrar hoy y retoma el hábito. Solo toma 5 segundos:\n_"Almuerzo 15"_`;
+        msg = `⚠️ *Hormicash — Llevas ${diasSinRegistrar + 1} días sin registrar*\n\nEstás perdiendo el control de tus gastos hormiga 🐜\n\nVuelve a registrar hoy y retoma el hábito. Solo toma 5 segundos:\n_"Almuerzo 15"_${avisoJoin}`;
       } else {
-        msg = `🔥 *Hormicash — Más de una semana sin registrar*\n\nTus finanzas te necesitan. Retoma el control hoy 💪\n\nEmpieza de nuevo con un gasto simple:\n_"Cualquier cosa + monto"_\n\nVe tu dashboard: https://hormicash.web.app`;
+        msg = `🔥 *Hormicash — Más de una semana sin registrar*\n\nTus finanzas te necesitan. Retoma el control hoy 💪\n\nEmpieza de nuevo con un gasto simple:\n_"Cualquier cosa + monto"_\n\nVe tu dashboard: https://hormicash.web.app${avisoJoin}`;
       }
       const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
       const gastosDelMes = await db.collection('gastos')
@@ -443,6 +447,11 @@ async function enviarAvisosNocturno() {
       let totalMes = 0;
       gastosDelMes.forEach(d => { if(d.data().tipo !== 'ingreso') totalMes += d.data().monto || 0; });
       try {
+        await twilioClient.messages.create({
+          from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+          to: telefono,
+          body: msg
+        });
         console.log(`✅ Recordatorio enviado a ${telefono} (${diasSinRegistrar + 1} días sin registrar)`);
         const userData = await obtenerEmailUsuario(telefono);
         if (userData?.email) {
