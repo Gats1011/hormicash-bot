@@ -2576,12 +2576,25 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap" id="currencyOptions">
         <button class="currency-btn active" onclick="selectCurrency('S/','PEN',this)">🇵🇪 S/ Sol</button>
         <button class="currency-btn" onclick="selectCurrency('$','USD',this)">🇺🇸 $ Dólar</button>
-        <button class="currency-btn" onclick="selectCurrency('R$','BRL',this)">🇧🇷 R$ Real</button>
-        <button class="currency-btn" onclick="selectCurrency('€','EUR',this)">🇪🇺 € Euro</button>
+        <button class="currency-btn" onclick="selectCurrency('€','EUR',this)">🇪🇸 € Euro</button>
         <button class="currency-btn" onclick="selectCurrency('$','MXN',this)">🇲🇽 $ Peso MX</button>
         <button class="currency-btn" onclick="selectCurrency('$','COP',this)">🇨🇴 $ Peso CO</button>
         <button class="currency-btn" onclick="selectCurrency('$','ARS',this)">🇦🇷 $ Peso AR</button>
         <button class="currency-btn" onclick="selectCurrency('$','CLP',this)">🇨🇱 $ Peso CL</button>
+        <button class="currency-btn" onclick="selectCurrency('RD$','DOP',this)">🇩🇴 RD$ Dominicano</button>
+        <button class="currency-btn" onclick="selectCurrency('Bs','VES',this)">🇻🇪 Bs Bolívar</button>
+        <button class="currency-btn" onclick="selectCurrency('$','USD',this)">🇪🇨 $ Dólar EC</button>
+        <button class="currency-btn" onclick="selectCurrency('Bs','BOB',this)">🇧🇴 Bs Boliviano</button>
+        <button class="currency-btn" onclick="selectCurrency('₲','PYG',this)">🇵🇾 ₲ Guaraní</button>
+        <button class="currency-btn" onclick="selectCurrency('$','UYU',this)">🇺🇾 $ Peso UY</button>
+        <button class="currency-btn" onclick="selectCurrency('B/.','PAB',this)">🇵🇦 B/. Balboa</button>
+        <button class="currency-btn" onclick="selectCurrency('₡','CRC',this)">🇨🇷 ₡ Colón CR</button>
+        <button class="currency-btn" onclick="selectCurrency('Q','GTQ',this)">🇬🇹 Q Quetzal</button>
+        <button class="currency-btn" onclick="selectCurrency('L','HNL',this)">🇭🇳 L Lempira</button>
+        <button class="currency-btn" onclick="selectCurrency('$','USD',this)">🇸🇻 $ Dólar SV</button>
+        <button class="currency-btn" onclick="selectCurrency('C$','NIO',this)">🇳🇮 C$ Córdoba</button>
+        <button class="currency-btn" onclick="selectCurrency('$','CUP',this)">🇨🇺 $ Peso CU</button>
+        <button class="currency-btn" onclick="selectCurrency('R$','BRL',this)">🇧🇷 R$ Real</button>
       </div>
     </div>
 
@@ -2706,6 +2719,9 @@
       <button class="snav-btn snav-premium" id="snav-premium" onclick="showTab('premium')">
         <span class="snav-icon">⭐</span><span class="snav-label">Premium</span>
         <span class="snav-badge" id="snavPremiumBadge">PRO</span>
+      </button>
+      <button class="snav-btn" id="snav-admin" onclick="showTab('admin')" style="display:none;border-color:rgba(239,68,68,0.3);color:#ef4444">
+        <span class="snav-icon">🛡️</span><span class="snav-label">Admin</span>
       </button>
     </nav>
 
@@ -2858,6 +2874,53 @@
       <!-- El presupuesto y meta están en premiumSection pero los botones aquí -->
     </div>
 
+    <!-- TAB: ADMIN -->
+    <div class="tab-content" id="tab-admin" style="padding:24px;max-width:900px;margin:0 auto">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+        <span style="font-size:24px">🛡️</span>
+        <div>
+          <div style="font-size:20px;font-weight:800;color:#ef4444">Panel Admin</div>
+          <div style="font-size:12px;color:var(--muted)">Solo visible para ti</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px" id="adminKpis">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Intención de compra</div>
+          <div style="font-size:32px;font-weight:800;color:#ef4444" id="adminCountUpgrade">—</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Usuarios únicos</div>
+          <div style="font-size:32px;font-weight:800;color:var(--premium)" id="adminCountUnique">—</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">Desde mobile</div>
+          <div style="font-size:32px;font-weight:800;color:var(--accent)" id="adminCountMobile">—</div>
+        </div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="font-weight:700;font-size:14px;margin-bottom:8px">🤖 Recategorización masiva con IA</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px">Analiza todos los gastos de todos los usuarios y asigna la categoría correcta con IA. Puede tardar varios minutos.</div>
+        <div id="recatProgress" style="display:none;font-size:13px;color:var(--muted);margin-bottom:12px">Procesando...</div>
+        <button onclick="recategorizarTodo()" id="recatBtn" style="padding:10px 20px;background:#ef4444;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">
+          🔄 Recategorizar todos los gastos
+        </button>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px">📋 Registros upgrade_intent</div>
+        <div id="adminTable" style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr style="background:var(--surface)">
+              <th style="padding:10px 16px;text-align:left;color:var(--muted);font-weight:600">#</th>
+              <th style="padding:10px 16px;text-align:left;color:var(--muted);font-weight:600">Email</th>
+              <th style="padding:10px 16px;text-align:left;color:var(--muted);font-weight:600">Fecha</th>
+              <th style="padding:10px 16px;text-align:left;color:var(--muted);font-weight:600">Fuente</th>
+            </tr></thead>
+            <tbody id="adminTableBody"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB: CUENTA (mobile only) -->
     <div class="tab-content" id="tab-cuenta">
       <div class="tab-header">
@@ -2993,6 +3056,8 @@
         <option value="otros" id="editCat-otros">💸 Otros</option>
         <option value="ingreso" id="editCat-ingreso">💰 Ingreso</option>
       </select>
+      <label class="modal-label">📅 Fecha</label>
+      <input type="date" class="modal-input" id="editFecha">
       <div class="modal-actions">
         <button class="modal-btn modal-btn-delete" id="modalBtnDelete" onclick="deleteTx()">🗑️ Eliminar</button>
         <button class="modal-btn modal-btn-cancel" id="modalBtnCancel" onclick="closeEditModal()">Cancelar</button>
@@ -3015,6 +3080,12 @@
     <button class="mobile-tab mobile-tab-premium" id="mtab-premium" onclick="showTab('premium')">
       <span>⭐</span><span>Premium</span>
     </button>
+    <button class="mobile-tab" id="mtab-tarjeta" onclick="showTab('tarjeta')" style="display:none">
+      <span>💳</span><span>Tarjeta</span>
+    </button>
+    <button class="mobile-tab" id="mtab-admin" onclick="showTab('admin')" style="display:none;color:#ef4444">
+      <span>🛡️</span><span>Admin</span>
+    </button>
     <button class="mobile-tab" id="mtab-perfil" onclick="toggleProfileDropdown()">
       <span><img id="mobileTabAvatar" src="" style="width:22px;height:22px;border-radius:50%;object-fit:cover;display:none"><span id="mobileTabAvatarFallback" style="font-size:20px">👤</span></span>
       <span id="mobileTabName">Yo</span>
@@ -3027,6 +3098,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
   import { getFirestore, collection, query, orderBy, onSnapshot, where, doc, setDoc, getDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-analytics.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBWHu26_WrO2m1nlUK3cU88rVr2lgI4FnI",
@@ -3034,10 +3106,12 @@
     projectId: "hormicash",
     storageBucket: "hormicash.firebasestorage.app",
     messagingSenderId: "966165885196",
-    appId: "1:966165885196:web:8ee2cdd87a9fa30c811929"
+    appId: "1:966165885196:web:8ee2cdd87a9fa30c811929",
+    measurementId: "G-E5X4Y6KMVD"   // 
   };
 
   const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
   const db = getFirestore(app);
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
@@ -3057,9 +3131,13 @@
 
   let currentMonth = new Date().getMonth();
   let currentYear = new Date().getFullYear();
+  window._currentMonth = () => currentMonth;
+  window._currentYear = () => currentYear;
   let unsubscribeData = null; // Para limpiar el listener anterior
 
   function updateMonthLabel() {
+    window._currentMonth = () => currentMonth;
+    window._currentYear = () => currentYear;
     const label = document.getElementById('monthLabel');
     if (label) label.textContent = `${MESES[currentMonth]} ${currentYear}`;
 
@@ -3117,6 +3195,8 @@
   });
 
   window.showTab = function(tab) {
+    // Bloquear tab admin para no-admins
+    if (tab === 'admin' && window._userEmail !== 'stefanoarte10@gmail.com') return;
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
@@ -3222,6 +3302,16 @@
       if (cuentaAvatarEl && user.photoURL) cuentaAvatarEl.src = user.photoURL;
       if (cuentaNombreEl) cuentaNombreEl.textContent = user.displayName || '';
 
+      // Guardar email para verificación de admin
+      window._userEmail = user.email;
+      // Mostrar tab admin solo para stefanoarte10@gmail.com
+      if (user.email === 'stefanoarte10@gmail.com') {
+        const adminBtn = document.getElementById('snav-admin');
+        if (adminBtn) adminBtn.style.display = '';
+        const adminMobileBtn = document.getElementById('mtab-admin');
+        if (adminMobileBtn) adminMobileBtn.style.display = '';
+      }
+
       // Buscar datos del usuario en Firestore
       try {
         const userDoc = await getDoc(doc(db, 'usuarios', user.uid));
@@ -3237,8 +3327,8 @@
               window.userCurrency = data.moneda;
               window.userCurrencyCode = data.monedaCodigo || 'PEN';
             } else {
-              window.userCurrency = 'S/';
-              window.userCurrencyCode = 'PEN';
+              // Sin moneda guardada: auto-detectar por país
+              window.autoDetectCurrency?.();
             }
 
             // Cargar umbral hormiga
@@ -3306,6 +3396,8 @@
     // Habilitar tab tarjeta (reemplazar "Próximamente" con contenido real)
     const snavTarjeta = document.getElementById('snav-tarjeta');
     if (snavTarjeta) snavTarjeta.style.display = 'flex';
+    const mtabTarjeta = document.getElementById('mtab-tarjeta');
+    if (mtabTarjeta) mtabTarjeta.style.display = '';
     renderTarjetaTab();
     updateDropdownUI();
   }
@@ -3969,6 +4061,54 @@
   }
 
   // ── CONSEJO IA PERSONALIZADO ──────────────────────────────────
+  // Categorización con keywords (fallback)
+  function categorizarConKeywords(desc) {
+    const lower = desc.toLowerCase();
+    const categorias = {
+      comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','tacos','empanada','salchipapa','broaster','lomo','causa','sopa','guiso','tallarines','chaufa','anticucho','chicharron','tamales','fruta','ensalada','galleta','snack','lonche','merienda','mcdonalds','kfc','bembos','norky','pardos','la lucha','sangucheria','heladería','helado'],
+      cafe: ['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
+      transporte: ['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','microbús','microbus','tren','aeropuerto','vuelo','bicicleta'],
+      telecom: ['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','google','dropbox','canva'],
+      compras: ['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','pantalon','jean','short','falda','vestido','mochila','cartera','lentes','reloj','accesorio','mall','saga','ripley','oechsle','zara','nike','adidas','amazon','mercado libre','tottus','plaza vea','wong','vivanda','sodimac','promart','perfume','cosméticos','cosmeticos','maquillaje'],
+      entretenimiento: ['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','salida','juerga','cumpleaños','celebración','betano','apuesta','casino','lotería'],
+      hogar: ['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','lavandería','detergente','escoba','trapeador'],
+      salud: ['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','jabón','higiene','terapia','consulta','botica','inkafarma','mifarma'],
+      educacion: ['libro','curso','universidad','pucp','upn','upc','ulima','usil','unmsm','udep','copias','impresión','impresion','cuaderno','lapicero','útiles','utiles','matrícula','matricula','pensión','pension','academia','tutoría','tutoria','certificado','examen','material'],
+    };
+    for (const [cat, keywords] of Object.entries(categorias)) {
+      if (keywords.some(k => lower.includes(k))) return cat;
+    }
+    return 'otros';
+  }
+
+  // Categorización con IA (Claude)
+  window.categorizarConIA = async function categorizarConIA(descripcion) {
+    const prompt = `Clasifica este gasto en UNA de estas categorías exactas: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.
+
+Gasto: "${descripcion}"
+
+Responde SOLO con la categoría, sin explicación ni puntuación. Ejemplos:
+- "Taxi" → transporte
+- "Wafer" → comida
+- "Betano" → entretenimiento
+- "Netflix" → telecom
+- "Pago de préstamo" → otros`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 20,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const cat = data.content?.[0]?.text?.trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');
+    const validas = ['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
+    return validas.includes(cat) ? cat : categorizarConKeywords(descripcion);
+  }
+
   async function generarConsejoIA({ totalGastos, totalIngresos, countGastos, topCat, cats, cur, promedio, proy }) {
     try {
       const catNames = { comida:'Comida', cafe:'Café', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
@@ -4374,27 +4514,14 @@ Reglas:
 
     btn.disabled = true;
 
-    // Categorizar gastos
+    // Categorizar gastos con IA
     let categoria = quickType === 'ingreso' ? 'ingreso' : 'otros';
     if (quickType === 'gasto') {
-      const lower = desc.toLowerCase();
-      const categorias = {
-        comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','tacos','empanada','salchipapa','broaster','lomo','causa','sopa','guiso','tallarines','chaufa','anticucho','chicharron','tamales','fruta','ensalada','galleta','snack','lonche','merienda','mcdonalds','kfc','bembos','norky','pardos','la lucha','sangucheria','heladería','helado'],
-        cafe: ['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
-        transporte: ['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','microbús','microbus','tren','aeropuerto','vuelo','bicicleta'],
-        telecom: ['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','google','dropbox','canva'],
-        compras: ['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','pantalon','jean','short','falda','vestido','mochila','cartera','lentes','reloj','accesorio','mall','saga','ripley','oechsle','zara','nike','adidas','amazon','mercado libre','tottus','plaza vea','wong','vivanda','sodimac','promart','perfume','cosméticos','cosmeticos','maquillaje'],
-        entretenimiento: ['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','salida','juerga','cumpleaños','celebración'],
-        hogar: ['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','lavandería','detergente','escoba','trapeador'],
-        salud: ['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','jabón','higiene','terapia','consulta','botica','inkafarma','mifarma'],
-        educacion: ['libro','curso','universidad','pucp','upn','upc','ulima','usil','unmsm','udep','copias','impresión','impresion','cuaderno','lapicero','útiles','utiles','matrícula','matricula','pensión','pension','academia','tutoría','tutoria','certificado','examen','material','boleta pucp','recibo universidad','pago universidad','mensualidad colegio'],
-        otros: ['yape','plin','tunki','billetera','transferencia','deposito','depósito','lukita','agente','cajero','retiro','deuda','préstamo','prestamo']
-      };
-      for (const [cat, keywords] of Object.entries(categorias)) {
-        if (keywords.some(k => lower.includes(k))) {
-          categoria = cat;
-          break;
-        }
+      try {
+        categoria = await categorizarConIA(desc);
+      } catch(e) {
+        // fallback a keyword si IA falla
+        categoria = categorizarConKeywords(desc);
       }
     }
 
@@ -4432,7 +4559,15 @@ Reglas:
         })(),
         fuente: 'web_dashboard',
         mensaje: `${desc} ${monto} (web)`,
-        fecha: Timestamp.now()
+        fecha: (() => {
+          const hoy = new Date();
+          const cMes = window._currentMonth ? window._currentMonth() : hoy.getMonth();
+          const cYear = window._currentYear ? window._currentYear() : hoy.getFullYear();
+          const diaGuardar = (cYear === hoy.getFullYear() && cMes === hoy.getMonth())
+            ? hoy
+            : new Date(cYear, cMes, 15, 12, 0, 0);
+          return Timestamp.fromDate(diaGuardar);
+        })()
       };
 
       if (esTarjeta && quickType === 'gasto') {
@@ -4551,12 +4686,36 @@ Reglas:
       // Moneda en stats
       document.querySelectorAll('.cur').forEach(el => el.textContent = cur + ' ');
 
-      // Balance
-      document.getElementById('balanceNum').textContent = balance.toFixed(2);
+      // Balance con saldo anterior
+      const mesAntYearR = currentMonth === 0 ? currentYear - 1 : currentYear;
+      const mesAntMonthR = currentMonth === 0 ? 11 : currentMonth - 1;
+      const startAntR = new Date(mesAntYearR, mesAntMonthR, 1);
+      const endAntR = new Date(mesAntYearR, mesAntMonthR + 1, 0, 23, 59, 59);
+      const docsAntR = docs.filter(d => {
+        if (!d.fecha || d.fuente_pago === 'tarjeta') return false;
+        const f = d.fecha.toDate ? d.fecha.toDate() : new Date(d.fecha);
+        return f >= startAntR && f <= endAntR;
+      });
+      const ingAntR = docsAntR.filter(d => d.tipo === 'ingreso').reduce((s,d) => s + (d.monto||0), 0);
+      const gasAntR = docsAntR.filter(d => d.tipo !== 'ingreso').reduce((s,d) => s + (d.monto||0), 0);
+      const saldoAntR = ingAntR - gasAntR;
+      const balanceTotal = balance + saldoAntR;
+
       const balanceEl = document.getElementById('balanceNum');
-      balanceEl.style.color = balance >= 0 ? 'var(--green)' : 'var(--red)';
-      document.getElementById('balanceSub').textContent = balance >= 0 ? t.balance_pos : t.balance_neg;
-      document.getElementById('balanceSub').className = 'stat-sub ' + (balance >= 0 ? 'ok' : 'warn');
+      const MESES_CORTO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      if (saldoAntR !== 0) {
+        balanceEl.textContent = balanceTotal.toFixed(2);
+        balanceEl.style.color = balanceTotal >= 0 ? 'var(--green)' : 'var(--red)';
+        const subEl = document.getElementById('balanceSub');
+        const signo = saldoAntR >= 0 ? '+' : '';
+        subEl.innerHTML = `${balanceTotal >= 0 ? t.balance_pos : t.balance_neg} <span style="font-size:10px;color:var(--muted)">(+${cur} ${saldoAntR.toFixed(0)} de ${MESES_CORTO[mesAntMonthR]})</span>`;
+        subEl.className = 'stat-sub ' + (balanceTotal >= 0 ? 'ok' : 'warn');
+      } else {
+        balanceEl.textContent = balance.toFixed(2);
+        balanceEl.style.color = balance >= 0 ? 'var(--green)' : 'var(--red)';
+        document.getElementById('balanceSub').textContent = balance >= 0 ? t.balance_pos : t.balance_neg;
+        document.getElementById('balanceSub').className = 'stat-sub ' + (balance >= 0 ? 'ok' : 'warn');
+      }
 
       // Barra 1: Gasto vs Ingreso
       const pct = totalIngresos > 0 ? Math.min((totalGastos / totalIngresos) * 100, 100) : 0;
@@ -4631,6 +4790,29 @@ Reglas:
         const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
         set('kpiIngresos', cur + ' ' + totalIngresos.toFixed(0));
         set('kpiGastos', cur + ' ' + totalGastos.toFixed(0));
+
+        // Saldo mes anterior
+        const mesAntYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+        const mesAntMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const startAnt = new Date(mesAntYear, mesAntMonth, 1);
+        const endAnt = new Date(mesAntYear, mesAntMonth + 1, 0, 23, 59, 59);
+        const docsAnt = docs.filter(d => {
+          if (!d.fecha || d.fuente_pago === 'tarjeta') return false;
+          const f = d.fecha.toDate ? d.fecha.toDate() : new Date(d.fecha);
+          return f >= startAnt && f <= endAnt;
+        });
+        const ingAnt = docsAnt.filter(d => d.tipo === 'ingreso').reduce((s,d) => s + (d.monto||0), 0);
+        const gasAnt = docsAnt.filter(d => d.tipo !== 'ingreso').reduce((s,d) => s + (d.monto||0), 0);
+        const saldoAnt = ingAnt - gasAnt;
+        const subIngEl = document.getElementById('kpiIngresosSub');
+        if (subIngEl) {
+          if (saldoAnt !== 0) {
+            const signo = saldoAnt >= 0 ? '+' : '';
+            subIngEl.innerHTML = `Este mes &nbsp;<span style="font-size:10px;color:${saldoAnt>=0?'var(--green)':'var(--red)'}">(Saldo ant: ${signo}${cur} ${saldoAnt.toFixed(0)})</span>`;
+          } else {
+            subIngEl.textContent = 'Este mes';
+          }
+        }
         set('proyeccion', cur + ' ' + proy.toFixed(0));
         set('promedioDiario', cur + ' ' + promedio.toFixed(0));
         set('ahorro', cur + ' ' + (topCat[1] * 0.3).toFixed(0));
@@ -4729,6 +4911,12 @@ Reglas:
     document.getElementById('editMonto').value = tx.monto || 0;
     document.getElementById('editTipo').value = tx.tipo || 'gasto';
     document.getElementById('editCategoria').value = tx.categoria || 'otros';
+    // Cargar fecha actual de la transacción
+    const txFecha = tx.fecha?.toDate ? tx.fecha.toDate() : new Date(tx.fecha);
+    const yyyy = txFecha.getFullYear();
+    const mm = String(txFecha.getMonth()+1).padStart(2,'0');
+    const dd = String(txFecha.getDate()).padStart(2,'0');
+    document.getElementById('editFecha').value = `${yyyy}-${mm}-${dd}`;
     document.getElementById('editModal').style.display = 'flex';
   };
 
@@ -4750,9 +4938,14 @@ Reglas:
 
     try {
       const { updateDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
-      await updateDoc(doc(db, 'gastos', id), {
-        label, monto, tipo, categoria
-      });
+      const fechaInput = document.getElementById('editFecha').value;
+      const updateData = { label, monto, tipo, categoria };
+      if (fechaInput) {
+        const [y,m,d] = fechaInput.split('-').map(Number);
+        const { Timestamp: TS2 } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+        updateData.fecha = TS2.fromDate(new Date(y, m-1, d, 12, 0, 0));
+      }
+      await updateDoc(doc(db, 'gastos', id), updateData);
       closeEditModal();
     } catch(e) {
       console.error(e);
@@ -5178,6 +5371,41 @@ Reglas:
   window.userCurrency = 'S/';
   window.userCurrencyCode = 'PEN';
 
+  // Mapa país -> moneda
+  const COUNTRY_CURRENCY = {
+    PE: {symbol:'S/',  code:'PEN'}, MX: {symbol:'$',   code:'MXN'},
+    CO: {symbol:'$',   code:'COP'}, AR: {symbol:'$',   code:'ARS'},
+    CL: {symbol:'$',   code:'CLP'}, DO: {symbol:'RD$', code:'DOP'},
+    ES: {symbol:'€',   code:'EUR'}, VE: {symbol:'Bs',  code:'VES'},
+    EC: {symbol:'$',   code:'USD'}, BO: {symbol:'Bs',  code:'BOB'},
+    PY: {symbol:'₲',   code:'PYG'}, UY: {symbol:'$',   code:'UYU'},
+    PA: {symbol:'B/.', code:'PAB'}, CR: {symbol:'₡',   code:'CRC'},
+    GT: {symbol:'Q',   code:'GTQ'}, HN: {symbol:'L',   code:'HNL'},
+    SV: {symbol:'$',   code:'USD'}, NI: {symbol:'C$',  code:'NIO'},
+    CU: {symbol:'$',   code:'CUP'}, PR: {symbol:'$',   code:'USD'},
+    US: {symbol:'$',   code:'USD'}, BR: {symbol:'R$',  code:'BRL'},
+  };
+
+  // Auto-detección por IP (solo si no hay moneda guardada en Firestore)
+  window.autoDetectCurrency = async () => {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      const cc = data.country_code;
+      const cur = COUNTRY_CURRENCY[cc];
+      if (cur) {
+        window.userCurrency = cur.symbol;
+        window.userCurrencyCode = cur.code;
+        // Marcar botón activo
+        document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.currency-btn').forEach(b => {
+          if (b.onclick && b.getAttribute('onclick')?.includes("'" + cur.code + "'")) b.classList.add('active');
+        });
+        updateCurrencyDisplay();
+      }
+    } catch(e) { /* silencioso, se queda S/ por defecto */ }
+  };
+
   window.selectCurrency = (symbol, code, btn) => {
     window.userCurrency = symbol;
     window.userCurrencyCode = code;
@@ -5382,6 +5610,9 @@ window.guardarTarjeta = async () => {
 const _origShowTab = window.showTab;
 window.showTab = function(tab) {
   _origShowTab(tab);
+  if (tab === 'admin') {
+    cargarAdminPanel();
+  }
   if (tab === 'tarjeta') {
     const tryLoad = (retries = 0) => {
       const phone = window._userPhone?.();
@@ -5393,6 +5624,65 @@ window.showTab = function(tab) {
     };
     setTimeout(tryLoad, 100);
   }
+};
+
+async function cargarAdminPanel() {
+  const tbody = document.getElementById('adminTableBody');
+  const countEl = document.getElementById('adminCountUpgrade');
+  const uniqueEl = document.getElementById('adminCountUnique');
+  const mobileEl = document.getElementById('adminCountMobile');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">Cargando...</td></tr>';
+  try {
+    const { collection: col2, query: q2, where: w2, orderBy: ob2, getDocs: gd2, getFirestore: gfs2 } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+    const dbAdmin = gfs2();
+    const snap = await gd2(q2(col2(dbAdmin, 'metricas'), w2('evento', '==', 'upgrade_intent'), ob2('fecha', 'desc')));
+    const docs2 = snap.docs.map(d => d.data());
+    if (countEl) countEl.textContent = docs2.length;
+    const uniqueEmails = new Set(docs2.map(d => d.email).filter(Boolean));
+    if (uniqueEl) uniqueEl.textContent = uniqueEmails.size;
+    const mobileCount = docs2.filter(d => d.fuente === 'mobile').length;
+    if (mobileEl) mobileEl.textContent = mobileCount;
+    if (!docs2.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">Sin registros aún</td></tr>';
+      return;
+    }
+    tbody.innerHTML = docs2.map((d, i) => {
+      const fecha = d.fecha?.toDate ? d.fecha.toDate().toLocaleString('es-PE') : '—';
+      const fuente = d.fuente === 'mobile' ? '📱 Mobile' : '🖥️ Desktop';
+      const rowBg = i % 2 === 0 ? '' : 'background:var(--surface)';
+      return `<tr style="${rowBg}">
+        <td style="padding:10px 16px;color:var(--muted)">${i+1}</td>
+        <td style="padding:10px 16px;font-weight:500">${d.email || 'anónimo'}</td>
+        <td style="padding:10px 16px;color:var(--muted);font-size:12px">${fecha}</td>
+        <td style="padding:10px 16px">${fuente}</td>
+      </tr>`;
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--red)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+window.recategorizarTodo = async () => {
+  const btn = document.getElementById('recatBtn');
+  const progress = document.getElementById('recatProgress');
+  if (!confirm('¿Recategorizar TODOS los gastos con IA? Esto puede tardar varios minutos.')) return;
+  btn.disabled = true;
+  progress.style.display = 'block';
+  progress.textContent = 'Enviando solicitud al servidor...';
+  try {
+    const res = await fetch('https://hormicash-bot-production.up.railway.app/recategorizar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clave: 'hormicash_admin_2024' })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    progress.textContent = `✅ Listo. ${data.procesados} gastos recategorizados. ${data.errores > 0 ? data.errores + ' errores.' : ''}`;
+  } catch(e) {
+    progress.textContent = `❌ Error: ${e.message}`;
+  }
+  btn.disabled = false;
 };
 
 window.cerrarMetaModal = () => {
@@ -5717,6 +6007,11 @@ document.addEventListener('click', (e) => {
         <div class="profile-dropdown-divider" id="dropdownDivider1" style="display:none"></div>
 
         <div class="profile-dropdown-divider"></div>
+        <button class="profile-dropdown-item" onclick="closeProfileDropdown(); abrirModalMoneda()">
+          <span class="item-icon">💱</span>
+          <span>Cambiar moneda</span>
+        </button>
+        <div class="profile-dropdown-divider"></div>
         <a class="profile-dropdown-item" href="https://wa.me/14155238886?text=join%20worse-lying" target="_blank" onclick="closeProfileDropdown()" style="text-decoration:none;color:var(--text)">
           <span class="item-icon">💬</span>
           <span>Registrar en WhatsApp</span>
@@ -5729,5 +6024,75 @@ document.addEventListener('click', (e) => {
       </div>
     </div>
 
+
+    <!-- MODAL MONEDA -->
+    <div id="monedaModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center" onclick="cerrarModalMoneda()">
+      <div style="background:var(--card);border-radius:16px;padding:24px;max-width:460px;width:92%;max-height:80vh;overflow-y:auto" onclick="event.stopPropagation()">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-size:18px;font-weight:800">💱 Cambiar moneda</div>
+          <button onclick="cerrarModalMoneda()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Selecciona la moneda de tu país. Se guardará en tu cuenta.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="monedaModalOptions">
+          <button class="currency-btn" data-symbol="S/" data-code="PEN" onclick="selectCurrencyModal('S/','PEN',this)">🇵🇪 S/ Sol</button>
+          <button class="currency-btn" data-symbol="$" data-code="USD" onclick="selectCurrencyModal('$','USD',this)">🇺🇸 $ Dólar</button>
+          <button class="currency-btn" data-symbol="€" data-code="EUR" onclick="selectCurrencyModal('€','EUR',this)">🇪🇸 € Euro</button>
+          <button class="currency-btn" data-symbol="$" data-code="MXN" onclick="selectCurrencyModal('$','MXN',this)">🇲🇽 $ Peso MX</button>
+          <button class="currency-btn" data-symbol="$" data-code="COP" onclick="selectCurrencyModal('$','COP',this)">🇨🇴 $ Peso CO</button>
+          <button class="currency-btn" data-symbol="$" data-code="ARS" onclick="selectCurrencyModal('$','ARS',this)">🇦🇷 $ Peso AR</button>
+          <button class="currency-btn" data-symbol="$" data-code="CLP" onclick="selectCurrencyModal('$','CLP',this)">🇨🇱 $ Peso CL</button>
+          <button class="currency-btn" data-symbol="RD$" data-code="DOP" onclick="selectCurrencyModal('RD$','DOP',this)">🇩🇴 RD$ Dominicano</button>
+          <button class="currency-btn" data-symbol="Bs" data-code="VES" onclick="selectCurrencyModal('Bs','VES',this)">🇻🇪 Bs Bolívar</button>
+          <button class="currency-btn" data-symbol="Bs" data-code="BOB" onclick="selectCurrencyModal('Bs','BOB',this)">🇧🇴 Bs Boliviano</button>
+          <button class="currency-btn" data-symbol="₲" data-code="PYG" onclick="selectCurrencyModal('₲','PYG',this)">🇵🇾 ₲ Guaraní</button>
+          <button class="currency-btn" data-symbol="$" data-code="UYU" onclick="selectCurrencyModal('$','UYU',this)">🇺🇾 $ Peso UY</button>
+          <button class="currency-btn" data-symbol="B/." data-code="PAB" onclick="selectCurrencyModal('B/.','PAB',this)">🇵🇦 B/. Balboa</button>
+          <button class="currency-btn" data-symbol="₡" data-code="CRC" onclick="selectCurrencyModal('₡','CRC',this)">🇨🇷 ₡ Colón CR</button>
+          <button class="currency-btn" data-symbol="Q" data-code="GTQ" onclick="selectCurrencyModal('Q','GTQ',this)">🇬🇹 Q Quetzal</button>
+          <button class="currency-btn" data-symbol="L" data-code="HNL" onclick="selectCurrencyModal('L','HNL',this)">🇭🇳 L Lempira</button>
+          <button class="currency-btn" data-symbol="C$" data-code="NIO" onclick="selectCurrencyModal('C$','NIO',this)">🇳🇮 C$ Córdoba</button>
+          <button class="currency-btn" data-symbol="$" data-code="CUP" onclick="selectCurrencyModal('$','CUP',this)">🇨🇺 $ Peso CU</button>
+          <button class="currency-btn" data-symbol="R$" data-code="BRL" onclick="selectCurrencyModal('R$','BRL',this)">🇧🇷 R$ Real</button>
+        </div>
+        <button onclick="cerrarModalMoneda()" style="margin-top:20px;width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer">Guardar</button>
+      </div>
+    </div>
+
+<script>
+  window.abrirModalMoneda = () => {
+    const modal = document.getElementById('monedaModal');
+    modal.style.display = 'flex';
+    // Marcar el botón activo según moneda actual
+    const code = window.userCurrencyCode;
+    document.querySelectorAll('#monedaModalOptions .currency-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.code === code);
+    });
+  };
+
+  window.cerrarModalMoneda = () => {
+    document.getElementById('monedaModal').style.display = 'none';
+  };
+
+  window.selectCurrencyModal = async (symbol, code, btn) => {
+    window.userCurrency = symbol;
+    window.userCurrencyCode = code;
+    document.querySelectorAll('#monedaModalOptions .currency-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Actualizar display
+    document.querySelectorAll('.cur').forEach(el => el.textContent = symbol + ' ');
+    const chip = document.getElementById('currencyChip');
+    if (chip) chip.textContent = symbol;
+    // Guardar en Firestore
+    try {
+      const { getFirestore, doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+      const { getAuth } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js");
+      const db2 = getFirestore();
+      const user = getAuth().currentUser;
+      if (user) await updateDoc(doc(db2, 'usuarios', user.uid), { moneda: symbol, monedaCodigo: code });
+    } catch(e) { console.warn('No se pudo guardar moneda:', e); }
+    // Recargar datos
+    if (window._loadData && window._auth?.currentUser) window._loadData(window._auth.currentUser);
+  };
+</script>
 </body>
 </html>
