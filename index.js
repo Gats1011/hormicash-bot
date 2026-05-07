@@ -712,6 +712,60 @@ app.post('/webhook', async (req, res) => {
   res.send(twiml.toString());
 });
 
+// ── ENDPOINT RECATEGORIZACIÓN MASIVA CON IA ───────────────────────
+app.post('/recategorizar', async (req, res) => {
+  const { clave } = req.body;
+  if (clave !== 'hormicash_admin_2024') return res.json({ error: 'No autorizado' });
+
+  const CATS_VALIDAS = ['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
+
+  async function categorizarGemini(label) {
+    try {
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      const prompt = `Clasifica este gasto en UNA categoría exacta: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.
+Gasto: "${label}"
+Responde SOLO con la categoría, sin explicación. Ejemplos:
+- "Taxi" → transporte
+- "Wafer" → comida  
+- "Betano" → entretenimiento
+- "Netflix" → telecom
+- "Perfume" → compras
+- "Pago de préstamo" → otros`;
+      const result = await model.generateContent(prompt);
+      const cat = result.response.text().trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');
+      return CATS_VALIDAS.includes(cat) ? cat : 'otros';
+    } catch(e) { return 'otros'; }
+  }
+
+  try {
+    const snap = await db.collection('gastos').get();
+    const todos = snap.docs.filter(d => {
+      const data = d.data();
+      return (data.tipo === 'gasto' || (!data.tipo && data.monto)) && data.categoria === 'otros';
+    });
+
+    let procesados = 0, errores = 0;
+    // Lotes de 5 para no saturar Gemini
+    for (let i = 0; i < todos.length; i += 5) {
+      const lote = todos.slice(i, i + 5);
+      await Promise.all(lote.map(async (d) => {
+        try {
+          const data = d.data();
+          const label = data.label || data.mensaje || '';
+          if (!label || label === '[imagen]' || label === '[audio]') return;
+          const cat = await categorizarGemini(label);
+          await db.collection('gastos').doc(d.id).update({ categoria: cat });
+          procesados++;
+        } catch(e) { errores++; }
+      }));
+      await new Promise(r => setTimeout(r, 500));
+    }
+    res.json({ procesados, errores, total: todos.length });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
+
 app.get('/', (req, res) => res.send('🐜 Hormicash Bot corriendo'));
 
 app.get('/test-email', async (req, res) => {
