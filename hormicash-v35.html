@@ -4301,24 +4301,32 @@ Reglas:
       const cx = padL + slotW*i + slotW/2;
       const bottom = padT+chartH;
 
+      const bhI = md.ingresos > 0 ? Math.max((md.ingresos/maxVal)*chartH, 2) : 0;
+      const bhG = md.gastos > 0 ? Math.max((md.gastos/maxVal)*chartH, 2) : 0;
+
+      // Detectar solapamiento de etiquetas (diferencia < 14px)
+      const yLabelI = bottom - bhI - 3;
+      const yLabelG = bottom - bhG - 3;
+      const overlap = bhI > 0 && bhG > 0 && Math.abs(yLabelI - yLabelG) < 14;
+      const offsetI = overlap && bhI >= bhG ? -10 : 0;
+      const offsetG = overlap && bhG > bhI ? -10 : 0;
+
       // Ingreso (verde)
       if (md.ingresos > 0) {
-        const bh = Math.max((md.ingresos/maxVal)*chartH, 2);
         ctx.fillStyle = '#22c55e';
-        ctx.beginPath(); roundRect(ctx, cx-barW-barGap/2, bottom-bh, barW, bh, 4); ctx.fill();
+        ctx.beginPath(); roundRect(ctx, cx-barW-barGap/2, bottom-bhI, barW, bhI, 4); ctx.fill();
         ctx.fillStyle='#16a34a'; ctx.font='bold 9px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
         const li = md.ingresos>=1000?'S/'+(md.ingresos/1000).toFixed(1)+'k':'S/'+md.ingresos.toFixed(0);
-        ctx.fillText(li, cx-barW/2-barGap/2, bottom-bh-3);
+        ctx.fillText(li, cx-barW/2-barGap/2, yLabelI + offsetI);
       }
 
       // Gasto (rojo)
       if (md.gastos > 0) {
-        const bh = Math.max((md.gastos/maxVal)*chartH, 2);
         ctx.fillStyle = '#ef4444';
-        ctx.beginPath(); roundRect(ctx, cx+barGap/2, bottom-bh, barW, bh, 4); ctx.fill();
+        ctx.beginPath(); roundRect(ctx, cx+barGap/2, bottom-bhG, barW, bhG, 4); ctx.fill();
         ctx.fillStyle='#dc2626'; ctx.font='bold 9px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
         const lg = md.gastos>=1000?'S/'+(md.gastos/1000).toFixed(1)+'k':'S/'+md.gastos.toFixed(0);
-        ctx.fillText(lg, cx+barW/2+barGap/2, bottom-bh-3);
+        ctx.fillText(lg, cx+barW/2+barGap/2, yLabelG + offsetG);
       }
 
       ctx.fillStyle=textColor; ctx.font='600 11px Inter,sans-serif';
