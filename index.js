@@ -49,6 +49,41 @@ const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
+// ── DETECCIÓN DE IDIOMA ───────────────────────────────────────────
+function detectarIdioma(texto) {
+  const lower = texto.toLowerCase();
+  // Palabras clave en portugués
+  const ptWords = ['olá','ola','oi','bom dia','boa tarde','boa noite','obrigado','obrigada','tudo bem','tudo bom','gastar','gastei','paguei','quanto','reais','real'];
+  // Palabras clave en inglés
+  const enWords = ['hello','hi','hey','good morning','good afternoon','spent','expense','cost','paid','dollars','bucks','how much'];
+  
+  const ptScore = ptWords.filter(w => lower.includes(w)).length;
+  const enScore = enWords.filter(w => lower.includes(w)).length;
+  
+  if (ptScore > enScore && ptScore > 0) return 'pt';
+  if (enScore > ptScore && enScore > 0) return 'en';
+  return 'es'; // default español
+}
+
+// ── MENSAJES MULTIIDIOMA ──────────────────────────────────────────
+const i18n = {
+  bienvenida: {
+    es: (nombre) => `🐜 *¡Bienvenido a Hormicash!*\n\nSoy tu asistente de gastos hormiga. Registra tus gastos por:\n\n📸 Foto de voucher\n🎙️ Mensaje de voz\n💬 Texto: _"Almuerzo 15"_\n💳 Tarjeta de crédito: _"Taxi 30 TC"_\n\n─────────────────\n¿Quieres configurar *límites de gasto* mensuales? ⭐ Premium\n\n1️⃣ Sí, configurar ahora\n2️⃣ Lo haré después`,
+    en: (nombre) => `🐜 *Welcome to Hormicash!*\n\nI'm your expense tracker assistant. Log your expenses by:\n\n📸 Receipt photo\n🎙️ Voice message\n💬 Text: _"Lunch 15"_\n💳 Credit card: _"Taxi 30 TC"_\n\n─────────────────\nWant to set monthly *spending limits*? ⭐ Premium\n\n1️⃣ Yes, set up now\n2️⃣ I'll do it later`,
+    pt: (nombre) => `🐜 *Bem-vindo ao Hormicash!*\n\nSou seu assistente de gastos. Registre seus gastos por:\n\n📸 Foto do recibo\n🎙️ Mensagem de voz\n💬 Texto: _"Almoço 15"_\n💳 Cartão de crédito: _"Táxi 30 TC"_\n\n─────────────────\nQuer configurar *limites de gastos* mensais? ⭐ Premium\n\n1️⃣ Sim, configurar agora\n2️⃣ Farei depois`,
+  },
+  noEntendi: {
+    es: `No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Tarjeta:* "Taxi 30 TC" o "Netflix 45 CREDITO"\n*Múltiples:* "Almuerzo 15 y taxi 8"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/borrar — Eliminar un gasto\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA`,
+    en: `I didn't understand the amount 🤔\n\n*Expenses:* "Lunch 15"\n*Card:* "Taxi 30 TC" or "Netflix 45 CREDIT"\n*Multiple:* "Lunch 15 and taxi 8"\n*Income:* "Income 500 salary"\n*Receipt:* 📸 photo\n*Voice:* 🎙️ audio\n\n*Commands:*\n/summary — View balance\n/delete — Delete an expense\n/limits ⭐ — Spending limits\n/goal ⭐ — Savings goal\n/tip ⭐ — AI advice`,
+    pt: `Não entendi o valor 🤔\n\n*Gastos:* "Almoço 15"\n*Cartão:* "Táxi 30 TC" ou "Netflix 45 CREDITO"\n*Múltiplos:* "Almoço 15 e táxi 8"\n*Renda:* "Renda 500 salário"\n*Recibo:* 📸 foto\n*Voz:* 🎙️ áudio\n\n*Comandos:*\n/resumo — Ver saldo\n/deletar — Deletar um gasto\n/limites ⭐ — Limites de gastos\n/meta ⭐ — Meta de poupança\n/dica ⭐ — Dica com IA`,
+  },
+  sinJoin: {
+    es: `👋 ¡Hola! Para empezar a usar Hormicash necesitas conectarte primero.\n\nEnvía exactamente este mensaje:\n\n*join worse-lying*\n\nAl número *+1 415 523 8886* por WhatsApp.\n\n_(Si ya lo hiciste hace más de 72 horas, debes enviarlo de nuevo — el sandbox expira cada 3 días)_`,
+    en: `👋 Hi! To start using Hormicash you need to connect first.\n\nSend exactly this message:\n\n*join worse-lying*\n\nTo *+1 415 523 8886* on WhatsApp.\n\n_(If you did it more than 72 hours ago, you need to send it again — the sandbox expires every 3 days)_`,
+    pt: `👋 Olá! Para começar a usar o Hormicash você precisa se conectar primeiro.\n\nEnvie exatamente esta mensagem:\n\n*join worse-lying*\n\nPara *+1 415 523 8886* no WhatsApp.\n\n_(Se você fez isso há mais de 72 horas, precisa enviar novamente — o sandbox expira a cada 3 dias)_`,
+  },
+};
+
 // ── OBTENER EMAIL DEL USUARIO POR TELÉFONO ───────────────────────
 async function obtenerEmailUsuario(telefono) {
   try {
@@ -320,12 +355,12 @@ function parsearMovimiento(texto) {
     return { monto, tipo:'ingreso', categoria:'ingreso', label: limpiarLabel(texto) };
   }
   const cats = {
-    comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada','salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho','chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc','bembos','norky','pardos','la lucha','helado'],
-    cafe:['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
+    comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada','salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho','chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc','bembos','norky','pardos','la lucha','helado','limonada','jugo','gaseosa','agua','bebida'],
+    cafe:['café','cafe','cappuccino','latte','té','te','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
     transporte:['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','tren','aeropuerto','vuelo'],
     telecom:['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','canva','google'],
     compras:['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','jean','short','vestido','mochila','cartera','lentes','reloj','mall','saga','ripley','oechsle','zara','nike','adidas','tottus','plaza vea','wong','sodimac','perfume','maquillaje'],
-    entretenimiento:['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','juerga','cumpleaños'],
+    entretenimiento:['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','juerga','cumpleaños','betano','apuesta'],
     hogar:['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','lavandería','detergente'],
     salud:['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','higiene','terapia','consulta','botica','inkafarma','mifarma'],
     educacion:['libro','curso','universidad','pucp','upn','upc','ulima','usil','unmsm','copias','impresión','cuaderno','lapicero','útiles','matrícula','pensión','academia','tutoría','certificado','examen','material','boleta pucp','mensualidad'],
@@ -411,8 +446,7 @@ async function enviarAvisosNocturno() {
   const inicioDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
   const hace7dias = new Date(inicioDia); hace7dias.setDate(hace7dias.getDate() - 7);
 
-  // Aviso que se agrega al final de cada recordatorio
-  const avisoJoin = `\n\n_💡 ¿Dejaste de recibir mis mensajes? Escribe *join [tu-código]* al +1 415 523 8886 para reconectarte._`;
+  const avisoJoin = `\n\n_💡 ¿Dejaste de recibir mis mensajes? Escribe *join worse-lying* al +1 415 523 8886 para reconectarte._`;
 
   try {
     const usuariosSnap = await db.collection('usuarios_whatsapp').where('activo','==',true).get();
@@ -506,11 +540,30 @@ app.post('/webhook', async (req, res) => {
   const numMedia = parseInt(req.body.NumMedia || '0');
   const twiml = new twilio.twiml.MessagingResponse();
 
+  // ── DETECTAR IDIOMA ───────────────────────────────────────────
+  const idioma = detectarIdioma(mensaje);
+
+  // ── VERIFICAR SI EXISTE EN FIRESTORE ─────────────────────────
+  // Si el mensaje no es el join de Twilio y el usuario no existe, guiarlo
+  const esJoin = mensaje.toLowerCase().startsWith('join ');
+  if (!esJoin) {
+    const docCheck = await db.collection('usuarios_whatsapp').doc(telefono).get();
+    if (!docCheck.exists) {
+      twiml.message(i18n.sinJoin[idioma] || i18n.sinJoin.es);
+      return res.type('text/xml').send(twiml.toString());
+    }
+  }
+
   const esNuevo = await registrarUsuario(telefono);
+
+  // Guardar idioma detectado para el usuario
+  if (esNuevo || idioma !== 'es') {
+    await db.collection('usuarios_whatsapp').doc(telefono).set({ idioma }, { merge: true });
+  }
 
   if (esNuevo) {
     estadoUsuario[telefono] = { esperando: 'bienvenida_limites' };
-    twiml.message(`🐜 *¡Bienvenido a Hormicash!*\n\nSoy tu asistente de gastos hormiga. Registra tus gastos por:\n\n📸 Foto de voucher\n🎙️ Mensaje de voz\n💬 Texto: _"Almuerzo 15"_\n💳 Tarjeta de crédito: _"Taxi 30 TC"_\n\n─────────────────\n¿Quieres configurar *límites de gasto* mensuales? ⭐ Premium\n\n1️⃣ Sí, configurar ahora\n2️⃣ Lo haré después`);
+    twiml.message(i18n.bienvenida[idioma](telefono));
     return res.type('text/xml').send(twiml.toString());
   }
 
@@ -557,6 +610,33 @@ app.post('/webhook', async (req, res) => {
       delete estadoUsuario[telefono];
       const resumen = Object.entries(estado.limites).map(([c,m]) => `  • ${CATEGORIAS_DISPLAY[c]}: S/ ${m}`).join('\n');
       twiml.message(`✅ *¡Límites configurados!*\n\n${resumen}\n\nTe avisaré cuando te acerques 🎯\nEdítalos en: https://hormicash.web.app`);
+    }
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── FLUJO ELIMINAR GASTO ──────────────────────────────────────
+  if (estadoUsuario[telefono]?.esperando === 'confirmar_borrar') {
+    const estado = estadoUsuario[telefono];
+    const opcion = parseInt(mensaje.trim());
+    delete estadoUsuario[telefono];
+
+    if (mensaje.toLowerCase() === 'cancelar' || isNaN(opcion)) {
+      twiml.message('❌ Cancelado. No se eliminó ningún gasto.');
+      return res.type('text/xml').send(twiml.toString());
+    }
+
+    const gastoABorrar = estado.gastos[opcion - 1];
+    if (!gastoABorrar) {
+      twiml.message('❌ Número inválido. Escribe /borrar para intentar de nuevo.');
+      return res.type('text/xml').send(twiml.toString());
+    }
+
+    try {
+      await db.collection('gastos').doc(gastoABorrar.id).delete();
+      twiml.message(`🗑️ *Gasto eliminado*\n\n_${gastoABorrar.label}_ — S/ ${gastoABorrar.monto.toFixed(2)}\n\nEscribe /resumen para ver tu balance actualizado.`);
+    } catch(e) {
+      console.error('Error eliminando gasto:', e);
+      twiml.message('❌ No pude eliminar el gasto. Intenta de nuevo.');
     }
     return res.type('text/xml').send(twiml.toString());
   }
@@ -629,9 +709,55 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
+  // ── COMANDOS ──────────────────────────────────────────────────
   if (mensaje.toLowerCase() === '/resumen') {
     estadoUsuario[telefono] = { esperando:'resumen' };
     twiml.message(`📊 *¿Qué resumen deseas?*\n\n1️⃣ Hoy\n2️⃣ Esta semana\n3️⃣ Este mes\n\nResponde con el número.`);
+    return res.type('text/xml').send(twiml.toString());
+  }
+
+  // ── /BORRAR — Eliminar gasto ──────────────────────────────────
+  if (mensaje.toLowerCase() === '/borrar' || mensaje.toLowerCase() === '/delete' || mensaje.toLowerCase() === '/deletar') {
+    try {
+      const inicioMes = new Date();
+      inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+      const snapshot = await db.collection('gastos')
+        .where('telefono', '==', telefono)
+        .where('tipo', '!=', 'ingreso')
+        .orderBy('tipo')
+        .orderBy('fecha', 'desc')
+        .limit(5)
+        .get();
+
+      if (snapshot.empty) {
+        twiml.message('📭 No tienes gastos registrados este mes para eliminar.');
+        return res.type('text/xml').send(twiml.toString());
+      }
+
+      const gastos = [];
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        gastos.push({
+          id: doc.id,
+          label: d.label || d.descripcion || '—',
+          monto: d.monto || 0,
+          fecha: d.fecha?.toDate ? d.fecha.toDate() : new Date()
+        });
+      });
+
+      let lista = `🗑️ *¿Cuál gasto quieres eliminar?*\n\n`;
+      gastos.forEach((g, i) => {
+        const fechaStr = g.fecha.toLocaleDateString('es-PE', { day:'2-digit', month:'2-digit' });
+        lista += `${i + 1}️⃣ ${g.label} — S/ ${g.monto.toFixed(2)} _(${fechaStr})_\n`;
+      });
+      lista += `\nResponde con el número o escribe *cancelar*.`;
+
+      estadoUsuario[telefono] = { esperando: 'confirmar_borrar', gastos };
+      twiml.message(lista);
+    } catch(e) {
+      console.error('Error en /borrar:', e);
+      twiml.message('❌ No pude cargar tus gastos. Intenta de nuevo.');
+    }
     return res.type('text/xml').send(twiml.toString());
   }
 
@@ -663,6 +789,7 @@ app.post('/webhook', async (req, res) => {
     return res.type('text/xml').send(twiml.toString());
   }
 
+  // ── REGISTRO DE GASTOS ────────────────────────────────────────
   const esTarjeta = detectarTarjeta(mensaje);
   const mensajeLimpio = esTarjeta ? limpiarTextoTC(mensaje) : mensaje;
 
@@ -687,7 +814,10 @@ app.post('/webhook', async (req, res) => {
 
   const mov = parsearMovimiento(mensajeLimpio);
   if (!mov) {
-    twiml.message('No entendí el monto 🤔\n\n*Gastos:* "Almuerzo 15"\n*Tarjeta:* "Taxi 30 TC" o "Netflix 45 CREDITO"\n*Múltiples:* "Almuerzo 15 y taxi 8"\n*Ingresos:* "Ingreso 500 sueldo"\n*Voucher:* 📸 foto\n*Voz:* 🎙️ audio\n\n*Comandos:*\n/resumen — Ver balance\n/limites ⭐ — Límites de gasto\n/meta ⭐ — Meta de ahorro\n/consejo ⭐ — Consejo con IA');
+    // Usar mensaje de "no entendí" en el idioma del usuario
+    const userDoc = await db.collection('usuarios_whatsapp').doc(telefono).get();
+    const userIdioma = userDoc.data()?.idioma || 'es';
+    twiml.message(i18n.noEntendi[userIdioma] || i18n.noEntendi.es);
   } else {
     const gastoData = {
       telefono, monto:mov.monto, tipo:mov.tipo, categoria:mov.categoria,
@@ -735,6 +865,7 @@ Gasto: "${label}"
 Responde SOLO con la categoría, sin explicación. Ejemplos:
 - "Taxi" → transporte
 - "Wafer" → comida  
+- "Limonada" → comida
 - "Betano" → entretenimiento
 - "Netflix" → telecom
 - "Perfume" → compras
@@ -753,7 +884,6 @@ Responde SOLO con la categoría, sin explicación. Ejemplos:
     });
 
     let procesados = 0, errores = 0;
-    // Lotes de 5 para no saturar Gemini
     for (let i = 0; i < todos.length; i += 5) {
       const lote = todos.slice(i, i + 5);
       await Promise.all(lote.map(async (d) => {
