@@ -371,9 +371,17 @@ app.post('/webhook', async (req, res) => {
   const idioma = detectarIdioma(mensaje);
   const esJoin = mensaje.toLowerCase().startsWith('join ');
   if (!esJoin) {
-    const docCheck = await db.collection('usuarios_whatsapp').doc(telefono).get();
-    if (!docCheck.exists) { twiml.message(i18n.sinJoin[idioma]||i18n.sinJoin.es); return res.type('text/xml').send(twiml.toString()); }
+  const docCheck = await db.collection('usuarios_whatsapp').doc(telefono).get();
+  if (!docCheck.exists) {
+    // Si parece un gasto o comando válido, registrar y continuar
+    const pareceMensajeValido = /\d/.test(mensaje) || mensaje.startsWith('/');
+    if (!pareceMensajeValido) {
+      twiml.message(i18n.sinJoin[idioma] || i18n.sinJoin.es);
+      return res.type('text/xml').send(twiml.toString());
+    }
+    // Si tiene número o comando, registrar como nuevo y continuar
   }
+}
   const esNuevo = await registrarUsuario(telefono);
   if (esNuevo || idioma !== 'es') await db.collection('usuarios_whatsapp').doc(telefono).set({ idioma }, { merge: true });
   if (esNuevo) { estadoUsuario[telefono]={esperando:'bienvenida_limites'}; twiml.message(i18n.bienvenida[idioma](telefono)); return res.type('text/xml').send(twiml.toString()); }
