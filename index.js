@@ -355,17 +355,75 @@ function parsearMovimiento(texto) {
     return { monto, tipo:'ingreso', categoria:'ingreso', label: limpiarLabel(texto) };
   }
   const cats = {
-    comida:['almuerzo','comida','pollo','arroz','ceviche','menu','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada','salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho','chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc','bembos','norky','pardos','la lucha','helado','limonada','jugo','gaseosa','agua','bebida'],
-    cafe:['café','cafe','cappuccino','latte','té','te','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
-    transporte:['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','tren','aeropuerto','vuelo'],
-    telecom:['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','canva','google'],
-    compras:['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','jean','short','vestido','mochila','cartera','lentes','reloj','mall','saga','ripley','oechsle','zara','nike','adidas','tottus','plaza vea','wong','sodimac','perfume','maquillaje'],
-    entretenimiento:['cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento','steam','play','videojuego','boleto','entrada','parque','juerga','cumpleaños','betano','apuesta'],
-    hogar:['alquiler','renta','luz','agua','gas','limpieza','mueble','decoración','mantenimiento','reparación','lavandería','detergente'],
-    salud:['farmacia','doctor','medicina','gym','gimnasio','dentista','hospital','clínica','clinica','pastilla','vitamina','crema','shampoo','higiene','terapia','consulta','botica','inkafarma','mifarma'],
-    educacion:['libro','curso','universidad','pucp','upn','upc','ulima','usil','unmsm','copias','impresión','cuaderno','lapicero','útiles','matrícula','pensión','academia','tutoría','certificado','examen','material','boleta pucp','mensualidad'],
-    otros:['yape','plin','tunki','billetera','transferencia','deposito','depósito','lukita','agente','cajero','retiro','deuda','préstamo']
-  };
+    comida:[
+      'almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena',
+      'sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','empanada',
+      'salchipapa','broaster','lomo','causa','sopa','tallarines','chaufa','anticucho',
+      'chicharron','fruta','ensalada','galleta','snack','lonche','mcdonalds','kfc',
+      'bembos','norky','pardos','la lucha','helado','limonada','jugo','gaseosa',
+      'bebida','agua mineral','wafer','choco','chocolate','caramelo','dulce','piqueo',
+      'sazonador','sazonadores','salsa','ketchup','mostaza','ají','ajo','condimento',
+      'fideos','atún','atun','conserva','arroz integral','verdura','verduras',
+      'carne','huevo','huevos','leche','yogurt','yogur','frugos','mercado','feria',
+      'minimarket','bodega','tamales','papa','papas','yuca','ensaladita','tostadas',
+      'cereal','avena','milo','nesquik','mantequilla','mermelada','queso'
+    ],
+    cafe:[
+      'café','cafe','cappuccino','latte','té','te','frappé','frappe',
+      'milkshake','smoothie','starbucks','tambo','boba','matcha','cold brew'
+    ],
+    transporte:[
+      'pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo',
+      'estacionamiento','peaje','didi','beat','indrive','tren','aeropuerto','vuelo',
+      'mototaxi','colectivo','bicicleta','scooter','rappi moto','cabify'
+    ],
+    telecom:[
+      'recarga','celular','internet','datos','spotify','netflix','youtube','disney',
+      'hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable',
+      'telefono','teléfono','canva','google','chatgpt','openai','claude','twitch',
+      'crunchyroll','paramount','star plus','directv'
+    ],
+    compras:[
+      'zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón',
+      'jean','short','vestido','mochila','cartera','lentes','reloj','mall','saga',
+      'ripley','oechsle','zara','nike','adidas','tottus','plaza vea','wong','sodimac',
+      'perfume','maquillaje','cosméticos','cosmeticos','accesorio','accesorios',
+      'bolso','billetera','gorra','casaca','abrigo','deportivo','falabella','hm',
+      'shein','amazon','aliexpress','jockey plaza'
+    ],
+    entretenimiento:[
+      'cine','juego','fiesta','bar','discoteca','karaoke','concierto','evento',
+      'steam','play','videojuego','boleto','entrada','parque','juerga','cumpleaños',
+      'betano','apuesta','casino','trago','tragos','cerveza','vino','ron','pisco',
+      'copa','shots','chela','chelita'
+    ],
+    hogar:[
+      'alquiler','renta','luz','agua','gas','limpieza','mueble','decoración',
+      'mantenimiento','reparación','lavandería','detergente','jabón','jabon',
+      'papel higienico','papel','toalla','escoba','trapeador','bolsa','bolsas',
+      'foco','pilas','pila','desinfectante','lejia','lejía','lavavajillas',
+      'suavizante','ambientador','balde','utensilio','utensilio de cocina'
+    ],
+    salud:[
+      'farmacia','doctor','medicina','gym','gimnasio','dentista','hospital',
+      'clínica','clinica','pastilla','vitamina','crema','shampoo','higiene',
+      'terapia','consulta','botica','inkafarma','mifarma','acondicionador',
+      'desodorante','protector solar','hilo dental','cepillo','pasta dental',
+      'mascarilla','alcohol','algodón','algodón','curitas','termómetro','lentes de contacto'
+    ],
+    educacion:[
+      'libro','curso','universidad','pucp','upn','upc','ulima','usil','unmsm',
+      'copias','impresión','cuaderno','lapicero','útiles','matrícula','pensión',
+      'academia','tutoría','certificado','examen','material','boleta pucp',
+      'mensualidad','udemy','coursera','platzi','bootcamp','taller','seminario',
+      'congreso','microplásticos','impresiones','folder','archivador'
+    ],
+    otros:[
+      'yape','plin','tunki','billetera','lukita','agente','cajero','retiro',
+      'deuda','préstamo','prestamo','itf','comisión','comision','interés','interes',
+      'multa','penalidad','seguro','póliza','poliza'
+    ]
+    };
   let categoria = 'otros';
   for (const [cat,kws] of Object.entries(cats)) { if (kws.some(k=>lower.includes(k))) { categoria=cat; break; } }
   return { monto, tipo:'gasto', categoria, label: limpiarLabel(texto) };
