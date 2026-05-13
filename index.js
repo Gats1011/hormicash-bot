@@ -371,7 +371,7 @@ app.post('/webhook', async (req, res) => {
     else{twiml.message('❌ Opción no válida.\nEscribe /resumen para intentar de nuevo.');return res.type('text/xml').send(twiml.toString());}
     const snapshot=await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(desde)).get();
     let totalGastos=0,totalIngresos=0,totalTarjeta=0; const cats={};
-    snapshot.forEach(doc=>{const d=doc.data();if(d.tipo==='ingreso'){totalIngresos+=d.monto;}else{totalGastos+=d.monto;cats[d.categoria]=(cats[d.categoria]||0)+d.monto;if(d.fuente_pago==='tarjeta')totalTarjeta+=d.monto;}});
+    snapshot.forEach(doc=>{const d=doc.data();if(d.tipo==='ingreso'){totalIngresos+=d.monto;}else{if(d.fuente_pago==='tarjeta'){totalTarjeta+=d.monto;}else{totalGastos+=d.monto;cats[d.categoria]=(cats[d.categoria]||0)+d.monto;}}});
     let resCats=''; for(const[c,m]of Object.entries(cats)) resCats+=`  • ${CATEGORIAS_DISPLAY[c]||c}: S/ ${m.toFixed(2)}\n`;
     const balance=totalIngresos-totalGastos;
     let msg=`📊 *Resumen - ${periodo}*\n━━━━━━━━━━━━━━\n💸 Gastos: S/ ${totalGastos.toFixed(2)}\n${resCats}💰 Ingresos: S/ ${totalIngresos.toFixed(2)}\n━━━━━━━━━━━━━━\n${balance>=0?'🟢':'🔴'} Balance: S/ ${balance.toFixed(2)}`;
