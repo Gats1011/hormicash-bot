@@ -364,9 +364,10 @@ app.post('/webhook', async (req, res) => {
   if (estadoUsuario[telefono]?.esperando==='resumen') {
     const opcion=mensaje; delete estadoUsuario[telefono];
     const ahora=new Date(); let desde,periodo;
-    if(opcion==='1'){desde=new Date(ahora.getFullYear(),ahora.getMonth(),ahora.getDate());periodo='Hoy';}
-    else if(opcion==='2'){desde=new Date(ahora);desde.setDate(ahora.getDate()-7);periodo='Esta semana';}
-    else if(opcion==='3'){desde=new Date(ahora.getFullYear(),ahora.getMonth(),1);periodo='Este mes';}
+    const offsetPeru = 5*60*60*1000;
+    if(opcion==='1'){desde=new Date(new Date(ahora.getFullYear(),ahora.getMonth(),ahora.getDate()).getTime()+offsetPeru);periodo='Hoy';}
+    else if(opcion==='2'){desde=new Date(ahora.getTime()-(7*24*60*60*1000));desde=new Date(new Date(desde.getFullYear(),desde.getMonth(),desde.getDate()).getTime()+offsetPeru);periodo='Esta semana';}
+    else if(opcion==='3'){desde=new Date(new Date(ahora.getFullYear(),ahora.getMonth(),1).getTime()+offsetPeru);periodo='Este mes';}
     else{twiml.message('❌ Opción no válida.\nEscribe /resumen para intentar de nuevo.');return res.type('text/xml').send(twiml.toString());}
     const snapshot=await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(desde)).get();
     let totalGastos=0,totalIngresos=0,totalTarjeta=0; const cats={};
