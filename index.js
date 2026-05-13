@@ -472,14 +472,21 @@ app.post('/webhook', async (req, res) => {
 
   if (mensaje.toLowerCase()==='/borrar'||mensaje.toLowerCase()==='/delete'||mensaje.toLowerCase()==='/deletar') {
     try {
-      const snapshot=await db.collection('gastos').where('telefono','==',telefono).where('tipo','!=','ingreso').orderBy('tipo').orderBy('fecha','desc').limit(5).get();
-      if(snapshot.empty){twiml.message('📭 No tienes gastos registrados para eliminar.');return res.type('text/xml').send(twiml.toString());}
-      const gastos=[];
-      snapshot.forEach(doc=>{const d=doc.data();gastos.push({id:doc.id,label:d.label||d.descripcion||'—',monto:d.monto||0,fecha:d.fecha?.toDate?d.fecha.toDate():new Date()});});
-      let lista=`🗑️ *¿Cuál gasto quieres eliminar?*\n\n`;
-      gastos.forEach((g,i)=>{const fechaStr=g.fecha.toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit'});lista+=`${i+1}️⃣ ${g.label} — S/ ${g.monto.toFixed(2)} _(${fechaStr})_\n`;});
-      lista+=`\nResponde con el número o escribe *cancelar*.`;
-      estadoUsuario[telefono]={esperando:'confirmar_borrar',gastos}; twiml.message(lista);
+      const snapshot = await db.collection('gastos')
+  .where('telefono', '==', telefono)
+  .orderBy('fecha', 'desc')
+  .limit(10)
+  .get();
+  if(snapshot.empty){twiml.message('📭 No tienes gastos registrados para eliminar.');return res.type('text/xml').send(twiml.toString());}
+  const gastos=[];
+  snapshot.forEach(doc=>{
+  const d=doc.data();
+  if(d.tipo==='ingreso') return;
+  if(gastos.length>=5) return;
+  gastos.push({id:doc.id,label:d.label||d.descripcion||'—',monto:d.monto||0,fecha:d.fecha?.toDate?d.fecha.toDate():new Date()});
+  });
+  if(gastos.length===0){twiml.message('📭 No tienes gastos registrados para eliminar.');return res.type('text/xml').send(twiml.toString());}
+            estadoUsuario[telefono]={esperando:'confirmar_borrar',gastos}; twiml.message(lista);
     } catch(e){console.error('Error en /borrar:',e);twiml.message('❌ No pude cargar tus gastos. Intenta de nuevo.');}
     return res.type('text/xml').send(twiml.toString());
   }
