@@ -276,6 +276,18 @@ app.get('/auth/gmail',(req,res)=>{res.redirect(oauth2Client.generateAuthUrl({acc
 app.get('/oauth2callback',async(req,res)=>{try{const{tokens}=await oauth2Client.getToken(req.query.code);res.send(`<pre>REFRESH TOKEN:\n${tokens.refresh_token}</pre>`);}catch(e){res.send(`Error: ${e.message}`);}});
 
 // ── WEBHOOK WHATSAPP ──────────────────────────────────────────────
+// — VERIFICACIÓN WEBHOOK META —
+app.get('/webhook', (req, res) => {
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+  if (mode === 'subscribe' && token === process.env.VERIFY_TOKEN) {
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
+});
+
 app.post('/webhook', async (req, res) => {
   const mensaje = req.body.Body?.trim() || '';
   const telefono = req.body.From || '';
