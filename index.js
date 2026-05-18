@@ -263,41 +263,8 @@ async function generarConsejoIA(telefono) {
   } catch(e){return null;}
 }
 
-async function enviarAvisosNocturno() {
-  console.log('🌙 Ejecutando aviso nocturno...');
-  const ahora=new Date(); const inicioDia=new Date(ahora.getFullYear(),ahora.getMonth(),ahora.getDate());
-  const hace7dias=new Date(inicioDia); hace7dias.setDate(hace7dias.getDate()-7);
-  try {
-    const usuariosSnap=await db.collection('usuarios_whatsapp').where('activo','==',true).get();
-    for(const userDoc of usuariosSnap.docs){
-      const {telefono}=userDoc.data();
-      const gastosRecientes=await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(hace7dias)).get();
-      const diasConGastos=new Set();
-      gastosRecientes.forEach(d=>{const f=d.data().fecha?.toDate?d.data().fecha.toDate():new Date(d.data().fecha);diasConGastos.add(`${f.getFullYear()}-${f.getMonth()}-${f.getDate()}`);});
-      const hoyKey=`${ahora.getFullYear()}-${ahora.getMonth()}-${ahora.getDate()}`;
-      if(diasConGastos.has(hoyKey)) continue;
-      let diasSinRegistrar=0;
-      for(let i=1;i<=7;i++){const d=new Date(inicioDia);d.setDate(d.getDate()-i);const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;if(!diasConGastos.has(key))diasSinRegistrar++;else break;}
-      let msg;
-      if(diasSinRegistrar===0) msg=`🐜 *Hormicash — Recordatorio*\n\n¡Hola! Hoy no registraste ningún gasto todavía.\n\nEscríbeme: _"Almuerzo 15"_ o _"Taxi 8 soles"_`;
-      else if(diasSinRegistrar===1) msg=`🐜 *Hormicash — ¿Todo bien?*\n\nLlevas 2 días sin registrar gastos 👀\n\n_"Café 5"_ o _"Bus 2.50"_`;
-      else if(diasSinRegistrar<=3) msg=`⚠️ *Hormicash — Llevas ${diasSinRegistrar+1} días sin registrar*\n\nVuelve a registrar hoy:\n_"Almuerzo 15"_`;
-      else msg=`🔥 *Hormicash — Más de una semana sin registrar*\n\nRetoma el control hoy 💪\n\nhttps://hormicash.com`;
-      const inicioMes=new Date(ahora.getFullYear(),ahora.getMonth(),1);
-      const gastosDelMes=await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes)).get();
-      let totalMes=0; gastosDelMes.forEach(d=>{if(d.data().tipo!=='ingreso')totalMes+=d.data().monto||0;});
-      try{
-        await enviarMensaje(telefono, msg);
-        const userData=await obtenerEmailUsuario(telefono);
-        if(userData?.email) await enviarEmailRecordatorio(userData.email,userData.nombre,diasSinRegistrar,totalMes);
-      }catch(e){console.error(`❌ Error enviando a ${telefono}:`,e.message);}
-    }
-  }catch(e){console.error('Error aviso nocturno:',e);}
-}
-
 setInterval(()=>{
   const ahora=new Date(); const horaUTC=ahora.getUTCHours(),minUTC=ahora.getUTCMinutes();
-  if((horaUTC===2||horaUTC===1)&&minUTC===0) enviarAvisosNocturno();
   if(ahora.getUTCDay()===1&&horaUTC===13&&minUTC===0) enviarResumenSemanal();
 },60000);
 
