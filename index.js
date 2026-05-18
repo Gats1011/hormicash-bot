@@ -27,14 +27,17 @@ admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ── META CLOUD API ────────────────────────────────────────────────
 const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 const META_API_URL = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
 
+function normalizarTelefono(telefono) {
+  return telefono.replace('whatsapp:', '').replace(/\s/g, '');
+}
+
 async function enviarMensaje(telefono, texto) {
-  const to = telefono.replace('whatsapp:+', '').replace('whatsapp:', '').replace('+', '');
+  const to = normalizarTelefono(telefono).replace('+', '');
   await axios.post(META_API_URL, {
     messaging_product: 'whatsapp',
     to,
@@ -60,7 +63,7 @@ async function downloadMetaMedia(mediaId) {
 
 function detectarIdioma(texto) {
   const lower = texto.toLowerCase();
-  const ptWords = ['olá','ola','oi','bom dia','boa tarde','boa noite','obrigado','obrigada','tudo bem','tudo bom','gastar','gastei','paguei','quanto','reais','real'];
+  const ptWords = ['oi','bom dia','boa tarde','boa noite','obrigado','obrigada','tudo bem','tudo bom','gastar','gastei','paguei','quanto','reais','real'];
   const enWords = ['hello','hi','hey','good morning','good afternoon','spent','expense','cost','paid','dollars','bucks','how much'];
   const ptScore = ptWords.filter(w=>lower.includes(w)).length;
   const enScore = enWords.filter(w=>lower.includes(w)).length;
@@ -84,6 +87,7 @@ const i18n = {
 
 async function obtenerEmailUsuario(telefono) {
   try {
+    telefono = normalizarTelefono(telefono);
     const snap = await db.collection('usuarios').where('telefono','==',telefono).limit(1).get();
     if (snap.empty) return null;
     const data = snap.docs[0].data();
@@ -126,12 +130,15 @@ function limpiarTextoTC(texto) {
   return limpio.trim();
 }
 async function esPremium(telefono) {
+  telefono = normalizarTelefono(telefono);
   try { const doc=await db.collection('usuarios_whatsapp').doc(telefono).get(); return doc.exists&&doc.data().plan==='premium'; } catch(e) { return false; }
 }
 async function registrarUsuario(telefono) {
+  telefono = normalizarTelefono(telefono);
   try { const doc=await db.collection('usuarios_whatsapp').doc(telefono).get(); const esNuevo=!doc.exists; await db.collection('usuarios_whatsapp').doc(telefono).set({telefono,ultimo_mensaje:admin.firestore.FieldValue.serverTimestamp(),activo:true},{merge:true}); return esNuevo; } catch(e) { return false; }
 }
 async function verificarLimite(telefono,categoria,montoNuevo) {
+  telefono = normalizarTelefono(telefono);
   try {
     const userDoc=await db.collection('usuarios_whatsapp').doc(telefono).get(); if(!userDoc.exists) return null;
     const userData=userDoc.data(); if(userData.plan!=='premium') return null;
@@ -146,6 +153,7 @@ async function verificarLimite(telefono,categoria,montoNuevo) {
   } catch(e) { return null; }
 }
 async function verificarAlertaContextual(telefono,categoria,montoNuevo) {
+  telefono = normalizarTelefono(telefono);
   try {
     const inicioMes=new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
     const hoy=new Date(); const inicioDia=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate());
@@ -160,6 +168,7 @@ async function verificarAlertaContextual(telefono,categoria,montoNuevo) {
   } catch(e) { return null; }
 }
 async function actualizarGastoTarjeta(telefono,monto) {
+  telefono = normalizarTelefono(telefono);
   try {
     const userDoc=await db.collection('usuarios_whatsapp').doc(telefono).get(); if(!userDoc.exists) return;
     const uid=userDoc.data().uid; if(!uid) return;
@@ -239,6 +248,7 @@ async function enviarResumenSemanal() {
 }
 
 async function generarConsejoIA(telefono) {
+  telefono = normalizarTelefono(telefono);
   try {
     const inicioMes=new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
     const snapshot=await db.collection('gastos').where('telefono','==',telefono).where('fecha','>=',admin.firestore.Timestamp.fromDate(inicioMes)).get();
@@ -294,7 +304,6 @@ setInterval(()=>{
 app.get('/auth/gmail',(req,res)=>{res.redirect(oauth2Client.generateAuthUrl({access_type:'offline',scope:['https://www.googleapis.com/auth/gmail.send'],prompt:'consent'}));});
 app.get('/oauth2callback',async(req,res)=>{try{const{tokens}=await oauth2Client.getToken(req.query.code);res.send(`<pre>REFRESH TOKEN:\n${tokens.refresh_token}</pre>`);}catch(e){res.send(`Error: ${e.message}`);}});
 
-// ── WEBHOOK META CLOUD API ────────────────────────────────────────
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -308,22 +317,21 @@ app.get('/webhook', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-  res.sendStatus(200); // Responder rápido a Meta
+  res.sendStatus(200);
 
   try {
     const entry = req.body?.entry?.[0];
     const change = entry?.changes?.[0];
     const value = change?.value;
 
-    // Ignorar status updates
     if (value?.statuses) return;
 
     const messages = value?.messages;
     if (!messages || messages.length === 0) return;
 
     const msgObj = messages[0];
-    const telefonoRaw = msgObj.from; // número sin +
-    const telefono = `+${telefonoRaw}`;
+    const telefonoRaw = msgObj.from;
+    const telefono = normalizarTelefono(`+${telefonoRaw}`);
 
     const tipo = msgObj.type;
     let mensaje = '';
@@ -346,7 +354,7 @@ app.post('/webhook', async (req, res) => {
       mediaId = msgObj.document?.id;
       mediaMime = msgObj.document?.mime_type || 'application/pdf';
     } else {
-      return; // Ignorar otros tipos
+      return;
     }
 
     const idioma = detectarIdioma(mensaje);
@@ -394,7 +402,6 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-    // ── MEDIA ─────────────────────────────────────────────────────
     if (tieneMedia && mediaId) {
       try {
         const { base64, mimeType } = await downloadMetaMedia(mediaId);
@@ -420,7 +427,6 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-    // ── RESUMEN ───────────────────────────────────────────────────
     if (estadoUsuario[telefono]?.esperando === 'resumen') {
       const opcion = mensaje; delete estadoUsuario[telefono];
       const ahora=new Date(); let desde,periodo;
@@ -482,7 +488,6 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-    // ── PARSEAR GASTO/INGRESO ─────────────────────────────────────
     const esTarjeta=detectarTarjeta(mensaje), mensajeLimpio=esTarjeta?limpiarTextoTC(mensaje):mensaje;
     const multiples=parsearMultiplesMovimientos(mensajeLimpio);
     if (multiples) {
@@ -514,7 +519,6 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
-// ── ENDPOINTS API ─────────────────────────────────────────────────
 app.post('/api/analisis-mes', async (req, res) => {
   try {
     const { prompt } = req.body;
