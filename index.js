@@ -36,6 +36,17 @@ function normalizarTelefono(telefono) {
   return telefono.replace('whatsapp:', '').replace(/\s/g, '');
 }
 
+// ── MÉTRICAS ──────────────────────────────────────────────────────
+async function registrarEvento(tipo, datos = {}) {
+  try {
+    await db.collection('metricas').add({
+      tipo,
+      fecha: admin.firestore.FieldValue.serverTimestamp(),
+      ...datos
+    });
+  } catch(e) { console.error('Error metrica:', e.message); }
+}
+
 async function enviarMensaje(telefono, texto) {
   const to = normalizarTelefono(telefono).replace('+', '');
   await axios.post(META_API_URL, {
@@ -135,7 +146,13 @@ async function esPremium(telefono) {
 }
 async function registrarUsuario(telefono) {
   telefono = normalizarTelefono(telefono);
-  try { const doc=await db.collection('usuarios_whatsapp').doc(telefono).get(); const esNuevo=!doc.exists; await db.collection('usuarios_whatsapp').doc(telefono).set({telefono,ultimo_mensaje:admin.firestore.FieldValue.serverTimestamp(),activo:true},{merge:true}); return esNuevo; } catch(e) { return false; }
+  try {
+    const doc=await db.collection('usuarios_whatsapp').doc(telefono).get();
+    const esNuevo=!doc.exists;
+    await db.collection('usuarios_whatsapp').doc(telefono).set({telefono,ultimo_mensaje:admin.firestore.FieldValue.serverTimestamp(),activo:true},{merge:true});
+    if(esNuevo) await registrarEvento('nuevo_usuario', {telefono, canal:'whatsapp'});
+    return esNuevo;
+  } catch(e) { return false; }
 }
 async function verificarLimite(telefono,categoria,montoNuevo) {
   telefono = normalizarTelefono(telefono);
@@ -336,9 +353,18 @@ app.post('/webhook', async (req, res) => {
     if (estadoUsuario[telefono]?.esperando === 'bienvenida_limites') {
       if (mensaje === '1') {
         const premium = await esPremium(telefono);
-        if (!premium) { delete estadoUsuario[telefono]; await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActiva tu plan en: https://hormicash.com/dashboard.html\n\nPor ahora ya puedes registrar gastos 🐜`); }
-        else { estadoUsuario[telefono]={esperando:'limite_categoria',limites:{},categoriaIndex:0}; await enviarMensaje(telefono, `💰 ¿Límite mensual para *${CATEGORIAS_DISPLAY[CATEGORIAS[0]]}*?\n\nEscribe el monto o _"saltar"_.\n_(1 de ${CATEGORIAS.length})_`); }
-      } else { delete estadoUsuario[telefono]; await enviarMensaje(telefono, `¡Perfecto! Edita tus límites en:\nhttps://hormicash.com/dashboard.html\n\nEscribe _"Almuerzo 15"_ para empezar 🐜`); }
+        if (!premium) {
+          delete estadoUsuario[telefono];
+          await registrarEvento('intento_premium', {telefono, canal:'whatsapp', origen:'bienvenida'});
+          await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActiva tu plan en: https://hormicash.com/dashboard.html\n\nPor ahora ya puedes registrar gastos 🐜`);
+        } else {
+          estadoUsuario[telefono]={esperando:'limite_categoria',limites:{},categoriaIndex:0};
+          await enviarMensaje(telefono, `💰 ¿Límite mensual para *${CATEGORIAS_DISPLAY[CATEGORIAS[0]]}*?\n\nEscribe el monto o _"saltar"_.\n_(1 de ${CATEGORIAS.length})_`);
+        }
+      } else {
+        delete estadoUsuario[telefono];
+        await enviarMensaje(telefono, `¡Perfecto! Edita tus límites en:\nhttps://hormicash.com/dashboard.html\n\nEscribe _"Almuerzo 15"_ para empezar 🐜`);
+      }
       return;
     }
 
@@ -377,6 +403,7 @@ app.post('/webhook', async (req, res) => {
           if (audio.error==='no_monto') { await enviarMensaje(telefono, '🎙️ No pude identificar un monto.\nIntenta: "Almuerzo en La Lucha, veinte soles"'); return; }
           const esIngreso=audio.tipo==='ingreso', cat=audio.categoria?.toLowerCase()||'otros', labelAudio=audio.negocio||audio.descripcion||(esIngreso?'Ingreso por voz':'Gasto por voz');
           await db.collection('gastos').add({telefono,monto:audio.monto,tipo:audio.tipo||'gasto',categoria:cat,label:labelAudio,descripcion:audio.descripcion,fuente:'audio_whatsapp',mensaje:'[audio]',fecha:admin.firestore.FieldValue.serverTimestamp()});
+          await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente:'audio', categoria:cat, monto:audio.monto});
           let resp=esIngreso?`💰 *Ingreso por voz*\n\n💵 S/ ${audio.monto.toFixed(2)}\n📝 ${labelAudio}\n\nEscribe /resumen para ver tu balance`:`✅ *Gasto por voz*\n\n🏪 ${labelAudio}\n💰 S/ ${audio.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n\nEscribe /resumen para ver tu balance`;
           if(!esIngreso){const a=await verificarLimite(telefono,cat,audio.monto);if(a)resp+=mensajeAlerta(a,CATEGORIAS_DISPLAY[cat]||cat);const alerta=await verificarAlertaContextual(telefono,cat,audio.monto);if(alerta)resp+=`\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;}
           await enviarMensaje(telefono, resp);
@@ -385,6 +412,7 @@ app.post('/webhook', async (req, res) => {
           if (voucher.error==='no_voucher') { await enviarMensaje(telefono, '📸 No pude identificar un voucher.\nEnvía una foto clara de tu ticket.'); return; }
           const cat=voucher.categoria?.toLowerCase()||'otros', labelVoucher=voucher.negocio||'Voucher';
           await db.collection('gastos').add({telefono,monto:voucher.monto,tipo:'gasto',categoria:cat,label:labelVoucher,descripcion:voucher.descripcion,fecha_voucher:voucher.fecha,fuente:'voucher_whatsapp',mensaje:'[imagen]',fecha:admin.firestore.FieldValue.serverTimestamp()});
+          await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente:'voucher', categoria:cat, monto:voucher.monto});
           let resp=`✅ *Voucher registrado*\n\n🏪 ${labelVoucher}\n💰 S/ ${voucher.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n📝 ${voucher.descripcion}\n\nEscribe /resumen para ver tu balance`;
           const a=await verificarLimite(telefono,cat,voucher.monto);if(a)resp+=mensajeAlerta(a,CATEGORIAS_DISPLAY[cat]||cat);
           const alerta=await verificarAlertaContextual(telefono,cat,voucher.monto);if(alerta)resp+=`\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;
@@ -432,7 +460,11 @@ app.post('/webhook', async (req, res) => {
 
     if (mensaje.toLowerCase()==='/limites') {
       const premium=await esPremium(telefono);
-      if(!premium){await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActívala en: https://hormicash.com/dashboard.html`);return;}
+      if(!premium){
+        await registrarEvento('intento_premium', {telefono, canal:'whatsapp', origen:'comando_limites'});
+        await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActívala en: https://hormicash.com/dashboard.html`);
+        return;
+      }
       estadoUsuario[telefono]={esperando:'limite_categoria',limites:{},categoriaIndex:0};
       await enviarMensaje(telefono, `💰 *Configurar límites*\n\n¿Límite para *${CATEGORIAS_DISPLAY[CATEGORIAS[0]]}*?\n\nEscribe el monto o _"saltar"_.\n_(1 de ${CATEGORIAS.length})_`);
       return;
@@ -440,7 +472,11 @@ app.post('/webhook', async (req, res) => {
 
     if (mensaje.toLowerCase()==='/consejo') {
       const premium=await esPremium(telefono);
-      if(!premium){await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActívala en: https://hormicash.com/dashboard.html`);return;}
+      if(!premium){
+        await registrarEvento('intento_premium', {telefono, canal:'whatsapp', origen:'comando_consejo'});
+        await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActívala en: https://hormicash.com/dashboard.html`);
+        return;
+      }
       await enviarMensaje(telefono, '💡 Analizando tus gastos...');
       const consejo=await generarConsejoIA(telefono);
       if(consejo) await enviarMensaje(telefono, `💡 *Consejo personalizado*\n\n${consejo}`);
@@ -449,7 +485,11 @@ app.post('/webhook', async (req, res) => {
 
     if (mensaje.toLowerCase()==='/meta') {
       const premium=await esPremium(telefono);
-      if(!premium){await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActívala en: https://hormicash.com/dashboard.html`);return;}
+      if(!premium){
+        await registrarEvento('intento_premium', {telefono, canal:'whatsapp', origen:'comando_meta'});
+        await enviarMensaje(telefono, `⭐ *Función Premium*\n\nActívala en: https://hormicash.com/dashboard.html`);
+        return;
+      }
       estadoUsuario[telefono]={esperando:'meta_ahorro'};
       await enviarMensaje(telefono, `🎯 *Meta de ahorro mensual*\n\n¿Cuánto quieres ahorrar este mes?\nEscribe el monto en soles:`);
       return;
@@ -459,7 +499,14 @@ app.post('/webhook', async (req, res) => {
     const multiples=parsearMultiplesMovimientos(mensajeLimpio);
     if (multiples) {
       let respuesta=`✅ *${multiples.length} gastos registrados*${esTarjeta?' 💳':''}\n\n`;
-      for(const mov of multiples){const gastoData={telefono,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje:mov.textoOriginal,fecha:admin.firestore.FieldValue.serverTimestamp()};if(esTarjeta)gastoData.fuente_pago='tarjeta';await db.collection('gastos').add(gastoData);if(esTarjeta)await actualizarGastoTarjeta(telefono,mov.monto);respuesta+=`${mov.tipo==='ingreso'?'💰':'🐜'}${esTarjeta?' 💳':''} *${mov.label}* — S/ ${mov.monto.toFixed(2)} (${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria})\n`;}
+      for(const mov of multiples){
+        const gastoData={telefono,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje:mov.textoOriginal,fecha:admin.firestore.FieldValue.serverTimestamp()};
+        if(esTarjeta)gastoData.fuente_pago='tarjeta';
+        await db.collection('gastos').add(gastoData);
+        await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente:'texto', categoria:mov.categoria, monto:mov.monto});
+        if(esTarjeta)await actualizarGastoTarjeta(telefono,mov.monto);
+        respuesta+=`${mov.tipo==='ingreso'?'💰':'🐜'}${esTarjeta?' 💳':''} *${mov.label}* — S/ ${mov.monto.toFixed(2)} (${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria})\n`;
+      }
       respuesta+=`\nEscribe /resumen para ver tu balance`;
       await enviarMensaje(telefono, respuesta);
       return;
@@ -473,6 +520,7 @@ app.post('/webhook', async (req, res) => {
       const gastoData={telefono,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje,fecha:admin.firestore.FieldValue.serverTimestamp()};
       if(esTarjeta) gastoData.fuente_pago='tarjeta';
       await db.collection('gastos').add(gastoData);
+      await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente: esTarjeta?'tarjeta':'texto', categoria:mov.categoria, monto:mov.monto});
       let resp;
       if(esTarjeta){await actualizarGastoTarjeta(telefono,mov.monto);resp=`💳 *Gasto con tarjeta registrado*\n\n🏪 ${mov.label}\n💰 S/ ${mov.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[mov.categoria]||mov.categoria}\n\n_Registrado en tu tarjeta de crédito_\nEscribe /resumen para ver tu balance`;}
       else if(mov.tipo==='ingreso') resp=`💰 S/ ${mov.monto.toFixed(2)} ingreso registrado\n📝 ${mov.label}\nEscribe /resumen para ver tu balance`;
@@ -519,6 +567,35 @@ app.post('/recategorizar', async (req, res) => {
     }
     res.json({procesados,errores,total:todos.length});
   }catch(e){res.json({error:e.message});}
+});
+
+// ── ENDPOINT MÉTRICAS ADMIN ───────────────────────────────────────
+app.get('/api/metricas', async (req, res) => {
+  if (req.query.clave !== process.env.ADMIN_SECRET) return res.status(401).json({ error: 'No autorizado' });
+  try {
+    const snap = await db.collection('metricas').orderBy('fecha','desc').limit(500).get();
+    const eventos = [];
+    snap.forEach(d => eventos.push({id: d.id, ...d.data()}));
+
+    const resumen = {
+      total_eventos: eventos.length,
+      nuevos_usuarios: eventos.filter(e=>e.tipo==='nuevo_usuario').length,
+      intentos_premium: eventos.filter(e=>e.tipo==='intento_premium').length,
+      gastos_registrados: eventos.filter(e=>e.tipo==='gasto_registrado').length,
+      por_origen: {},
+      por_categoria: {}
+    };
+
+    eventos.filter(e=>e.tipo==='intento_premium').forEach(e=>{
+      resumen.por_origen[e.origen] = (resumen.por_origen[e.origen]||0) + 1;
+    });
+
+    eventos.filter(e=>e.tipo==='gasto_registrado' && e.categoria).forEach(e=>{
+      resumen.por_categoria[e.categoria] = (resumen.por_categoria[e.categoria]||0) + 1;
+    });
+
+    res.json({ resumen, eventos });
+  } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 app.get('/',(req,res)=>res.send('🐜 Hormicash Bot corriendo'));
