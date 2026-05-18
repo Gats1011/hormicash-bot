@@ -6,7 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Hormicash – Controla tus gastos hormiga</title>
+<title>Hormicash – Controla tus gastos hormiga v25</title>
+<meta name="facebook-domain-verification" content="fug0ckvru89cufj2yzsz9e5ffjpi9j" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
   :root[data-theme="dark"] {
@@ -675,6 +676,22 @@
   .month-nav:disabled { opacity: 0.25; cursor: not-allowed; }
   .month-nav:disabled:hover { color: var(--muted); background: none; }
 
+  /* Mobile month selector in resumen tab */
+  .mobile-month-selector {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+  }
+  .mobile-month-selector .month-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .mobile-month-selector .month-nav { width: 22px; height: 22px; font-size: 12px; }
+  @media (max-width: 768px) {
+    .mobile-month-selector { display: flex; }
+  }
+
   .month-label {
     font-family: 'Inter', sans-serif;
     font-size: 13px;
@@ -828,11 +845,14 @@
     padding: 14px;
     text-align: center;
     transition: transform 0.2s, border-color 0.3s;
+    position: relative;
   }
   .cat-item:hover { transform: translateY(-2px); border-color: var(--muted); }
   .cat-icon { font-size: 24px; margin-bottom: 6px; }
   .cat-name { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; }
   .cat-amount { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; }
+
+  .cat-detail-btn { position: absolute; top: 8px; right: 8px; background: var(--green); color: white; border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 14px; cursor: pointer; line-height: 1; z-index: 2; }
 
   .section-title { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
 
@@ -1683,7 +1703,7 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 14px;
-    overflow-y: auto;
+    flex-shrink: 0;
   }
 
   .cat-item {
@@ -1720,6 +1740,28 @@
   /* Barra mini debajo del monto */
   .cat-mini-bar-track { height: 4px; background: var(--border); border-radius: 4px; margin-top: 10px; overflow: hidden; }
   .cat-mini-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green), #16a34a); transition: width 0.6s ease; }
+
+  /* Gastos Fijos panel en Categorías */
+  #btnGastosFijosTab { display: none; }
+  #btnGastosFijosTab.visible { display: flex !important; }
+  .gasto-fijo-panel-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .gasto-fijo-panel-item:hover { transform: translateX(3px); border-color: rgba(59,130,246,0.3); }
+
+  /* CATEGORÍAS GRID */
+  .cat-grid-full {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    flex-shrink: 0;
+  }
 
   /* TRANSACCIONES TAB */
   .tx-list-full {
@@ -2141,8 +2183,9 @@
 
   /* Categorías tab mejorado - sección resumen abajo */
   .cat-summary-section {
-    margin-top: 24px;
+    margin-top: 28px;
     flex-shrink: 0;
+    padding-top: 4px;
   }
   .cat-summary-title {
     font-size: 11px;
@@ -2183,6 +2226,33 @@
   .cat-rank-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--green), #16a34a); transition: width 0.7s ease; }
   .cat-rank-amount { font-size: 14px; font-weight: 700; color: var(--red); flex-shrink: 0; min-width: 70px; text-align: right; }
 
+  /* ── GASTOS FIJOS CALENDARIO ── */
+  .gf-cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  .gf-cal-month { font-size:18px; font-weight:700; color:var(--text); }
+  .gf-cal-nav { display:flex; gap:8px; }
+  .gf-cal-nav button { background:var(--card); border:1px solid var(--border); border-radius:8px; width:32px; height:32px; cursor:pointer; color:var(--text); font-size:16px; display:flex; align-items:center; justify-content:center; }
+  .gf-cal-nav button:hover { border-color:var(--green); }
+  .gf-cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:4px; }
+  .gf-cal-day-name { text-align:center; font-size:11px; font-weight:700; color:var(--muted); padding:6px 0; text-transform:uppercase; }
+  .gf-cal-cell { min-height:80px; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:6px; position:relative; transition:border-color .15s; }
+  .gf-cal-cell.today { border-color:var(--green); box-shadow:0 0 0 2px rgba(34,197,94,0.15); }
+  .gf-cal-cell.other-month { opacity:.4; }
+  .gf-cal-date { font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px; }
+  .gf-cal-cell.today .gf-cal-date { color:var(--green); }
+  .gf-event { display:flex; align-items:center; gap:4px; background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.25); border-radius:6px; padding:3px 6px; margin-bottom:3px; cursor:pointer; transition:transform .1s; }
+  .gf-event:hover { transform:scale(1.02); }
+  .gf-event.upcoming { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.3); }
+  .gf-event.upcoming .gf-event-amount { color:var(--accent); }
+  .gf-event-logo { width:16px; height:16px; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .gf-event-name { font-size:10px; font-weight:600; color:var(--text); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .gf-event-amount { font-size:10px; font-weight:700; color:#3b82f6; flex-shrink:0; }
+  .gf-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+  .gf-kpi { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+  .gf-kpi-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+  .gf-kpi-value { font-size:20px; font-weight:800; color:var(--text); }
+  .gf-kpi-value.blue { color:#3b82f6; }
+  .gf-kpi-value.amber { color:var(--accent); }
+  .gf-kpi-value.green { color:var(--green); }
   /* Theme preference modal */
   .theme-pref-modal {
     display: none;
@@ -2968,6 +3038,11 @@
     <div class="tab-content active" id="tab-resumen">
       <div class="tab-header">
         <div class="tab-title" id="dashTitle">Tu resumen</div>
+        <div class="mobile-month-selector" id="mobileMonthSelector">
+          <button class="month-nav" onclick="changeMonth(-1)">◀</button>
+          <span class="month-label" id="monthLabelMobile">Mayo 2026</span>
+          <button class="month-nav" onclick="changeMonth(1)">▶</button>
+        </div>
       </div>
       <div class="resumen-grid">
         <!-- KPI cards -->
@@ -3022,19 +3097,21 @@
     <div class="tab-content" id="tab-categorias">
       <div class="tab-header">
         <div class="tab-title" id="labelCategorias">Categorías</div>
+        <button id="btnGastosFijosTab" onclick="showTab('gastosfijos')" style="background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;border-radius:10px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:white;cursor:pointer">
+          📅 Gastos Fijos
+        </button>
       </div>
-      <div style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:20px">
         <div class="cat-grid-full" id="catGridFull">
-          <div class="cat-item" id="catcard-comida"><div class="cat-icon">🍱</div><div class="cat-name" id="cat-name-comida">Comida</div><div class="cat-amount" id="cat-comida">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-comida" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-cafe"><div class="cat-icon">☕</div><div class="cat-name" id="cat-name-cafe">Café</div><div class="cat-amount" id="cat-cafe">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-cafe" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-transporte"><div class="cat-icon">🚌</div><div class="cat-name" id="cat-name-transporte">Transporte</div><div class="cat-amount" id="cat-transporte">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-transporte" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-telecom"><div class="cat-icon">📱</div><div class="cat-name" id="cat-name-telecom">Telecom</div><div class="cat-amount" id="cat-telecom">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-telecom" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-compras"><div class="cat-icon">🛍️</div><div class="cat-name" id="cat-name-compras">Compras</div><div class="cat-amount" id="cat-compras">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-compras" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-entretenimiento"><div class="cat-icon">🎮</div><div class="cat-name" id="cat-name-ocio">Ocio</div><div class="cat-amount" id="cat-entretenimiento">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-entretenimiento" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-hogar"><div class="cat-icon">🏠</div><div class="cat-name" id="cat-name-hogar">Hogar</div><div class="cat-amount" id="cat-hogar">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-hogar" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-salud"><div class="cat-icon">💊</div><div class="cat-name" id="cat-name-salud">Salud</div><div class="cat-amount" id="cat-salud">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-salud" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-educacion"><div class="cat-icon">📚</div><div class="cat-name" id="cat-name-educacion">Educación</div><div class="cat-amount" id="cat-educacion">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-educacion" style="width:0%"></div></div></div>
-          <div class="cat-item" id="catcard-otros"><div class="cat-icon">💸</div><div class="cat-name" id="cat-name-otros">Otros</div><div class="cat-amount" id="cat-otros">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-otros" style="width:0%"></div></div></div>
+          <div class="cat-item" id="catcard-comida"><div class="cat-icon">🍱</div><div class="cat-name" id="cat-name-comida">Comida</div><div class="cat-amount" id="cat-comida">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-comida" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="comida" onclick="abrirDesgloseCat('comida')">→</button></div>
+<div class="cat-item" id="catcard-transporte"><div class="cat-icon">🚌</div><div class="cat-name" id="cat-name-transporte">Transporte</div><div class="cat-amount" id="cat-transporte">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-transporte" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="transporte" onclick="abrirDesgloseCat('transporte')">→</button></div>
+<div class="cat-item" id="catcard-telecom"><div class="cat-icon">📱</div><div class="cat-name" id="cat-name-telecom">Telecom</div><div class="cat-amount" id="cat-telecom">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-telecom" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="telecom" onclick="abrirDesgloseCat('telecom')">→</button></div>
+<div class="cat-item" id="catcard-compras"><div class="cat-icon">🛍️</div><div class="cat-name" id="cat-name-compras">Compras</div><div class="cat-amount" id="cat-compras">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-compras" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="compras" onclick="abrirDesgloseCat('compras')">→</button></div>
+<div class="cat-item" id="catcard-entretenimiento"><div class="cat-icon">🎮</div><div class="cat-name" id="cat-name-ocio">Ocio</div><div class="cat-amount" id="cat-entretenimiento">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-entretenimiento" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="entretenimiento" onclick="abrirDesgloseCat('entretenimiento')">→</button></div>
+<div class="cat-item" id="catcard-hogar"><div class="cat-icon">🏠</div><div class="cat-name" id="cat-name-hogar">Hogar</div><div class="cat-amount" id="cat-hogar">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-hogar" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="hogar" onclick="abrirDesgloseCat('hogar')">→</button></div>
+<div class="cat-item" id="catcard-salud"><div class="cat-icon">💊</div><div class="cat-name" id="cat-name-salud">Salud</div><div class="cat-amount" id="cat-salud">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-salud" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="salud" onclick="abrirDesgloseCat('salud')">→</button></div>
+<div class="cat-item" id="catcard-educacion"><div class="cat-icon">📚</div><div class="cat-name" id="cat-name-educacion">Educación</div><div class="cat-amount" id="cat-educacion">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-educacion" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="educacion" onclick="abrirDesgloseCat('educacion')">→</button></div>
+<div class="cat-item" id="catcard-otros"><div class="cat-icon">💸</div><div class="cat-name" id="cat-name-otros">Otros</div><div class="cat-amount" id="cat-otros">S/ 0</div><div class="cat-mini-bar-track"><div class="cat-mini-bar-fill" id="catbar-otros" style="width:0%"></div></div><button class="cat-detail-btn" data-cat="otros" onclick="abrirDesgloseCat('otros')">→</button></div>
         </div>
         <!-- Ranking visual debajo -->
         <div class="cat-summary-section">
@@ -3074,6 +3151,17 @@
     </div>
   </div>
 </div>
+    <!-- TAB: GASTOS FIJOS -->
+    <div class="tab-content" id="tab-gastosfijos">
+      <div class="tab-header">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button onclick="showTab('categorias')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer">← Volver</button>
+          <div class="tab-title">📅 Gastos Fijos</div>
+        </div>
+        <button onclick="abrirModalGastoFijo(null)" style="background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;border-radius:10px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:white;cursor:pointer">+ Agregar</button>
+      </div>
+      <div id="gfCalendarWrap" style="flex:1;overflow-y:auto;padding-bottom:20px"></div>
+    </div>
     <!-- TAB: PREMIUM -->
     <div class="tab-content" id="tab-premium">
       <div class="tab-header">
@@ -3252,7 +3340,6 @@
       <label class="modal-label" id="modalLabelCat">Categoría</label>
       <select class="modal-input" id="editCategoria">
         <option value="comida" id="editCat-comida">🍱 Comida</option>
-        <option value="cafe" id="editCat-cafe">☕ Café</option>
         <option value="transporte" id="editCat-transporte">🚌 Transporte</option>
         <option value="telecom" id="editCat-telecom">📱 Telecom</option>
         <option value="compras" id="editCat-compras">🛍️ Compras</option>
@@ -3340,9 +3427,16 @@
           <input type="number" class="tc-form-input" id="tcLimite" placeholder="Ej: 2000" min="0" oninput="actualizarPreviewTarjeta()">
         </div>
         <div>
-          <label class="tc-form-label">Día de corte</label>
-          <input type="number" class="tc-form-input" id="tcCorte" placeholder="Ej: 15" min="1" max="31" oninput="actualizarPreviewTarjeta()">
+          <label class="tc-form-label">Día de corte/cierre</label>
+          <input type="number" class="tc-form-input" id="tcCorte" placeholder="Ej: 22" min="1" max="31" oninput="actualizarPreviewTarjeta()">
         </div>
+      </div>
+      <div class="tc-form-row" style="margin-top:14px">
+        <div>
+          <label class="tc-form-label">Día límite de pago</label>
+          <input type="number" class="tc-form-input" id="tcPago" placeholder="Ej: 18" min="1" max="31">
+        </div>
+        <div></div>
       </div>
 
       <!-- Default -->
@@ -3467,6 +3561,12 @@
   const auth = getAuth(app);
   const provider = new GoogleAuthProvider();
   window._auth = auth;
+  window._db = db;
+  window._query = query;
+  window._collection = collection;
+  window._where = where;
+  window._orderBy = orderBy;
+  window._getDocs = getDocs;
   window._loadData = loadData;
 
   // Expose loadData after it's defined
@@ -3491,6 +3591,8 @@
     window._currentYear = () => currentYear;
     const label = document.getElementById('monthLabel');
     if (label) label.textContent = `${MESES[currentMonth]} ${currentYear}`;
+    const labelMobile = document.getElementById('monthLabelMobile');
+    if (labelMobile) labelMobile.textContent = `${MESES[currentMonth]} ${currentYear}`;
 
     const now = new Date();
     const prevBtn = document.getElementById('monthPrev');
@@ -3510,7 +3612,7 @@
   updateMonthLabel();
 
   const BUDGET = 50;
-  const emojis = { comida:'🍱', cafe:'☕', transporte:'🚌', telecom:'📱', compras:'🛍️', entretenimiento:'🎮', hogar:'🏠', salud:'💊', educacion:'📚', otros:'💸' };
+  const emojis = { comida:'🍱', transporte:'🚌', telecom:'📱', compras:'🛍️', entretenimiento:'🎮', hogar:'🏠', salud:'💊', educacion:'📚', otros:'💸' };
 
   window.userPlan = 'free';
   let userPhone = null;
@@ -3532,6 +3634,7 @@
     else if (page === 'app') {
       document.getElementById('app').style.display = 'flex';
       history.replaceState({ page: 'app' }, '', '#app');
+      ['quickModal','tcModal','gfModal'].forEach(id => { const m = document.getElementById(id); if (m) m.classList.remove('open'); });
     }
   }
 
@@ -3562,6 +3665,15 @@
   if (window._redrawPremium) setTimeout(window._redrawPremium, 60);
 }
   if (tab === 'tarjeta') cargarTarjetasTab();
+  if (tab === 'gastosfijos') {
+    const uid = window._auth?.currentUser?.uid;
+    const doRender = () => { if (window.renderGFCalendar) window.renderGFCalendar(); };
+    if (uid && window.cargarGastosFijos) {
+      window.cargarGastosFijos(uid).then(doRender);
+    } else {
+      setTimeout(doRender, 200);
+    }
+  }
   };
 
   window.openQuickAdd = function() {
@@ -3720,6 +3832,10 @@
       } catch(e) {
         console.error(e);
         showPage('app');
+        ['quickModal','tcModal','gfModal','configModal','themePrefModal'].forEach(id => {
+          const m = document.getElementById(id);
+          if (m) m.classList.remove('open');
+        });
       }
     } else {
       showPage('login');
@@ -3755,6 +3871,61 @@
     if (btnAgregar) btnAgregar.style.display = '';
     cargarTarjetasTab();
     updateDropdownUI();
+    // Mostrar botón Gastos Fijos en Categorías (solo Premium)
+    const btnGF = document.getElementById('btnGastosFijosTab');
+    if (btnGF) btnGF.classList.add('visible');
+
+  }
+
+  window.toggleGastosFijosPanel = function() {
+    const panel = document.getElementById('gastosFijosPanel');
+    if (!panel) return;
+    const open = panel.style.display === 'flex';
+    panel.style.display = open ? 'none' : 'flex';
+    if (!open) renderGastosFijosPanelList();
+  };
+
+  function renderGastosFijosPanelList() {
+    const list = document.getElementById('gastosFijosPanelList');
+    const totalEl = document.getElementById('gastosFijosPanelTotal');
+    if (!list) return;
+    const cache = window._gastosFijosCache || [];
+    const cur = window._currency || 'S/';
+    if (cache.length === 0) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px;text-align:center">Sin gastos fijos. Agrega uno con el botón +</div>';
+      if (totalEl) totalEl.textContent = cur + ' 0';
+      return;
+    }
+    const emojis = { netflix:'🎬', spotify:'🎵', amazon:'📦', disney:'🏰', youtube:'▶️', internet:'🌐', luz:'💡', agua:'💧', gym:'💪', alquiler:'🏠', telefono:'📱', otros:'💸' };
+    const appEmoji = (g) => {
+      const n = (g.nombre||'').toLowerCase();
+      if (n.includes('netflix')) return '🎬';
+      if (n.includes('spotify')) return '🎵';
+      if (n.includes('amazon')) return '📦';
+      if (n.includes('disney')) return '🏰';
+      if (n.includes('youtube')) return '▶️';
+      if (n.includes('gym') || n.includes('gimnasio')) return '💪';
+      if (n.includes('luz') || n.includes('entel') || n.includes('claro') || n.includes('movistar')) return '💡';
+      if (n.includes('agua')) return '💧';
+      if (n.includes('alquiler')) return '🏠';
+      if (n.includes('internet') || n.includes('wifi')) return '🌐';
+      return '💸';
+    };
+    const today = new Date().getDate();
+    list.innerHTML = cache.map(g => {
+      const esProximo = g.dia_cobro && Math.abs(g.dia_cobro - today) <= 5;
+      return `<div class="gasto-fijo-panel-item ${esProximo ? 'gasto-fijo-upcoming' : ''}" onclick="abrirModalGastoFijo('${g.id}')">
+        <div class="gasto-fijo-logo">${appEmoji(g)}</div>
+        <div class="gasto-fijo-info">
+          <div class="gasto-fijo-name">${g.nombre}</div>
+          <div class="gasto-fijo-meta">${g.categoria || 'Suscripción'}${g.dia_cobro ? ' · Día ' + g.dia_cobro : ''}</div>
+        </div>
+        ${esProximo ? '<div class="gasto-fijo-day-badge">Próximo</div>' : ''}
+        <div class="gasto-fijo-amount">${cur} ${(g.monto||0).toFixed(0)}</div>
+      </div>`;
+    }).join('');
+    const total = cache.reduce((s, g) => s + (g.monto || 0), 0);
+    if (totalEl) totalEl.textContent = `${cur} ${total.toFixed(0)}`;
   }
 
   // ═══════════════════════════════════════════════════════
@@ -3853,6 +4024,7 @@ window.abrirModalTarjeta = (tarjetaId = null) => {
     document.getElementById('tcDigitos').value = tc.digitos || '';
     document.getElementById('tcLimite').value  = tc.limite || '';
     document.getElementById('tcCorte').value   = tc.dia_corte || '';
+    document.getElementById('tcPago').value    = tc.dia_pago || '';
     document.getElementById('tcRed').value     = tc.red || 'visa';
     document.getElementById('tcDefault').checked = tc.es_default || false;
     tcSelectedBanco = tc.banco || 'bcp';
@@ -3908,7 +4080,8 @@ window.guardarTarjeta = async () => {
         if (d.id !== editId) await setDoc(doc(db, 'usuarios', user.uid, 'tarjetas', d.id), { es_default: false }, { merge: true });
       }
     }
-    const data = { nombre, banco: tcSelectedBanco, color: tcSelectedColor, digitos, limite, dia_corte: corte, red, es_default: esDefault, actualizado: serverTimestamp() };
+    const pago = parseInt(document.getElementById('tcPago')?.value) || 0;
+    const data = { nombre, banco: tcSelectedBanco, color: tcSelectedColor, digitos, limite, dia_corte: corte, dia_pago: pago, red, es_default: esDefault, actualizado: serverTimestamp() };
     if (editId) {
       await setDoc(doc(db, 'usuarios', user.uid, 'tarjetas', editId), data, { merge: true });
     } else {
@@ -3952,6 +4125,7 @@ async function cargarTarjetasTab() {
   try {
     const snap = await getDocs(collection(db, 'usuarios', user.uid, 'tarjetas'));
     _tarjetasCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    window._tarjetasCache = _tarjetasCache;
     actualizarSelectorTarjetas();
     const cur = window.userCurrency || 'S/';
     // Calcular gastos TC del mes por tarjeta
@@ -4051,7 +4225,9 @@ function actualizarSelectorTarjetas() {
   }
 }
 
-window.abrirDashboardTarjeta = async (tarjetaId) => {
+window.abrirDashboardTarjeta = async (tarjetaId, cicloOffset) => {
+  if (cicloOffset !== undefined) window._tcCicloOffset = cicloOffset;
+  const offset = window._tcCicloOffset || 0;
   const tc = _tarjetasCache.find(t => t.id === tarjetaId);
   if (!tc) return;
   const cur = window.userCurrency || 'S/';
@@ -4062,58 +4238,116 @@ window.abrirDashboardTarjeta = async (tarjetaId) => {
   content.innerHTML = `<div style="color:var(--muted);padding:20px;text-align:center">Cargando...</div>`;
 
   let txTC = [];
+  // Calcular ciclo de facturación basado en dia_corte + offset
+  const hoyFetch = new Date();
+  let inicioCiclo, finCiclo;
+  if (tc.dia_corte) {
+    const diaCierre = tc.dia_corte;
+    let baseMonth, baseYear;
+    if (hoyFetch.getDate() > diaCierre) {
+      // Ciclo actual: desde día cierre de este mes
+      baseMonth = hoyFetch.getMonth();
+      baseYear  = hoyFetch.getFullYear();
+    } else {
+      // Ciclo actual: desde día cierre del mes pasado
+      baseMonth = hoyFetch.getMonth() - 1;
+      baseYear  = hoyFetch.getFullYear();
+    }
+    // Apply offset
+    baseMonth += offset;
+    inicioCiclo = new Date(baseYear, baseMonth, diaCierre + 1, 0, 0, 0);
+    finCiclo    = new Date(baseYear, baseMonth + 1, diaCierre, 23, 59, 59);
+  } else {
+    // Sin día de corte: usar mes calendario + offset
+    inicioCiclo = new Date(hoyFetch.getFullYear(), hoyFetch.getMonth() + offset, 1, 0, 0, 0);
+    finCiclo    = new Date(hoyFetch.getFullYear(), hoyFetch.getMonth() + offset + 1, 0, 23, 59, 59);
+  }
   if (userPhone) {
-    const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
     try {
-      const snap = await getDocs(query(collection(db,'gastos'), where('telefono','==',userPhone), where('fecha','>=',Timestamp.fromDate(inicioMes))));
+      const snap = await getDocs(query(collection(db,'gastos'), where('telefono','==',userPhone), where('fecha','>=',Timestamp.fromDate(inicioCiclo)), where('fecha','<=',Timestamp.fromDate(finCiclo))));
       snap.forEach(d => {
         const data = d.data();
-        if (data.fuente_pago === 'tarjeta' && (data.tarjeta_id === tarjetaId || (!data.tarjeta_id && tc.es_default))) txTC.push(data);
+        if (data.fuente_pago === 'tarjeta' && (data.tarjeta_id === tarjetaId || (!data.tarjeta_id && tc.es_default))) txTC.push({ id: d.id, ...data });
       });
     } catch(e) { console.error(e); }
   }
 
-  const gasto = txTC.reduce((s,t) => s + (t.monto||0), 0);
-  const disp  = tc.limite ? tc.limite - gasto : 0;
-  const pct   = tc.limite > 0 ? Math.min((gasto/tc.limite)*100, 100) : 0;
+  window._txTCCache = txTC;
+  window._txTCCache = txTC;
+  const pagos = txTC.filter(t => t.es_pago).reduce((s,t) => s + (t.monto||0), 0);
+  const gasto = txTC.filter(t => !t.es_pago).reduce((s,t) => s + (t.monto||0), 0);
+  const gastoNeto = Math.max(0, gasto - pagos);
+  const disp  = tc.limite ? tc.limite - gastoNeto : 0;
+  const pct   = tc.limite > 0 ? Math.min((gastoNeto/tc.limite)*100, 100) : 0;
   const colorObj = TC_COLORS.find(c => c.id === tc.color);
   const bancoObj = BANCOS_PE.find(b => b.id === tc.banco);
   const bg = colorObj?.bg || bancoObj?.color || 'linear-gradient(135deg,#7c3aed,#a78bfa)';
 
   // Próximo corte
   let proximoHTML = '';
-  if (tc.dia_corte) {
+  if (tc.dia_corte || tc.dia_pago) {
     const hoy = new Date();
-    let fechaCorte = new Date(hoy.getFullYear(), hoy.getMonth(), tc.dia_corte);
-    if (fechaCorte <= hoy) fechaCorte = new Date(hoy.getFullYear(), hoy.getMonth()+1, tc.dia_corte);
-    const dias = Math.ceil((fechaCorte - hoy) / (1000*60*60*24));
-    const urgente = dias <= 5;
-    const cc = urgente ? 'rgba(239,68,68,0.08)' : 'rgba(167,139,250,0.08)';
-    const bc = urgente ? 'rgba(239,68,68,0.3)' : 'rgba(167,139,250,0.25)';
-    const ac = urgente ? 'var(--red)' : 'var(--premium)';
-    proximoHTML = `
-      <div style="background:${cc};border:1.5px solid ${bc};border-radius:14px;padding:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:12px;font-weight:700;color:${ac};text-transform:uppercase;letter-spacing:0.5px">${urgente?'🚨':'📅'} Próximo corte</div>
-          <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:800;color:${ac}">en ${dias} día${dias===1?'':'s'}</div>
-        </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Día ${tc.dia_corte} de cada mes</div>
-        ${urgente ? `<div style="margin-top:10px;padding:8px 12px;background:rgba(239,68,68,0.1);border-radius:8px;font-size:12px;color:var(--red);font-weight:600;text-align:center">⚠️ Prepara el pago de ${cur} ${gasto.toFixed(2)}</div>` : ''}
-      </div>`;
-  }
+    // Fecha de cierre
+    let fechaCierre = tc.dia_corte ? new Date(hoy.getFullYear(), hoy.getMonth(), tc.dia_corte) : null;
+    if (fechaCierre && fechaCierre <= hoy) fechaCierre = new Date(hoy.getFullYear(), hoy.getMonth()+1, tc.dia_corte);
+    const diasCierre = fechaCierre ? Math.ceil((fechaCierre - hoy) / (1000*60*60*24)) : null;
+    // Fecha límite de pago
+    let fechaPago = tc.dia_pago ? new Date(hoy.getFullYear(), hoy.getMonth(), tc.dia_pago) : null;
+    if (fechaPago && fechaPago <= hoy) fechaPago = new Date(hoy.getFullYear(), hoy.getMonth()+1, tc.dia_pago);
+    const diasPago = fechaPago ? Math.ceil((fechaPago - hoy) / (1000*60*60*24)) : null;
+    const urgenteP = diasPago !== null && diasPago <= 5;
+    const urgenteC = diasCierre !== null && diasCierre <= 5;
+    const ac = (urgenteP || urgenteC) ? 'var(--red)' : 'var(--premium)';
+    const cc = (urgenteP || urgenteC) ? 'rgba(239,68,68,0.08)' : 'rgba(167,139,250,0.08)';
+    const bc = (urgenteP || urgenteC) ? 'rgba(239,68,68,0.3)' : 'rgba(167,139,250,0.25)';
+    const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    proximoHTML = '';
+    const monthNames2 = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    let pHtml = '<div style="background:'+cc+';border:1.5px solid '+bc+';border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px">';
+    pHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">';
+    if (fechaCierre) {
+      const labelC = diasCierre === 0 ? 'Hoy' : 'en ' + diasCierre + ' día' + (diasCierre===1?'':'s');
+      pHtml += '<div>';
+      pHtml += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📅 Cierre de ciclo</div>';
+      pHtml += '<div style="font-size:16px;font-weight:800;color:'+(urgenteC?'var(--red)':'var(--text)')+'">'+labelC+'</div>';
+      pHtml += '<div style="font-size:11px;color:var(--muted)">'+fechaCierre.getDate()+' '+monthNames2[fechaCierre.getMonth()]+'</div>';
+      pHtml += '</div>';
+    }
+    if (fechaPago) {
+      const labelP = diasPago === 0 ? 'Hoy' : 'en ' + diasPago + ' día' + (diasPago===1?'':'s');
+      pHtml += '<div>';
+      pHtml += '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">💳 Límite de pago</div>';
+      pHtml += '<div style="font-size:16px;font-weight:800;color:'+(urgenteP?'var(--red)':'var(--text)')+'">'+labelP+'</div>';
+      pHtml += '<div style="font-size:11px;color:var(--muted)">'+fechaPago.getDate()+' '+monthNames2[fechaPago.getMonth()]+'</div>';
+      pHtml += '</div>';
+    }
+    pHtml += '</div>';
+    if (urgenteP || urgenteC) {
+      pHtml += '<div style="padding:8px 12px;background:rgba(239,68,68,0.1);border-radius:8px;font-size:12px;color:var(--red);font-weight:600;text-align:center">⚠️ Prepara el pago de '+cur+' '+gasto.toFixed(2)+'</div>';
+    }
+    pHtml += '<div style="font-size:11px;color:var(--muted);text-align:center">Ciclo: del '+inicioCiclo.getDate()+' '+monthNames2[inicioCiclo.getMonth()]+' al '+finCiclo.getDate()+' '+monthNames2[finCiclo.getMonth()]+'</div>';
+    pHtml += '</div>';
+    proximoHTML = pHtml;
+    }
 
-  const catIcons = { comida:'🍔',cafe:'☕',transporte:'🚌',telecom:'📱',compras:'🛍️',entretenimiento:'🎮',hogar:'🏠',salud:'💊',educacion:'📚',otros:'💸' };
-  const catNames = { comida:'Comida',cafe:'Café',transporte:'Transporte',telecom:'Telecom',compras:'Compras',entretenimiento:'Ocio',hogar:'Hogar',salud:'Salud',educacion:'Educación',otros:'Otros' };
+  const catIcons = { comida:'🍔',transporte:'🚌',telecom:'📱',compras:'🛍️',entretenimiento:'🎮',hogar:'🏠',salud:'💊',educacion:'📚',otros:'💸' };
+  const catNames = { comida:'Comida',transporte:'Transporte',telecom:'Telecom',compras:'Compras',entretenimiento:'Ocio',hogar:'Hogar',salud:'Salud',educacion:'Educación',otros:'Otros' };
   const catsTc = {};
   txTC.forEach(t => { catsTc[t.categoria||'otros'] = (catsTc[t.categoria||'otros']||0)+(t.monto||0); });
   const topCats = Object.entries(catsTc).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const maxCat = topCats[0]?.[1]||1;
 
+  // Store current cycle offset for navigation
+  if (!window._tcCicloOffset) window._tcCicloOffset = 0;
+  
   content.innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap">
       <button onclick="volverListaTarjetas()" style="background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--text);cursor:pointer">← Mis tarjetas</button>
       <div style="font-size:16px;font-weight:700">${tc.nombre}${tc.digitos ? ` ••${tc.digitos}` : ''}</div>
-      <button onclick="abrirModalTarjeta('${tarjetaId}')" style="margin-left:auto;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer">✏️ Editar</button>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button onclick="window.registrarPagoTarjeta('${tarjetaId}')" style="background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;color:white;cursor:pointer">💳 Registrar pago</button>
+        <button onclick="abrirModalTarjeta('${tarjetaId}')" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer">✏️ Editar</button>
+      </div>
     </div>
     <div style="background:${bg};border-radius:18px;padding:22px 24px;color:white;position:relative;overflow:hidden;min-height:150px">
       <div class="tc-card-shine"></div><div class="tc-card-shine2"></div>
@@ -4163,19 +4397,28 @@ window.abrirDashboardTarjeta = async (tarjetaId) => {
         </div>`).join('')}
     </div>` : ''}
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px">
-      <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">🧾 Transacciones del mes</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px">🧾 Transacciones del ciclo</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="window.tcNavCiclo('${tarjetaId}',-1)" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text)">◀</button>
+          <span id="tcCicloLabel" style="font-size:11px;color:var(--muted);min-width:120px;text-align:center">${inicioCiclo.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})} – ${finCiclo.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})}</span>
+          <button onclick="window.tcNavCiclo('${tarjetaId}',1)" style="background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text)">▶</button>
+        </div>
+      </div>
       ${txTC.length ? txTC.sort((a,b)=>{
         const fa=a.fecha?.toDate?a.fecha.toDate():new Date(a.fecha);
         const fb=b.fecha?.toDate?b.fecha.toDate():new Date(b.fecha);
         return fb-fa;
       }).map(tx => {
         const f = tx.fecha?.toDate?tx.fecha.toDate():new Date(tx.fecha);
-        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+        return `<div onclick="window._txTCCache && window._txTCCache.forEach(t=>{ if(t.id==='${tx.id}') window.openEditModal(t); })" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='var(--card2)'" onmouseout="this.style.background='transparent'">
           <div>
             <div style="font-size:13px;font-weight:600">${catIcons[tx.categoria]||'💸'} ${tx.label||'Gasto TC'}</div>
-            <div style="font-size:11px;color:var(--muted)">${f.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})} · ${f.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})}</div>
+            <div style="font-size:11px;color:var(--muted)">${f.toLocaleDateString('es-PE',{day:'2-digit',month:'short'})} · ${f.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})} <span style="color:var(--premium);margin-left:4px">✏️ editar</span></div>
           </div>
-          <div style="font-size:14px;font-weight:700;color:var(--red)">−${cur} ${(tx.monto||0).toFixed(2)}</div>
+          <div style="font-size:14px;font-weight:700;color:${tx.es_pago?'var(--green)':'var(--red)'}">
+            ${tx.es_pago ? '+' : '−'}${cur} ${(tx.monto||0).toFixed(2)}
+          </div>
         </div>`;
       }).join('') : `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin transacciones este mes</div>`}
     </div>
@@ -4187,6 +4430,43 @@ window.volverListaTarjetas = () => {
   const detalle = document.getElementById('tcDetalleTarjeta');
   if (grid) grid.style.display = '';
   if (detalle) { detalle.style.display = 'none'; detalle.innerHTML = ''; }
+  window._tcCicloOffset = 0;
+};
+
+window.tcNavCiclo = (tarjetaId, dir) => {
+  window._tcCicloOffset = (window._tcCicloOffset || 0) + dir;
+  // Don't allow future cycles
+  if (window._tcCicloOffset > 0) { window._tcCicloOffset = 0; return; }
+  window.abrirDashboardTarjeta(tarjetaId, window._tcCicloOffset);
+};
+
+window.registrarPagoTarjeta = (tarjetaId) => {
+  const monto = prompt('¿Cuánto pagaste al banco? (S/)');
+  if (!monto || isNaN(parseFloat(monto))) return;
+  const m = parseFloat(monto);
+  if (m <= 0) return;
+  const user = window._auth?.currentUser;
+  if (!user) return;
+  import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js").then(({ addDoc, collection, Timestamp }) => {
+    // Usar el mes/año seleccionado en el navegador, no la fecha actual
+    const mes = window._currentMonth ? window._currentMonth() : new Date().getMonth();
+    const año = window._currentYear ? window._currentYear() : new Date().getFullYear();
+    const fechaPago = Timestamp.fromDate(new Date(año, mes, 15, 12, 0, 0));
+    addDoc(collection(window._db, 'gastos'), {
+      uid: user.uid,
+      telefono: (typeof window._userPhone === 'function' ? window._userPhone() : window._userPhone) || '',
+      label: 'Pago Homebanking',
+      monto: m,
+      tipo: 'pago_tarjeta',
+      categoria: 'otros',
+      fuente_pago: 'tarjeta',
+      tarjeta_id: tarjetaId,
+      es_pago: true,
+      fecha: fechaPago
+    }).then(() => {
+      window.abrirDashboardTarjeta(tarjetaId);
+    }).catch(e => { console.error(e); alert('Error al registrar pago'); });
+  });
 };
 
 // ═══════════════════════════════════════════════════════
@@ -4295,6 +4575,7 @@ window.guardarGastoFijo = async () => {
     }
     cerrarModalGastoFijo();
     await cargarGastosFijos(user.uid);
+    if (window.renderGFCalendar) window.renderGFCalendar();
   } catch(e) { console.error(e); alert('Error al guardar.'); }
   btn.disabled = false; btn.textContent = '💾 Guardar';
 };
@@ -4309,6 +4590,7 @@ window.eliminarGastoFijo = async () => {
     await deleteDoc(doc(db, 'usuarios', user.uid, 'gastos_fijos', editId));
     cerrarModalGastoFijo();
     await cargarGastosFijos(user.uid);
+    if (window.renderGFCalendar) window.renderGFCalendar();
   } catch(e) { console.error(e); }
 };
 
@@ -4385,12 +4667,12 @@ function renderGastosFijosCard() {
               <div class="pkpi-sub">Este mes</div>
             </div>
           </div>
-          <div class="pdash-kpi pkpi-blue">
+          <div class="pdash-kpi pkpi-blue" onclick="abrirPopupCard('proyeccion')" style="cursor:pointer;transition:transform 0.15s" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
             <div class="pkpi-icon-circle blue">📈</div>
             <div class="pkpi-info">
               <div class="pkpi-label">Proyección fin de mes</div>
               <div class="pkpi-value" id="proyeccion" style="color:var(--blue)">S/ —</div>
-              <div class="pkpi-sub">Basado en ritmo actual</div>
+              <div class="pkpi-sub" style="color:var(--blue);font-size:10px">✨ Toca para análisis IA</div>
             </div>
           </div>
           <div class="pdash-kpi pkpi-amber">
@@ -4547,8 +4829,7 @@ function renderGastosFijosCard() {
   function categorizarConKeywords(desc) {
     const lower = desc.toLowerCase();
     const categorias = {
-      comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena','sandwich','pan','pizza','burger','hamburguesa','chifa','sushi','tacos','empanada','salchipapa','broaster','lomo','causa','sopa','guiso','tallarines','chaufa','anticucho','chicharron','tamales','fruta','ensalada','galleta','snack','lonche','merienda','mcdonalds','kfc','bembos','norky','pardos','la lucha','sangucheria','heladería','helado'],
-      cafe: ['café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','frappé','frappe','milkshake','smoothie','chocolate','starbucks','tambo','boba'],
+      comida: ['almuerzo','comida','pollo','arroz','ceviche','menu','menú','desayuno','cena','sandw','café','cafe','cappuccino','latte','té','te','jugo','gaseosa','cerveza','trago','vino','pizza','burger','sushi','tamal','empanada','pan','panaderia','pasteleria','torta','postre','helado','delivery','rappi','uber eats','pidiendo','bembos','kfc','mcdonalds','mcdonald','popeyes','chifa','limeña','criolla','menú del dia','polleria','caldo','sopa'],
       transporte: ['pasaje','bus','taxi','uber','metro','combi','moto','gasolina','grifo','estacionamiento','peaje','didi','beat','indrive','microbús','microbus','tren','aeropuerto','vuelo','bicicleta'],
       telecom: ['recarga','celular','internet','datos','spotify','netflix','youtube','disney','hbo','amazon prime','apple','suscripción','suscripcion','plan movil','cable','telefono','teléfono','google','dropbox','canva'],
       compras: ['zapatillas','ropa','zapatos','tienda','regalo','camisa','polo','pantalón','pantalon','jean','short','falda','vestido','mochila','cartera','lentes','reloj','accesorio','mall','saga','ripley','oechsle','zara','nike','adidas','amazon','mercado libre','tottus','plaza vea','wong','vivanda','sodimac','promart','perfume','cosméticos','cosmeticos','maquillaje'],
@@ -4565,7 +4846,7 @@ function renderGastosFijosCard() {
 
   // Categorización con IA (Claude)
   window.categorizarConIA = async function categorizarConIA(descripcion) {
-    const prompt = `Clasifica este gasto en UNA de estas categorías exactas: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.
+    const prompt = `Clasifica este gasto en UNA de estas categorías exactas: comida, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.
 
 Gasto: "${descripcion}"
 
@@ -4587,13 +4868,13 @@ Responde SOLO con la categoría, sin explicación ni puntuación. Ejemplos:
     });
     const data = await res.json();
     const cat = data.content?.[0]?.text?.trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');
-    const validas = ['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
+    const validas = ['comida','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
     return validas.includes(cat) ? cat : categorizarConKeywords(descripcion);
   }
 
   async function generarConsejoIA({ totalGastos, totalIngresos, countGastos, topCat, cats, cur, promedio, proy }) {
     try {
-      const catNames = { comida:'Comida', cafe:'Café', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
+      const catNames = { comida:'Comida', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
       const balance = totalIngresos - totalGastos;
       const topNombre = topCat[1] > 0 ? catNames[topCat[0]] || topCat[0] : null;
       const gastosHormiga = Object.entries(cats).reduce((s,[,v])=>s+v,0);
@@ -4636,7 +4917,7 @@ Reglas:
   }
 
   function fallbackTip({ totalGastos, totalIngresos, countGastos, topCat, cur, promedio }) {
-    const catNames = { comida:'comida', cafe:'café', transporte:'transporte', telecom:'telecom', compras:'compras', entretenimiento:'ocio', hogar:'hogar', salud:'salud', educacion:'educación', otros:'otros' };
+    const catNames = { comida:'comida', transporte:'transporte', telecom:'telecom', compras:'compras', entretenimiento:'ocio', hogar:'hogar', salud:'salud', educacion:'educación', otros:'otros' };
     if (countGastos === 0) return 'Aún no registras gastos este mes. Empieza ahora para tener control total de tus finanzas.';
     if (topCat[1] > 0) return `Tu mayor gasto este mes es ${catNames[topCat[0]] || topCat[0]} con ${cur} ${topCat[1].toFixed(0)}. ¿Puedes reducirlo un 10%?`;
     return `Llevas ${cur} ${totalGastos.toFixed(0)} gastados este mes, ${cur} ${promedio.toFixed(0)} por día en promedio.`;
@@ -4655,7 +4936,6 @@ Reglas:
     const cx = 110, cy = 110, r = 85, lineWidth = 28;
     const colors = {
       comida: '#f59e0b',
-      cafe: '#a78bfa',
       transporte: '#3b82f6',
       telecom: '#22c55e',
       compras: '#ec4899',
@@ -4665,7 +4945,7 @@ Reglas:
       educacion: '#8b5cf6',
       otros: '#6b7a8d'
     };
-    const labels = { comida:'Comida', cafe:'Café', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
+    const labels = { comida:'Comida', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
 
     ctx.clearRect(0, 0, 220, 220);
 
@@ -5137,11 +5417,13 @@ Reglas:
         return f >= startOfMonth && f <= endOfMonth;
       });
 
+      window._mesActual = mesActual;
+
       let totalGastos = 0;
       let totalIngresos = 0;
       let countGastos = 0;
       let countIngresos = 0;
-      const cats = { comida:0, cafe:0, transporte:0, telecom:0, compras:0, entretenimiento:0, hogar:0, salud:0, educacion:0, otros:0 };
+      const cats = { comida:0, transporte:0, telecom:0, compras:0, entretenimiento:0, hogar:0, salud:0, educacion:0, otros:0 };
 
       mesActual.forEach(d => {
         // ── Excluir gastos de tarjeta del dashboard común ──
@@ -5250,8 +5532,8 @@ Reglas:
       // Ranking de categorías
       const rankList = document.getElementById('catRankingList');
       if (rankList) {
-        const catIcons = { comida:'🍱', cafe:'☕', transporte:'🚌', telecom:'📱', compras:'🛍️', entretenimiento:'🎮', hogar:'🏠', salud:'💊', educacion:'📚', otros:'💸' };
-        const catNames = { comida:'Comida', cafe:'Café', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
+        const catIcons = { comida:'🍱', transporte:'🚌', telecom:'📱', compras:'🛍️', entretenimiento:'🎮', hogar:'🏠', salud:'💊', educacion:'📚', otros:'💸' };
+        const catNames = { comida:'Comida', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
         const sorted = Object.entries(cats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
         const maxA = sorted[0]?.[1] || 1;
         rankList.innerHTML = sorted.length ? sorted.map(([cat,amt],i) => `
@@ -5275,7 +5557,7 @@ Reglas:
         // Guardar para popup
         window._lastCats = cats;
         window._lastTotal = totalGastos;
-        const catLabels = { comida:'🍱 '+t.cats[0], cafe:'☕ '+t.cats[1], transporte:'🚌 '+t.cats[2], telecom:'📱 '+t.cats[3], compras:'🛍️ '+t.cats[4], entretenimiento:'🎮 '+t.cats[5], hogar:'🏠 '+t.cats[6], salud:'💊 '+t.cats[7], educacion:'📚 '+t.cats[8], otros:'💸 '+t.cats[9] };
+        const catLabels = { comida:'🍱 '+t.cats[0], transporte:'🚌 '+t.cats[1], telecom:'📱 '+t.cats[2], compras:'🛍️ '+t.cats[3], entretenimiento:'🎮 '+t.cats[4], hogar:'🏠 '+t.cats[5], salud:'💊 '+t.cats[6], educacion:'📚 '+t.cats[7], otros:'💸 '+t.cats[8] };
 
         // KPI cards
         const set = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
@@ -5438,6 +5720,10 @@ Reglas:
       }
       await updateDoc(doc(db, 'gastos', id), updateData);
       closeEditModal();
+      // Recargar vista activa
+      if (document.getElementById('tcDetalleTarjeta')?.style.display !== 'none') {
+        cargarTarjetasTab();
+      }
     } catch(e) {
       console.error(e);
       alert('Error al guardar. Intenta de nuevo.');
@@ -5500,6 +5786,14 @@ Reglas:
       const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
       await deleteDoc(doc(db, 'gastos', id));
       closeEditModal();
+      // Reload tarjeta detail if we're in it
+      const detalle = document.getElementById('tcDetalleTarjeta');
+      if (detalle && detalle.style.display !== 'none' && window._tarjetasCache?.length > 0) {
+        const tc = window._tarjetasCache.find(t => t.es_default) || window._tarjetasCache[0];
+        if (tc) window.abrirDashboardTarjeta(tc.id);
+      } else {
+        cargarTarjetasTab();
+      }
     } catch(e) {
       console.error(e);
       alert('Error al eliminar. Intenta de nuevo.');
@@ -5636,7 +5930,7 @@ Reglas:
       labelBalance: '📊 BALANCE',
       labelCategorias: 'CATEGORÍAS',
       labelTransacciones: 'ÚLTIMAS TRANSACCIONES',
-      cats: ['Comida','Café','Transporte','Telecom','Compras','Ocio','Hogar','Salud','Educación','Otros'],
+      cats: ['Comida','Transporte','Telecom','Compras','Ocio','Hogar','Salud','Educación','Otros'],
       modalTitle: '✏️ Editar movimiento',
       modalDesc: 'Descripción',
       modalMonto: 'Monto (S/)',
@@ -5687,7 +5981,7 @@ Reglas:
       labelBalance: '📊 BALANCE',
       labelCategorias: 'CATEGORIES',
       labelTransacciones: 'LATEST TRANSACTIONS',
-      cats: ['Food','Coffee','Transport','Telecom','Shopping','Leisure','Home','Health','Education','Other'],
+      cats: ['Food','Transport','Telecom','Shopping','Leisure','Home','Health','Education','Other'],
       modalTitle: '✏️ Edit transaction',
       modalDesc: 'Description',
       modalMonto: 'Amount (S/)',
@@ -5738,7 +6032,7 @@ Reglas:
       labelBalance: '📊 SALDO',
       labelCategorias: 'CATEGORIAS',
       labelTransacciones: 'ÚLTIMAS TRANSAÇÕES',
-      cats: ['Comida','Café','Transporte','Telecom','Compras','Lazer','Casa','Saúde','Educação','Outros'],
+      cats: ['Comida','Transporte','Telecom','Compras','Lazer','Casa','Saúde','Educação','Outros'],
       modalTitle: '✏️ Editar transação',
       modalDesc: 'Descrição',
       modalMonto: 'Valor (S/)',
@@ -5769,7 +6063,7 @@ Reglas:
   };
 
   window.currentLang = 'es';
-  const catIds = ['comida','cafe','transporte','telecom','compras','ocio','hogar','salud','educacion','otros'];
+  const catIds = ['comida','transporte','telecom','compras','ocio','hogar','salud','educacion','otros'];
 
   function applyLang(lang) {
     const t = (window.LANGS||{})[lang] || (window.LANGS||{})["es"] || {};
@@ -5827,10 +6121,10 @@ Reglas:
     setText('modalBtnCancel', t.modalCancel);
     setText('modalBtnSave', t.modalSave);
     // Opciones de categoría en modal
-    const editCatNames = ['comida','cafe','transporte','telecom','compras','ocio','hogar','salud','educacion','otros'];
+    const editCatNames = ['comida','transporte','telecom','compras','ocio','hogar','salud','educacion','otros'];
     editCatNames.forEach((id, i) => {
       const el = document.getElementById('editCat-' + id);
-      if (el) el.textContent = ['🍱','☕','🚌','📱','🛍️','🎮','🏠','💊','📚','💸'][i] + ' ' + t.cats[i];
+      if (el) el.textContent = ['🍱','🚌','📱','🛍️','🎮','🏠','💊','📚','💸'][i] + ' ' + t.cats[i];
     });
     const editCatIngreso = document.getElementById('editCat-ingreso');
     if (editCatIngreso) editCatIngreso.textContent = '💰 ' + (lang === 'es' ? 'Ingreso' : lang === 'en' ? 'Income' : 'Receita');
@@ -6006,11 +6300,106 @@ Reglas:
 
 <script>
 // ── POPUP CARDS PREMIUM ─────────────────────────────────────────
-window.abrirPopupCard = (tipo) => {
+window.abrirPopupCard = async (tipo) => {
   const overlay = document.getElementById('cardPopupOverlay');
   const title = document.getElementById('cardPopupTitle');
   const content = document.getElementById('cardPopupContent');
-  
+
+  if (tipo === 'proyeccion') {
+    title.textContent = '✨ Análisis IA de tu mes';
+    content.innerHTML = `<div style="text-align:center;padding:32px 0">
+      <div style="font-size:32px;margin-bottom:12px">🤖</div>
+      <div style="color:var(--muted);font-size:14px">Analizando tus gastos con IA...</div>
+    </div>`;
+    overlay.style.display = 'flex';
+
+    try {
+      // Recopilar datos del mes actual
+      const mesActual = window._mesActual || [];
+      const gastos = mesActual.filter(d => d.tipo !== 'ingreso');
+      const ingresos = mesActual.filter(d => d.tipo === 'ingreso');
+      const totalGastos = gastos.reduce((s,d) => s + (d.monto||0), 0);
+      const totalIngresos = ingresos.reduce((s,d) => s + (d.monto||0), 0);
+      const balance = totalIngresos - totalGastos;
+
+      // Categorías
+      const cats = {};
+      gastos.forEach(d => { cats[d.categoria] = (cats[d.categoria]||0) + (d.monto||0); });
+      const topCats = Object.entries(cats).sort((a,b) => b[1]-a[1]).slice(0,3);
+
+      // Info del mes
+      const ahora = new Date();
+      const diasMes = new Date(ahora.getFullYear(), ahora.getMonth()+1, 0).getDate();
+      const diaActual = ahora.getDate();
+      const diasRestantes = diasMes - diaActual;
+      const promedioDiario = diaActual > 0 ? totalGastos / diaActual : 0;
+      const proyeccion = promedioDiario * diasMes;
+      const mesNombre = ahora.toLocaleString('es-PE', { month:'long', year:'numeric' });
+
+      // Mes anterior para comparar
+      const mesAnterior = window._mesAnteriorTotal || 0;
+
+      const catTexto = topCats.map(([c,m]) => `${c}: S/ ${m.toFixed(0)}`).join(', ');
+
+      const prompt = `Eres un asesor financiero personal amigable y directo para usuarios latinoamericanos.
+Analiza estos datos financieros de ${mesNombre} y da un análisis personalizado en español:
+
+- Total gastos: S/ ${totalGastos.toFixed(2)}
+- Total ingresos: S/ ${totalIngresos.toFixed(2)}
+- Balance: S/ ${balance.toFixed(2)}
+- Día ${diaActual} de ${diasMes} (quedan ${diasRestantes} días)
+- Promedio diario de gasto: S/ ${promedioDiario.toFixed(2)}
+- Proyección matemática fin de mes: S/ ${proyeccion.toFixed(0)}
+- Top categorías: ${catTexto || 'Sin datos'}
+${mesAnterior > 0 ? `- Gasto mes anterior: S/ ${mesAnterior.toFixed(0)}` : ''}
+
+Responde con 3 secciones cortas usando este formato EXACTO (sin markdown, sin asteriscos):
+📊 PROYECCIÓN
+[Una oración sobre cómo va el mes y cuánto proyectas que gastará]
+
+💡 CONSEJO
+[Un consejo específico y accionable basado en sus datos reales]
+
+🎯 META
+[Una meta concreta para los días restantes del mes]
+
+Máximo 2 oraciones por sección. Tono amigable, directo, en español latinoamericano.`;
+
+      const resp = await fetch('https://hormicash-bot-production.up.railway.app/api/analisis-mes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await resp.json();
+      const texto = data.texto || 'No pude generar el análisis. Intenta de nuevo.';
+
+      // Formatear el texto con secciones visuales
+      const secciones = texto.split('\n\n').filter(s => s.trim());
+      const html = secciones.map(s => {
+        const lineas = s.trim().split('\n');
+        const header = lineas[0];
+        const body = lineas.slice(1).join(' ');
+        return `<div style="background:var(--card2);border-radius:12px;padding:14px 16px;margin-bottom:12px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:6px">${header}</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6">${body}</div>
+        </div>`;
+      }).join('');
+
+      content.innerHTML = `
+        <div style="margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,rgba(99,102,241,0.1),rgba(16,185,129,0.1));border-radius:12px;border:1px solid rgba(99,102,241,0.2)">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Proyección matemática</div>
+          <div style="font-size:22px;font-weight:800;color:var(--blue)">S/ ${proyeccion.toFixed(0)}</div>
+          <div style="font-size:11px;color:var(--muted)">Día ${diaActual} de ${diasMes} · S/ ${promedioDiario.toFixed(0)}/día promedio</div>
+        </div>
+        ${html}
+        <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px">✨ Análisis generado por IA · ${new Date().toLocaleDateString('es-PE')}</div>`;
+    } catch(e) {
+      console.error('Error análisis IA:', e);
+      content.innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted)">❌ No pude conectar con la IA. Intenta de nuevo.</div>`;
+    }
+    return;
+  }
+
   if (tipo === 'top-cats') {
     title.textContent = '🏅 Top categorías de gasto';
     const topList = document.getElementById('topCatsList');
@@ -6068,7 +6457,7 @@ function drawDonutPopup(cats, total) {
   ctx.fill();
 }
 const CATS_DISPLAY = {
-  comida:'🍔 Comida', cafe:'☕ Café', transporte:'🚌 Transporte', telecom:'📱 Telecom',
+  comida:'🍔 Comida', transporte:'🚌 Transporte', telecom:'📱 Telecom',
   entretenimiento:'🎬 Entretenimiento', salud:'💊 Salud', educacion:'📚 Educación',
   ropa:'👕 Ropa', hogar:'🏠 Hogar', otros:'📦 Otros'
 };
@@ -6105,6 +6494,15 @@ window.showTab = function(tab) {
     cargarAdminPanel();
   }
   if (tab === 'tarjeta') cargarTarjetasTab();
+  if (tab === 'gastosfijos') {
+    const uid = window._auth?.currentUser?.uid;
+    const doRender = () => { if (window.renderGFCalendar) window.renderGFCalendar(); };
+    if (uid && window.cargarGastosFijos) {
+      window.cargarGastosFijos(uid).then(doRender);
+    } else {
+      setTimeout(doRender, 200);
+    }
+  }
   if (tab === 'premium') {
   renderPremiumSection();
   if (window._auth?.currentUser && window._loadData) setTimeout(() => window._loadData(window._auth.currentUser), 100);
@@ -6294,7 +6692,6 @@ window.cargarMetaYLimites = async (uid) => {
 // ── PRESUPUESTO POR CATEGORÍA ─────────────────────────────────────
 const PRES_CATS = [
   { key:'comida',          emoji:'🍱', label:'Comida' },
-  { key:'cafe',            emoji:'☕', label:'Café' },
   { key:'transporte',      emoji:'🚌', label:'Transporte' },
   { key:'telecom',         emoji:'📱', label:'Telecom' },
   { key:'entretenimiento', emoji:'🎮', label:'Ocio' },
@@ -6580,6 +6977,243 @@ document.addEventListener('click', (e) => {
     // Recargar datos
     if (window._loadData && window._auth?.currentUser) window._loadData(window._auth.currentUser);
   };
+  // — DESGLOSE POR CATEGORÍA —
+  window.abrirDesgloseCat = async function(cat) {
+  if (window.userPlan !== 'premium') {
+    if (window.mostrarUpgradeModal) window.mostrarUpgradeModal();
+    else alert('Esta función es exclusiva de Premium 🌟\nDesbloquea por $4/mes con el código HORMI2026');
+    return;
+  }
+  const modal = document.getElementById('catDesglosModal');
+  const titulo = document.getElementById('catDesgloseTitulo');
+  const lista = document.getElementById('catDesgloseList');
+  const total = document.getElementById('catDesgloseTotal');
+  if (!modal) return;
+  const catNames = { comida:'Comida', transporte:'Transporte', telecom:'Telecom', compras:'Compras', entretenimiento:'Ocio', hogar:'Hogar', salud:'Salud', educacion:'Educación', otros:'Otros' };
+  titulo.textContent = catNames[cat] || cat;
+  lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Cargando...</div>';
+  modal.style.display = 'flex';
+  try {
+    const user = window._auth?.currentUser;
+    if (!user) { lista.innerHTML = '<div style="color:var(--red);padding:20px">No hay sesión activa</div>'; return; }
+const gastos = (window._mesActual || []).filter(d => d.categoria === cat && d.tipo !== 'ingreso' && d.fuente_pago !== 'tarjeta');
+if (!gastos.length) {
+  lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted)">Sin gastos en esta categoría</div>';
+  total.textContent = '';
+  document.getElementById('catDesgloseDonutWrap').style.display = 'none';
+  return;
+}
+document.getElementById('catDesgloseDonutWrap').style.display = 'flex';
+const totalAmt = gastos.reduce((s, d) => s + (d.monto || 0), 0);
+total.textContent = 'Total: S/ ' + totalAmt.toFixed(2);
+
+// Agrupar por descripcion para el donut
+const grupos = {};
+gastos.forEach(d => {
+  const key = d.descripcion || d.label || 'Otro';
+  grupos[key] = (grupos[key] || 0) + (d.monto || 0);
+});
+const entries = Object.entries(grupos).sort((a,b) => b[1]-a[1]);
+const COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#3b82f6','#ec4899','#8b5cf6','#f97316','#14b8a6','#64748b'];
+
+// Dibujar donut
+const canvas = document.getElementById('catDesgloseDonut');
+const ctx = canvas.getContext('2d');
+ctx.clearRect(0, 0, 130, 130);
+const cx = 65, cy = 65, r = 55, inner = 32;
+let angle = -Math.PI / 2;
+entries.forEach(([key, val], i) => {
+  const slice = (val / totalAmt) * 2 * Math.PI;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, r, angle, angle + slice);
+  ctx.closePath();
+  ctx.fillStyle = COLORS[i % COLORS.length];
+  ctx.fill();
+  angle += slice;
+});
+// Hueco interior
+ctx.beginPath();
+ctx.arc(cx, cy, inner, 0, 2 * Math.PI);
+ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#fff';
+ctx.fill();
+// Texto central
+ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#111';
+ctx.font = 'bold 12px Inter,sans-serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('S/ ' + totalAmt.toFixed(0), cx, cy);
+
+// Leyenda
+const legend = document.getElementById('catDesgloseDonutLegend');
+legend.innerHTML = entries.slice(0, 6).map(([key, val], i) => {
+  const pct = ((val / totalAmt) * 100).toFixed(0);
+  const label = key.length > 18 ? key.slice(0, 18) + '…' : key;
+  return `<div style="display:flex;align-items:center;gap:6px">
+    <span style="width:10px;height:10px;border-radius:50%;background:${COLORS[i % COLORS.length]};flex-shrink:0"></span>
+    <span style="flex:1;color:var(--text)">${label}</span>
+    <span style="color:var(--muted);font-size:11px">${pct}%</span>
+  </div>`;
+}).join('') + (entries.length > 6 ? `<div style="color:var(--muted);font-size:11px">+${entries.length - 6} más</div>` : '');
+
+// Lista de gastos
+lista.innerHTML = gastos.sort((a,b) => (b.fecha?.toDate?.() || 0) - (a.fecha?.toDate?.() || 0)).map(d => {
+  const fecha = d.fecha?.toDate ? d.fecha.toDate().toLocaleDateString('es-PE') : '—';
+  return `<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+    <div><div style="font-weight:500">${d.descripcion || d.label || '—'}</div><div style="font-size:11px;color:var(--muted)">${fecha}</div></div>
+    <div style="font-weight:700;color:var(--red)">S/ ${(d.monto||0).toFixed(2)}</div>
+  </div>`;
+}).join('');
+} catch(e) { console.error(e); }};
+
+window.cerrarDesgloseCat = function() {
+  document.getElementById('catDesglosModal').style.display = 'none';
+};
 </script>
+<div id="catDesglosModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-weight:700;font-size:18px" id="catDesgloseTitulo"></div>
+      <button onclick="cerrarDesgloseCat()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button>
+    </div>
+    <div id="catDesgloseTotal" style="font-size:13px;color:var(--muted);margin-bottom:16px"></div>
+    <!-- Donut chart -->
+    <div id="catDesgloseDonutWrap" style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+      <canvas id="catDesgloseDonut" width="130" height="130" style="flex-shrink:0"></canvas>
+      <div id="catDesgloseDonutLegend" style="flex:1;display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
+    </div>
+    <div id="catDesgloseList"></div>
+  </div>
+</div>
+
+<script>
+// ── GASTOS FIJOS CALENDARIO ──────────────────────────
+const GF_SERVICES = {
+  netflix:   { logo:"N", color:"#E50914" },
+  spotify:   { logo:"S", color:"#1DB954" },
+  amazon:    { logo:"A", color:"#FF9900" },
+  disney:    { logo:"D", color:"#0063e5" },
+  youtube:   { logo:"Y", color:"#FF0000" },
+  hbo:       { logo:"H", color:"#5822B4" },
+  prime:     { logo:"P", color:"#00A8E0" },
+  apple:     { logo:"", color:"#555555" },
+  crunchyroll: { logo:"C", color:"#F47521" },
+  twitch:    { logo:"T", color:"#9146FF" },
+  internet:  { logo:"🌐", color:"#3b82f6" },
+  wifi:      { logo:"🌐", color:"#3b82f6" },
+  luz:       { logo:"⚡", color:"#f59e0b" },
+  electricidad: { logo:"⚡", color:"#f59e0b" },
+  agua:      { logo:"💧", color:"#06b6d4" },
+  gas:       { logo:"🔥", color:"#ef4444" },
+  telefono:  { logo:"📱", color:"#8b5cf6" },
+  movistar:  { logo:"M", color:"#019df4" },
+  claro:     { logo:"C", color:"#da291c" },
+  entel:     { logo:"E", color:"#00843D" },
+  bitel:     { logo:"B", color:"#7B2D8B" },
+  gym:       { logo:"💪", color:"#22c55e" },
+  gimnasio:  { logo:"💪", color:"#22c55e" },
+  alquiler:  { logo:"🏠", color:"#f97316" },
+  seguro:    { logo:"🛡", color:"#64748b" },
+  cuota:     { logo:"💳", color:"#a78bfa" },
+};
+
+function gfGetService(nombre) {
+  const n = (nombre || "").toLowerCase();
+  for (const [key, val] of Object.entries(GF_SERVICES)) {
+    if (n.includes(key)) return val;
+  }
+  return { logo:"💸", color:"#3b82f6" };
+}
+
+let _gfCalMonth = new Date().getMonth();
+let _gfCalYear  = new Date().getFullYear();
+
+window.renderGFCalendar = function() {
+  const wrap = document.getElementById("gfCalendarWrap");
+  if (!wrap) return;
+  const cache = window._gastosFijosCache || [];
+  const cur   = window.userCurrency || "S/";
+  const today = new Date();
+  const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const dayNames   = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+  const total = cache.reduce((s,g) => s + (g.monto||0), 0);
+  const proximos = cache.filter(g => g.dia_cobro && _gfCalMonth === today.getMonth() && Math.abs(g.dia_cobro - today.getDate()) <= 5);
+  const pagadosEst = cache.filter(g => g.dia_cobro && _gfCalMonth === today.getMonth() && g.dia_cobro < today.getDate()).reduce((s,g)=>s+(g.monto||0),0);
+
+  const firstDay    = new Date(_gfCalYear, _gfCalMonth, 1).getDay();
+  const daysInMonth = new Date(_gfCalYear, _gfCalMonth+1, 0).getDate();
+  const prevDays    = new Date(_gfCalYear, _gfCalMonth, 0).getDate();
+
+  const byDay = {};
+  cache.forEach(g => {
+    if (g.dia_cobro) {
+      if (!byDay[g.dia_cobro]) byDay[g.dia_cobro] = [];
+      byDay[g.dia_cobro].push(g);
+    }
+  });
+
+  let cells = "";
+  for (let i = firstDay - 1; i >= 0; i--) {
+    cells += '<div class="gf-cal-cell other-month"><div class="gf-cal-date">'+(prevDays-i)+'</div></div>';
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = d === today.getDate() && _gfCalMonth === today.getMonth() && _gfCalYear === today.getFullYear();
+    const events  = byDay[d] || [];
+    let evHtml = "";
+    events.forEach(g => {
+      const svc = gfGetService(g.nombre);
+      const isUp = Math.abs(d - today.getDate()) <= 5 && _gfCalMonth === today.getMonth();
+      const gfId = g.id || '';
+      evHtml += '<div class="gf-event '+(isUp?"upcoming":"")+' gf-clickable" data-gfid="'+gfId+'" title="'+g.nombre+'">'
+        +'<div class="gf-event-logo" style="background:'+svc.color+'22;color:'+svc.color+'">'+svc.logo+'</div>'
+        +'<span class="gf-event-name">'+g.nombre+'</span>'
+        +'<span class="gf-event-amount">'+cur+(g.monto||0).toFixed(0)+'</span>'
+        +'</div>';
+    });
+    cells += '<div class="gf-cal-cell '+(isToday?"today":"")+'">'
+      +'<div class="gf-cal-date">'+d+'</div>'+evHtml+'</div>';
+  }
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+  for (let d = 1; d <= totalCells - firstDay - daysInMonth; d++) {
+    cells += '<div class="gf-cal-cell other-month"><div class="gf-cal-date">'+d+'</div></div>';
+  }
+
+  const dayHdrs = dayNames.map(d => '<div class="gf-cal-day-name">'+d+'</div>').join("");
+
+  wrap.innerHTML =
+    '<div class="gf-summary">'
+    +'<div class="gf-kpi"><div class="gf-kpi-label">Total mensual</div><div class="gf-kpi-value blue">'+cur+' '+total.toFixed(0)+'</div></div>'
+    +'<div class="gf-kpi"><div class="gf-kpi-label">Próximos</div><div class="gf-kpi-value amber">'+proximos.length+' pagos</div></div>'
+    +'<div class="gf-kpi"><div class="gf-kpi-label">Ya cobrado est.</div><div class="gf-kpi-value green">'+cur+' '+pagadosEst.toFixed(0)+'</div></div>'
+    +'</div>'
+    +'<div class="gf-cal-header">'
+    +'<div class="gf-cal-month">'+monthNames[_gfCalMonth]+' '+_gfCalYear+'</div>'
+    +'<div class="gf-cal-nav"><button onclick="gfPrevMonth()">&lt;</button><button onclick="gfNextMonth()">&gt;</button></div>'
+    +'</div>'
+    +'<div class="gf-cal-grid">'+dayHdrs+'</div>'
+    +'<div class="gf-cal-grid" style="gap:4px">'+cells+'</div>'
+    +(cache.length===0?'<div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">Sin gastos fijos. Agrega uno con el botón +</div>':"");
+
+  wrap.onclick = function(e) {
+    const el = e.target.closest('.gf-clickable');
+    if (el && window.abrirModalGastoFijo) {
+      window.abrirModalGastoFijo(el.dataset.gfid);
+    }
+  };
+};
+
+window.gfPrevMonth = function() {
+  _gfCalMonth--;
+  if (_gfCalMonth < 0) { _gfCalMonth = 11; _gfCalYear--; }
+  renderGFCalendar();
+};
+window.gfNextMonth = function() {
+  _gfCalMonth++;
+  if (_gfCalMonth > 11) { _gfCalMonth = 0; _gfCalYear++; }
+  renderGFCalendar();
+};
+</script>
+
 </body>
 </html>
