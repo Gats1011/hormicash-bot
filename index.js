@@ -337,7 +337,11 @@ app.post('/webhook', async (req, res) => {
       tieneMedia = true;
       mediaId = msgObj.document?.id;
       mediaMime = msgObj.document?.mime_type || 'application/pdf';
+    } else if (tipo === 'call' || tipo === 'reaction' || tipo === 'sticker' || tipo === 'location' || tipo === 'contacts' || tipo === 'unsupported') {
+      console.log(`Tipo ignorado: ${tipo} de ${telefono}`);
+      return;
     } else {
+      console.log(`Tipo desconocido: ${tipo} de ${telefono}`);
       return;
     }
 
