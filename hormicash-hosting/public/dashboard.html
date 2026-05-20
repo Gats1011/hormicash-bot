@@ -6,7 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Hormicash – Controla tus gastos hormiga v25</title>
+<title>Hormicash 🐜 — Controla tus gastos hormiga</title>
+<link rel="icon" type="image/png" href="/logo3.png">
 <meta name="facebook-domain-verification" content="fug0ckvru89cufj2yzsz9e5ffjpi9j" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -2939,26 +2940,47 @@
       <div class="premium-feat-item">🚫 Sin anuncios</div>
     </div>
 
-    <div class="premium-price-tag">$4 <span>/ mes</span></div>
-
-    <div class="premium-code-section">
-      <div class="premium-code-label">🔑 Ingresa tu código de acceso</div>
-      <input
-        type="text"
-        class="premium-code-input"
-        id="premiumCodeInput"
-        placeholder="Código Premium"
-        maxlength="20"
-        autocomplete="off"
-        oninput="this.value = this.value.toUpperCase()"
-      >
-      <div class="premium-code-error" id="premiumCodeError">❌ Código incorrecto. Verifica e intenta de nuevo.</div>
+    <!-- TABS: Yape / Código -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;background:var(--card2);border-radius:12px;padding:4px">
+      <button id="tabYapeBtn" onclick="window.switchPayTab('yape')" style="flex:1;padding:10px;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:var(--premium);color:white;transition:all 0.2s">💜 Pagar con Yape</button>
+      <button id="tabCodigoBtn" onclick="window.switchPayTab('codigo')" style="flex:1;padding:10px;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all 0.2s">🔑 Tengo un código</button>
     </div>
 
-    <button class="premium-activate-btn" id="premiumActivateBtn" onclick="activatePremiumCode()">
-      ⭐ Activar Premium
-    </button>
-    <button class="premium-back-btn" onclick="closePremiumPage()">← Volver al dashboard</button>
+    <!-- TAB YAPE -->
+    <div id="tabYape">
+      <div style="text-align:center;margin-bottom:12px">
+        <img src="/yape.png" alt="QR Yape" style="width:180px;height:180px;border-radius:16px;border:2px solid var(--border)">
+      </div>
+      <div style="background:var(--card2);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:2px">Número Yape</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)" id="yapeNumero">930 109 405</div>
+        </div>
+        <button onclick="window.copiarYape()" style="background:var(--premium-dim);border:none;border-radius:8px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--premium);cursor:pointer" id="copiarYapeBtn">📋 Copiar</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5">Yapea S/ 15 y luego toca el botón de abajo 👇</div>
+      <button onclick="window.mostrarFormPago()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:white;cursor:pointer">✅ Ya pagué — Activar Premium</button>
+    </div>
+
+    <!-- TAB CÓDIGO -->
+    <div id="tabCodigo" style="display:none">
+      <div class="premium-code-section">
+        <div class="premium-code-label">🔑 Ingresa tu código de acceso</div>
+        <input type="text" class="premium-code-input" id="premiumCodeInput" placeholder="Código Premium" maxlength="20" autocomplete="off" oninput="this.value = this.value.toUpperCase()">
+        <div class="premium-code-error" id="premiumCodeError">❌ Código incorrecto. Verifica e intenta de nuevo.</div>
+      </div>
+      <button class="premium-activate-btn" id="premiumActivateBtn" onclick="activatePremiumCode()">⭐ Activar Premium</button>
+    </div>
+
+    <!-- FORM CONFIRMACIÓN PAGO -->
+    <div id="formPagoYape" style="display:none">
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:12px">📋 Confirma tu pago</div>
+      <input type="text" id="pagoNombre" placeholder="Tu nombre completo" style="width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);margin-bottom:10px">
+      <input type="tel" id="pagoWhatsapp" placeholder="Tu WhatsApp (ej: 987654321)" style="width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);margin-bottom:10px">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Te avisaremos por WhatsApp cuando confirmemos tu pago 🐜</div>
+      <button onclick="window.enviarSolicitudPago()" id="btnEnviarPago" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:white;cursor:pointer">Enviar solicitud</button>
+      <button onclick="window.volverYape()" style="width:100%;background:transparent;border:none;padding:10px;font-family:'Inter',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;margin-top:4px">← Volver</button>
+    </div>
   </div>
 </div>
 
@@ -3172,7 +3194,7 @@
         <div class="lock-icon">🔒</div>
         <div class="lock-title">Análisis avanzado — Premium</div>
         <div class="lock-desc">KPIs en tiempo real, top categorías, gráficos de distribución, proyecciones y consejos personalizados.</div>
-        <button class="upgrade-cta" onclick="window.showUpgrade()">⭐ Upgrade a Premium — $4/mes</button>
+        <button class="upgrade-cta" onclick="window.showUpgrade()">⭐ Upgrade a Premium — S/ 15/mes</button>
       </div>
       <div id="premiumSection"></div>
     </div>
@@ -3214,6 +3236,13 @@
         <tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">Cargando...</td></tr>
       </tbody>
     </table>
+  </div>
+  <!-- PAGOS PENDIENTES -->
+  <div style="margin-top:24px">
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px">💜 Pagos pendientes de aprobación</div>
+    <div id="adminPagosList">
+      <div style="color:var(--muted);font-size:14px">Cargando...</div>
+    </div>
   </div>
 </div>
 
@@ -5199,7 +5228,7 @@ Reglas:
       `• Top categorías y distribución\n` +
       `• Seguimiento de tarjeta de crédito\n` +
       `• Sin anuncios\n\n` +
-      `Por solo $4/mes estás ahorrando tiempo y tomando mejores decisiones con tu dinero. ¿Estás seguro?`;
+      `Por solo S/ 15/mes estás ahorrando tiempo y tomando mejores decisiones con tu dinero. ¿Estás seguro?`;
     if (!confirm(msg)) return;
     const user = auth.currentUser;
     if (!user) return;
@@ -6515,11 +6544,14 @@ async function cargarAdminPanel() {
   const countEl = document.getElementById('adminCountUpgrade');
   const uniqueEl = document.getElementById('adminCountUnique');
   const mobileEl = document.getElementById('adminCountMobile');
+  const pagosList = document.getElementById('adminPagosList');
   if (!tbody) return;
   tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">Cargando...</td></tr>';
   try {
-    const { collection: col2, query: q2, where: w2, orderBy: ob2, getDocs: gd2, getFirestore: gfs2 } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+    const { collection: col2, query: q2, where: w2, orderBy: ob2, getDocs: gd2, getFirestore: gfs2, doc: doc2, updateDoc: upd2 } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
     const dbAdmin = gfs2();
+
+    // Métricas
     const snap = await gd2(q2(col2(dbAdmin, 'metricas'), w2('tipo', '==', 'intento_premium'), ob2('fecha', 'desc')));
     const docs2 = snap.docs.map(d => d.data());
     if (countEl) countEl.textContent = docs2.length;
@@ -6529,23 +6561,71 @@ async function cargarAdminPanel() {
     if (mobileEl) mobileEl.textContent = mobileCount;
     if (!docs2.length) {
       tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--muted)">Sin registros aún</td></tr>';
-      return;
+    } else {
+      tbody.innerHTML = docs2.map((d, i) => {
+        const fecha = d.fecha?.toDate ? d.fecha.toDate().toLocaleString('es-PE') : '—';
+        const fuente = d.fuente === 'mobile' ? '📱 Mobile' : '🖥️ Desktop';
+        const rowBg = i % 2 === 0 ? '' : 'background:var(--surface)';
+        return `<tr style="${rowBg}">
+          <td style="padding:10px 16px;color:var(--muted)">${i+1}</td>
+          <td style="padding:10px 16px;font-weight:500">${d.email || 'anónimo'}</td>
+          <td style="padding:10px 16px;color:var(--muted);font-size:12px">${fecha}</td>
+          <td style="padding:10px 16px">${fuente}</td>
+        </tr>`;
+      }).join('');
     }
-    tbody.innerHTML = docs2.map((d, i) => {
-      const fecha = d.fecha?.toDate ? d.fecha.toDate().toLocaleString('es-PE') : '—';
-      const fuente = d.fuente === 'mobile' ? '📱 Mobile' : '🖥️ Desktop';
-      const rowBg = i % 2 === 0 ? '' : 'background:var(--surface)';
-      return `<tr style="${rowBg}">
-        <td style="padding:10px 16px;color:var(--muted)">${i+1}</td>
-        <td style="padding:10px 16px;font-weight:500">${d.email || 'anónimo'}</td>
-        <td style="padding:10px 16px;color:var(--muted);font-size:12px">${fecha}</td>
-        <td style="padding:10px 16px">${fuente}</td>
-      </tr>`;
-    }).join('');
+
+    // Pagos pendientes
+    if (pagosList) {
+      const pagosSnap = await gd2(q2(col2(dbAdmin, 'pagos_pendientes'), w2('estado', '==', 'pendiente'), ob2('fecha', 'desc')));
+      if (pagosSnap.empty) {
+        pagosList.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:16px;background:var(--card);border-radius:12px">Sin pagos pendientes 🎉</div>';
+      } else {
+        pagosList.innerHTML = pagosSnap.docs.map(d => {
+          const data = d.data();
+          const fecha = data.fecha?.toDate ? data.fecha.toDate().toLocaleString('es-PE') : '—';
+          return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-weight:700;font-size:15px">${data.nombre || '—'}</div>
+              <div style="font-size:13px;color:var(--muted)">📱 ${data.whatsapp || '—'} · ${data.email || '—'}</div>
+              <div style="font-size:12px;color:var(--muted)">${fecha} · S/ ${data.monto || 15}</div>
+            </div>
+            <button data-pagoid="${d.id}" data-uid="${data.uid||''}" data-tel="${data.whatsapp||''}" data-nombre="${data.nombre||''}" onclick="window.aprobarPago(this)" style="background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:10px;padding:10px 18px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:white;cursor:pointer">✅ Aprobar</button>
+          </div>`;
+        }).join('');
+      }
+    }
   } catch(e) {
     tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--red)">Error: ${e.message}</td></tr>`;
   }
 }
+
+window.aprobarPago = async (btn) => {
+  const pagoId = btn.dataset.pagoid;
+  const uid = btn.dataset.uid;
+  const tel = btn.dataset.tel;
+  const nombre = btn.dataset.nombre;
+  if (!confirm(`¿Aprobar pago de ${nombre}?`)) return;
+  btn.disabled = true; btn.textContent = 'Aprobando...';
+  try {
+    const { getFirestore, doc, updateDoc, setDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+    const dbA = getFirestore();
+    // Marcar pago como aprobado
+    await updateDoc(doc(dbA, 'pagos_pendientes', pagoId), { estado: 'aprobado' });
+    // Activar premium en usuario si tiene uid
+    if (uid) await setDoc(doc(dbA, 'usuarios', uid), { plan: 'premium' }, { merge: true });
+    // Notificar por WhatsApp
+    if (tel) {
+      await fetch('/api/notificar-premium', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telefono: tel, nombre })
+      });
+    }
+    btn.closest('div[style]').remove();
+    alert(`✅ Premium activado para ${nombre}`);
+  } catch(e) { alert('Error: ' + e.message); btn.disabled=false; btn.textContent='✅ Aprobar'; }
+};
 
 window.recategorizarTodo = async () => {
   const btn = document.getElementById('recatBtn');
@@ -6982,7 +7062,7 @@ document.addEventListener('click', (e) => {
   window.abrirDesgloseCat = async function(cat) {
   if (window.userPlan !== 'premium') {
     if (window.mostrarUpgradeModal) window.mostrarUpgradeModal();
-    else alert('Esta función es exclusiva de Premium 🌟\nDesbloquea por $4/mes con el código HORMI2026');
+    else alert('Esta función es exclusiva de Premium 🌟\nDesbloquea por S/ 15/mes con el código HORMI2026');
     return;
   }
   const modal = document.getElementById('catDesglosModal');
@@ -7213,6 +7293,55 @@ window.gfNextMonth = function() {
   _gfCalMonth++;
   if (_gfCalMonth > 11) { _gfCalMonth = 0; _gfCalYear++; }
   renderGFCalendar();
+};
+window.switchPayTab = (tab) => {
+  document.getElementById('tabYape').style.display = tab==='yape'?'block':'none';
+  document.getElementById('tabCodigo').style.display = tab==='codigo'?'block':'none';
+  document.getElementById('formPagoYape').style.display = 'none';
+  document.getElementById('tabYapeBtn').style.background = tab==='yape'?'var(--premium)':'transparent';
+  document.getElementById('tabYapeBtn').style.color = tab==='yape'?'white':'var(--muted)';
+  document.getElementById('tabCodigoBtn').style.background = tab==='codigo'?'var(--premium)':'transparent';
+  document.getElementById('tabCodigoBtn').style.color = tab==='codigo'?'white':'var(--muted)';
+};
+
+window.copiarYape = () => {
+  navigator.clipboard.writeText('930109405');
+  const btn = document.getElementById('copiarYapeBtn');
+  btn.textContent = '✅ Copiado';
+  setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+};
+
+window.mostrarFormPago = () => {
+  document.getElementById('tabYape').style.display = 'none';
+  document.getElementById('formPagoYape').style.display = 'block';
+};
+
+window.volverYape = () => {
+  document.getElementById('formPagoYape').style.display = 'none';
+  document.getElementById('tabYape').style.display = 'block';
+};
+
+window.enviarSolicitudPago = async () => {
+  const nombre = document.getElementById('pagoNombre').value.trim();
+  const whatsapp = document.getElementById('pagoWhatsapp').value.trim();
+  if (!nombre || !whatsapp) { alert('Completa todos los campos'); return; }
+  const btn = document.getElementById('btnEnviarPago');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const user = auth.currentUser;
+    await addDoc(collection(db, 'pagos_pendientes'), {
+      nombre, whatsapp: `+51${whatsapp.replace(/\D/g,'')}`,
+      uid: user?.uid || null, email: user?.email || null,
+      monto: 15, moneda: 'PEN', metodo: 'yape',
+      estado: 'pendiente', fecha: serverTimestamp()
+    });
+    document.getElementById('formPagoYape').innerHTML = `
+      <div style="text-align:center;padding:20px">
+        <div style="font-size:48px;margin-bottom:12px">🐜</div>
+        <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">¡Solicitud enviada!</div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.6">Verificaremos tu pago en breve y te avisaremos por WhatsApp al <strong>${whatsapp}</strong></div>
+      </div>`;
+  } catch(e) { alert('Error al enviar. Intenta de nuevo.'); btn.disabled=false; btn.textContent='Enviar solicitud'; }
 };
 </script>
 

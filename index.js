@@ -629,5 +629,13 @@ app.post('/api/claude', async (req, res) => {
   }catch(e){res.status(500).json({error:e.message});}
 });
 
+app.post('/api/notificar-premium', async (req, res) => {
+  const { telefono, nombre } = req.body;
+  try {
+    await enviarMensaje(telefono, `🌟 *¡Ya eres Premium, ${nombre}!*\n\nTu pago fue confirmado. Entra al dashboard para disfrutar todas las funciones:\nhttps://hormicash.com/dashboard.html\n\n¡Gracias por confiar en Hormicash! 🐜`);
+    res.json({ ok: true });
+  } catch(e) { res.json({ error: e.message }); }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🐜 Hormicash Bot corriendo en puerto ${PORT}`));
