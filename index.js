@@ -193,6 +193,16 @@ async function actualizarGastoTarjeta(telefono,monto) {
     await userRef.update({'tarjeta.gasto_actual':(snap.data().tarjeta?.gasto_actual||0)+monto});
   } catch(e) { console.error('Error tarjeta:',e.message); }
 }
+async function obtenerUidPorTelefono(telefono) {
+  telefono = normalizarTelefono(telefono);
+  try {
+    const snap = await db.collection('usuarios').where('telefono', '==', telefono).limit(1).get();
+    if (!snap.empty) return snap.docs[0].id;
+    const snap2 = await db.collection('usuarios').where('telefono', '==', `whatsapp:${telefono}`).limit(1).get();
+    if (!snap2.empty) return snap2.docs[0].id;
+    return null;
+  } catch(e) { return null; }
+}
 async function extractVoucherData(base64,mimeType) {
   const model=genAI.getGenerativeModel({model:'gemini-2.5-flash-lite'});
   const prompt=`Analiza este voucher y extrae la información del gasto.\nResponde ÚNICAMENTE JSON válido sin markdown.\nFormato: {"negocio":"","monto":0.00,"moneda":"PEN","categoria":"Comida|Transporte|Entretenimiento|Salud|Educación|Ropa|Tecnología|Hogar|Otros","fecha":"YYYY-MM-DD o null","descripcion":""}\nSi no es voucher: {"error":"no_voucher"}`;
@@ -407,7 +417,8 @@ app.post('/webhook', async (req, res) => {
           const audio = await extractAudioData(base64, mimeType);
           if (audio.error==='no_monto') { await enviarMensaje(telefono, '🎙️ No pude identificar un monto.\nIntenta: "Almuerzo en La Lucha, veinte soles"'); return; }
           const esIngreso=audio.tipo==='ingreso', cat=audio.categoria?.toLowerCase()||'otros', labelAudio=audio.negocio||audio.descripcion||(esIngreso?'Ingreso por voz':'Gasto por voz');
-          await db.collection('gastos').add({telefono,monto:audio.monto,tipo:audio.tipo||'gasto',categoria:cat,label:labelAudio,descripcion:audio.descripcion,fuente:'audio_whatsapp',mensaje:'[audio]',fecha:admin.firestore.FieldValue.serverTimestamp()});
+          const uid = await obtenerUidPorTelefono(telefono);
+          await db.collection('gastos').add({telefono,uid:uid||null,monto:audio.monto,tipo:audio.tipo||'gasto',categoria:cat,label:labelAudio,descripcion:audio.descripcion,fuente:'audio_whatsapp',mensaje:'[audio]',fecha:admin.firestore.FieldValue.serverTimestamp()});
           await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente:'audio', categoria:cat, monto:audio.monto});
           let resp=esIngreso?`💰 *Ingreso por voz*\n\n💵 S/ ${audio.monto.toFixed(2)}\n📝 ${labelAudio}\n\nEscribe /resumen para ver tu balance`:`✅ *Gasto por voz*\n\n🏪 ${labelAudio}\n💰 S/ ${audio.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n\nEscribe /resumen para ver tu balance`;
           if(!esIngreso){const a=await verificarLimite(telefono,cat,audio.monto);if(a)resp+=mensajeAlerta(a,CATEGORIAS_DISPLAY[cat]||cat);const alerta=await verificarAlertaContextual(telefono,cat,audio.monto);if(alerta)resp+=`\n\n💡 Hoy ya llevas S/ ${alerta.totalHoy} en ${alerta.catDisplay}, por encima de tu promedio diario (S/ ${alerta.promedio})`;}
@@ -416,7 +427,8 @@ app.post('/webhook', async (req, res) => {
           const voucher = await extractVoucherData(base64, mimeType);
           if (voucher.error==='no_voucher') { await enviarMensaje(telefono, '📸 No pude identificar un voucher.\nEnvía una foto clara de tu ticket.'); return; }
           const cat=voucher.categoria?.toLowerCase()||'otros', labelVoucher=voucher.negocio||'Voucher';
-          await db.collection('gastos').add({telefono,monto:voucher.monto,tipo:'gasto',categoria:cat,label:labelVoucher,descripcion:voucher.descripcion,fecha_voucher:voucher.fecha,fuente:'voucher_whatsapp',mensaje:'[imagen]',fecha:admin.firestore.FieldValue.serverTimestamp()});
+          const uidV = await obtenerUidPorTelefono(telefono);
+          await db.collection('gastos').add({telefono,uid:uidV||null,monto:voucher.monto,tipo:'gasto',categoria:cat,label:labelVoucher,descripcion:voucher.descripcion,fecha_voucher:voucher.fecha,fuente:'voucher_whatsapp',mensaje:'[imagen]',fecha:admin.firestore.FieldValue.serverTimestamp()});
           await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente:'voucher', categoria:cat, monto:voucher.monto});
           let resp=`✅ *Voucher registrado*\n\n🏪 ${labelVoucher}\n💰 S/ ${voucher.monto.toFixed(2)}\n📂 ${CATEGORIAS_DISPLAY[cat]||cat}\n📝 ${voucher.descripcion}\n\nEscribe /resumen para ver tu balance`;
           const a=await verificarLimite(telefono,cat,voucher.monto);if(a)resp+=mensajeAlerta(a,CATEGORIAS_DISPLAY[cat]||cat);
@@ -505,7 +517,8 @@ app.post('/webhook', async (req, res) => {
     if (multiples) {
       let respuesta=`✅ *${multiples.length} gastos registrados*${esTarjeta?' 💳':''}\n\n`;
       for(const mov of multiples){
-        const gastoData={telefono,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje:mov.textoOriginal,fecha:admin.firestore.FieldValue.serverTimestamp()};
+        const uidM = await obtenerUidPorTelefono(telefono);
+        const gastoData={telefono,uid:uidM||null,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje:mov.textoOriginal,fecha:admin.firestore.FieldValue.serverTimestamp()};
         if(esTarjeta)gastoData.fuente_pago='tarjeta';
         await db.collection('gastos').add(gastoData);
         await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente:'texto', categoria:mov.categoria, monto:mov.monto});
@@ -521,8 +534,9 @@ app.post('/webhook', async (req, res) => {
     if (!mov) {
       const userDoc=await db.collection('usuarios_whatsapp').doc(telefono).get();
       await enviarMensaje(telefono, i18n.noEntendi[userDoc.data()?.idioma||'es']||i18n.noEntendi.es);
-    } else {
-      const gastoData={telefono,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje,fecha:admin.firestore.FieldValue.serverTimestamp()};
+ } else {
+      const uidT = await obtenerUidPorTelefono(telefono);
+      const gastoData={telefono,uid:uidT||null,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje,fecha:admin.firestore.FieldValue.serverTimestamp()};
       if(esTarjeta) gastoData.fuente_pago='tarjeta';
       await db.collection('gastos').add(gastoData);
       await registrarEvento('gasto_registrado', {telefono, canal:'whatsapp', fuente: esTarjeta?'tarjeta':'texto', categoria:mov.categoria, monto:mov.monto});
