@@ -1652,13 +1652,17 @@
     flex-direction: column;
     overflow: hidden;
     height: 100vh;
+    min-height: 0;
+    min-height: 0;
   }
 
-  .tab-content {
+    .tab-content {
     display: none;
     flex-direction: column;
     flex: 1;
     overflow: hidden;
+    min-height: 0;
+    min-height: 0;
     padding: 24px;
   }
   .tab-content.active { display: flex; }
@@ -1765,13 +1769,18 @@
     flex-shrink: 0;
   }
 
-  /* TRANSACCIONES TAB */
+/* TRANSACCIONES TAB */
   .tx-list-full {
     flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-height: 0;
+  }
+
+  #tab-transacciones {
+    height: 100%;
   }
 
   /* PREMIUM TAB */
@@ -2940,6 +2949,19 @@
       <div class="premium-feat-item">🚫 Sin anuncios</div>
     </div>
 
+    <!-- TRIAL 14 DÍAS -->
+    <div id="trialSection" style="margin-bottom:20px">
+    <button onclick="window.activarTrial()" id="trialBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:12px;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:white;cursor:pointer;margin-bottom:8px">
+    🎁 Probar gratis 14 días
+  </button>
+  <div style="font-size:11px;color:var(--muted);text-align:center">Sin pago · Se desactiva automáticamente al día 15</div>
+</div>
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
+  <div style="flex:1;height:1px;background:var(--border)"></div>
+  <span style="font-size:11px;color:var(--muted)">o activa Premium ahora</span>
+  <div style="flex:1;height:1px;background:var(--border)"></div>
+</div>
+
     <!-- TABS: Yape / Código -->
     <div style="display:flex;gap:8px;margin-bottom:20px;background:var(--card2);border-radius:12px;padding:4px">
       <button id="tabYapeBtn" onclick="window.switchPayTab('yape')" style="flex:1;padding:10px;border:none;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:var(--premium);color:white;transition:all 0.2s">💜 Pagar con Yape</button>
@@ -3206,8 +3228,11 @@
       <div>
     <div style="font-family:'Inter',sans-serif;font-size:20px;font-weight:700">Panel Admin</div>
       <div style="font-size:13px;color:var(--muted)">Solo visible para stefanoarte10@gmail.com</div>
+      <button onclick="window.abrirMetricasAdmin()" style="background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;border-radius:10px;padding:9px 18px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:white;cursor:pointer;margin-top:12px">
+    📊 Ver métricas & usuarios
+    </button>
+      </div>
     </div>
-  </div>
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
       <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Intenciones upgrade</div>
@@ -3667,7 +3692,7 @@
       ['quickModal','tcModal','gfModal'].forEach(id => { const m = document.getElementById(id); if (m) m.classList.remove('open'); });
     }
   }
-
+    window.showPage = showPage;
   // Manejar botón atrás del navegador
   window.addEventListener('popstate', (e) => {
     const premiumPage = document.getElementById('premiumPage');
@@ -3704,7 +3729,19 @@
       setTimeout(doRender, 200);
     }
   }
+  if (tab === 'tarjeta') cargarTarjetasTab();
+  if (tab === 'gastosfijos') {
+    const uid = window._auth?.currentUser?.uid;
+    const doRender = () => { if (window.renderGFCalendar) window.renderGFCalendar(); };
+    if (uid && window.cargarGastosFijos) {
+      window.cargarGastosFijos(uid).then(doRender);
+    } else {
+      setTimeout(doRender, 200);
+    }
+  }
+  if (tab === 'admin') cargarAdminPanel();
   };
+  
 
   window.openQuickAdd = function() {
     document.getElementById('quickModal').classList.add('open');
@@ -3731,11 +3768,21 @@
     showPage('login');
   };
 
-  window.goToDashboard = () => {
+window.goToDashboard = async () => {
   const user = auth.currentUser;
   showPage('app');
   setTimeout(() => renderPremiumSection(), 300);
-  if (user) loadData(user);
+  if (user) {
+    loadData(user);
+    // Verificar si necesita onboarding
+    try {
+      const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+      const snap = await getDoc(doc(window._db, 'usuarios', user.uid));
+      if (snap.exists() && !snap.data().onboardingCompleted) {
+        setTimeout(() => window.showOnboarding(user.displayName), 400);
+      }
+    } catch(e) { console.error(e); }
+  }
 };
 
   // ── PHONE LINKING ──
@@ -3755,7 +3802,7 @@
     btn.disabled = true;
     btn.textContent = 'Vinculando...';
 
-    const phone = 'whatsapp:' + countryCode + raw;
+    const phone = countryCode + raw;
     const user = auth.currentUser;
 
     try {
@@ -3834,9 +3881,22 @@
             // ¿Es premium?
             if (data.plan === 'premium') {
               window.userPlan = 'premium';
+            } else if (data.plan === 'trial') {
+              const trialFin = data.trial_fin?.toDate ? data.trial_fin.toDate() : new Date(data.trial_fin);
+              if (new Date() < trialFin) {
+               window.userPlan = 'premium';
+              } else {
+                window.userPlan = 'free';
+                setDoc(doc(db, 'usuarios', user.uid), { plan: 'free' }, { merge: true });
+              }
             }
 
-            showPage('app');
+            if (!data.onboardingCompleted) {
+              showPage('app');
+              setTimeout(() => window.showOnboarding(user.displayName), 400);
+            } else {
+              showPage('app');
+            }
             setTimeout(() => renderPremiumSection(), 300);
             window._auth = auth;
             window._loadData = loadData;
@@ -3853,11 +3913,13 @@
             }
           } else {
             // No tiene teléfono → pedir vinculación
-            showPage('link');
+            showPage('app');
+            setTimeout(() => window.showOnboarding(user.displayName), 400);
           }
         } else {
           // No existe en Firestore → pedir vinculación
-          showPage('link');
+          showPage('app');
+          setTimeout(() => window.showOnboarding(user.displayName), 400);
         }
       } catch(e) {
         console.error(e);
@@ -5152,6 +5214,14 @@ Reglas:
       });
     } catch(e) { console.log('Metrica no registrada', e); }
 
+    // Ocultar trial si ya fue usado
+    try {
+      const userSnap = await getDoc(doc(db, 'usuarios', auth.currentUser?.uid));
+      const planActual = userSnap.data()?.plan;
+      const trialSection = document.getElementById('trialSection');
+      if (trialSection) trialSection.style.display = ['trial','premium'].includes(planActual) ? 'none' : 'block';
+    } catch(e) {}
+
     // Limpiar estado anterior
     const codeInput = document.getElementById('premiumCodeInput');
     const codeError = document.getElementById('premiumCodeError');
@@ -5161,6 +5231,32 @@ Reglas:
     if (activateBtn) activateBtn.disabled = false;
     showPage('premium');
   };
+
+window.activarTrial = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+  const btn = document.getElementById('trialBtn');
+  btn.disabled = true; btn.textContent = 'Activando...';
+  try {
+    const trialInicio = new Date();
+    const trialFin = new Date(trialInicio.getTime() + 14 * 24 * 60 * 60 * 1000);
+    await setDoc(doc(db, 'usuarios', user.uid), {
+      plan: 'trial',
+      trial_inicio: trialInicio,
+      trial_fin: trialFin
+    }, { merge: true });
+    window.userPlan = 'premium';
+    setPremiumUI();
+    showPage('app');
+    renderPremiumSection();
+    loadData(user);
+    showTab('premium');
+  } catch(e) {
+    console.error(e);
+    btn.disabled = false; btn.textContent = '🎁 Probar gratis 14 días';
+  }
+  };
+
 
   window.closePremiumPage = () => {
     showPage('app');
@@ -5669,7 +5765,7 @@ Reglas:
         if (listPreview) listPreview.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin movimientos este mes</div>`;
         return;
       }
-      mesActual.filter(tx => tx.fuente_pago !== 'tarjeta').slice(0, 30).forEach((tx, i) => {
+      mesActual.filter(tx => tx.fuente_pago !== 'tarjeta').forEach((tx, i) => {
         const fecha = tx.fecha?.toDate ? tx.fecha.toDate() : new Date();
         const locale = window.currentLang === 'pt' ? 'pt-BR' : currentLang === 'en' ? 'en-US' : 'es-PE';
         const dia = fecha.toLocaleDateString(locale, { day:'numeric', month:'short' });
@@ -7328,8 +7424,11 @@ window.enviarSolicitudPago = async () => {
   const btn = document.getElementById('btnEnviarPago');
   btn.disabled = true; btn.textContent = 'Enviando...';
   try {
-    const user = auth.currentUser;
-    await addDoc(collection(db, 'pagos_pendientes'), {
+    const { getFirestore, collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+    const { getAuth } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js");
+    const dbP = getFirestore();
+    const user = getAuth().currentUser;
+    await addDoc(collection(dbP, 'pagos_pendientes'), {
       nombre, whatsapp: `+51${whatsapp.replace(/\D/g,'')}`,
       uid: user?.uid || null, email: user?.email || null,
       monto: 15, moneda: 'PEN', metodo: 'yape',
@@ -7341,9 +7440,1239 @@ window.enviarSolicitudPago = async () => {
         <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">¡Solicitud enviada!</div>
         <div style="font-size:14px;color:var(--muted);line-height:1.6">Verificaremos tu pago en breve y te avisaremos por WhatsApp al <strong>${whatsapp}</strong></div>
       </div>`;
-  } catch(e) { alert('Error al enviar. Intenta de nuevo.'); btn.disabled=false; btn.textContent='Enviar solicitud'; }
+  } catch(e) { console.error(e); alert('Error al enviar. Intenta de nuevo.'); btn.disabled=false; btn.textContent='Enviar solicitud'; }
 };
 </script>
 
+<!-- ══════════════════════════════════════════
+     HORMICASH ONBOARDING OVERLAY
+     Pegar justo antes de </body> en dashboard.html
+     ══════════════════════════════════════════ -->
+
+<style>
+/* ── ONBOARDING OVERLAY ── */
+#onboardingOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg);
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+#onboardingOverlay.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+/* Progress bar top */
+.ob-progress-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--border);
+}
+.ob-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  border-radius: 0 3px 3px 0;
+}
+
+/* Dots */
+.ob-dots {
+  position: absolute;
+  top: 20px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ob-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.3s;
+}
+.ob-dot.active {
+  background: var(--green);
+  width: 20px;
+  border-radius: 3px;
+}
+
+/* Card container */
+.ob-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 40px 36px;
+  width: 92%;
+  max-width: 500px;
+  position: relative;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.12);
+  animation: obFadeIn 0.4s ease;
+}
+@keyframes obFadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ob-step { display: none; }
+.ob-step.active { display: block; }
+
+/* Logo chip */
+.ob-logo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--green-dim);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--green);
+  margin-bottom: 20px;
+  letter-spacing: 0.3px;
+}
+
+.ob-title {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.ob-sub {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 28px;
+  line-height: 1.6;
+}
+
+/* STEP 1: Goal pills */
+.ob-goals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.ob-goal-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.ob-goal-pill:hover { border-color: var(--green); }
+.ob-goal-pill.selected {
+  border-color: var(--green);
+  background: var(--green-dim);
+  color: var(--green);
+  font-weight: 600;
+}
+.ob-goal-pill .ob-pill-icon { font-size: 18px; flex-shrink: 0; }
+
+/* STEP 2: Questions */
+.ob-questions { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.ob-q-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.ob-yn-row { display: flex; gap: 8px; }
+.ob-yn-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ob-yn-btn:hover { border-color: var(--muted); color: var(--text); }
+.ob-yn-btn.selected { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+
+/* STEP 3: Privacy */
+.ob-privacy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.ob-privacy-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.ob-privacy-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ob-privacy-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+.ob-privacy-text strong { font-weight: 700; display: block; margin-bottom: 2px; }
+
+/* Orbit illustration */
+.ob-orbit-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.ob-orbit {
+  width: 120px; height: 120px;
+  position: relative;
+}
+.ob-orbit-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1A6B3C, #22c55e);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 16px rgba(34,197,94,0.3);
+}
+.ob-orbit-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(34,197,94,0.3);
+  animation: obSpin 8s linear infinite;
+}
+@keyframes obSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.ob-orbit-satellite {
+  position: absolute;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* STEP 4: Reviews */
+.ob-reviews-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.ob-review-card {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+.ob-review-stars {
+  color: #f59e0b;
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.ob-review-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.ob-review-text {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* CTA Button */
+.ob-cta-btn {
+  width: 100%;
+  padding: 15px 24px;
+  background: var(--green);
+  border: none;
+  border-radius: 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.ob-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(34,197,94,0.35); }
+
+.ob-skip-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 12px;
+  width: 100%;
+  padding: 6px;
+}
+.ob-skip-btn:hover { color: var(--text); }
+
+/* Step counter */
+.ob-step-counter {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+/* Footer */
+.ob-footer {
+  position: absolute;
+  bottom: 20px;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+@media (max-width: 480px) {
+  .ob-card { padding: 28px 20px; }
+  .ob-title { font-size: 20px; }
+  .ob-reviews-grid { grid-template-columns: 1fr; }
+  .ob-goals-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<!-- ONBOARDING OVERLAY HTML -->
+<div id="onboardingOverlay">
+  <div class="ob-progress-bar">
+    <div class="ob-progress-fill" id="obProgressFill" style="width:25%"></div>
+  </div>
+
+  <div class="ob-dots" id="obDots">
+    <div class="ob-dot active" id="obDot1"></div>
+    <div class="ob-dot" id="obDot2"></div>
+    <div class="ob-dot" id="obDot3"></div>
+    <div class="ob-dot" id="obDot4"></div>
+  </div>
+
+  <div class="ob-card" id="obCard">
+
+    <!-- ── STEP 1: Objetivos ── -->
+    <div class="ob-step active" id="ob-step-1">
+      <div class="ob-logo-chip">🐜 Hormicash</div>
+      <div class="ob-step-counter">Paso 1 de 4</div>
+      <div class="ob-title">¿Qué te trae a<br>Hormicash?</div>
+      <div class="ob-sub">Selecciona tus prioridades financieras y te ayudaremos a lograrlas.</div>
+      <div class="ob-goals-grid" id="obGoalsGrid">
+        <div class="ob-goal-pill" data-goal="control" onclick="toggleGoal(this)">
+          <span class="ob-pill-icon">📊</span>Ver todos mis gastos
+        </div>
+        <div class="ob-goal-pill" data-goal="hormiga" onclick="toggleGoal(this)">
+          <span class="ob-pill-icon">🐜</span>Reducir gastos hormiga
+        </div>
+        <div class="ob-goal-pill" data-goal="ahorro" onclick="toggleGoal(this)">
+          <span class="ob-pill-icon">🐷</span>Ahorrar más cada mes
+        </div>
+        <div class="ob-goal-pill" data-goal="deuda" onclick="toggleGoal(this)">
+          <span class="ob-pill-icon">💳</span>Pagar mis deudas
+        </div>
+        <div class="ob-goal-pill" data-goal="presupuesto" onclick="toggleGoal(this)">
+          <span class="ob-pill-icon">📋</span>Llevar presupuesto
+        </div>
+        <div class="ob-goal-pill" data-goal="otro" onclick="toggleGoal(this)">
+          <span class="ob-pill-icon">✨</span>Algo más
+        </div>
+      </div>
+      <button class="ob-cta-btn" onclick="obNext(1)">Continuar →</button>
+      <button class="ob-skip-btn" onclick="obSkip()">Omitir por ahora</button>
+    </div>
+
+    <!-- ── STEP 2: Sobre ti ── -->
+    <div class="ob-step" id="ob-step-2">
+      <div class="ob-logo-chip">🐜 Hormicash</div>
+      <div class="ob-step-counter">Paso 2 de 4</div>
+      <div class="ob-title">Cuéntanos un<br>poco sobre ti</div>
+      <div class="ob-sub">Para personalizar tu experiencia.</div>
+      <div class="ob-questions">
+        <div>
+          <div class="ob-q-label">¿Trabajas o estudias actualmente?</div>
+          <div class="ob-yn-row">
+            <button class="ob-yn-btn" data-q="trabajo" data-v="trabajo" onclick="selectQ(this)">💼 Trabajo</button>
+            <button class="ob-yn-btn" data-q="trabajo" data-v="estudio" onclick="selectQ(this)">🎓 Estudio</button>
+            <button class="ob-yn-btn" data-q="trabajo" data-v="ambos" onclick="selectQ(this)">⚡ Ambos</button>
+          </div>
+        </div>
+        <div>
+          <div class="ob-q-label">¿Con qué frecuencia gastas en efectivo?</div>
+          <div class="ob-yn-row">
+            <button class="ob-yn-btn" data-q="efectivo" data-v="siempre" onclick="selectQ(this)">Siempre</button>
+            <button class="ob-yn-btn" data-q="efectivo" data-v="aveces" onclick="selectQ(this)">A veces</button>
+            <button class="ob-yn-btn" data-q="efectivo" data-v="nunca" onclick="selectQ(this)">Nunca</button>
+          </div>
+        </div>
+        <div>
+          <div class="ob-q-label">¿Tienes ingresos fijos o variables?</div>
+          <div class="ob-yn-row">
+            <button class="ob-yn-btn" data-q="ingresos" data-v="fijos" onclick="selectQ(this)">📅 Fijos</button>
+            <button class="ob-yn-btn" data-q="ingresos" data-v="variables" onclick="selectQ(this)">📈 Variables</button>
+            <button class="ob-yn-btn" data-q="ingresos" data-v="mixto" onclick="selectQ(this)">🔀 Mixto</button>
+          </div>
+        </div>
+      </div>
+      <button class="ob-cta-btn" onclick="obNext(2)">Continuar →</button>
+      <button class="ob-skip-btn" onclick="obSkip()">Omitir por ahora</button>
+    </div>
+
+    <!-- ── STEP 3: Privacidad ── -->
+    <div class="ob-step" id="ob-step-3">
+      <div class="ob-logo-chip">🐜 Hormicash</div>
+      <div class="ob-step-counter">Paso 3 de 4</div>
+
+      <div class="ob-orbit-wrap">
+        <div class="ob-orbit">
+          <div class="ob-orbit-ring"></div>
+          <div class="ob-orbit-center">🐜</div>
+          <div class="ob-orbit-satellite" style="top:-6px;left:50%;transform:translateX(-50%)">📱</div>
+          <div class="ob-orbit-satellite" style="bottom:-6px;left:50%;transform:translateX(-50%)">🔒</div>
+          <div class="ob-orbit-satellite" style="top:50%;right:-6px;transform:translateY(-50%)">📊</div>
+        </div>
+      </div>
+
+      <div class="ob-title" style="text-align:center">Tu info está<br>segura con nosotros</div>
+      <div class="ob-sub" style="text-align:center">Sin bancos, sin datos bancarios, sin anuncios molestos.</div>
+
+      <div class="ob-privacy-list">
+        <div class="ob-privacy-item">
+          <div class="ob-privacy-icon">🔒</div>
+          <div class="ob-privacy-text">
+            <strong>Sin acceso a tus cuentas bancarias</strong>
+            Todo se registra manualmente o por WhatsApp. Tú tienes el control total.
+          </div>
+        </div>
+        <div class="ob-privacy-item">
+          <div class="ob-privacy-icon">🚫</div>
+          <div class="ob-privacy-text">
+            <strong>Sin publicidad ni rastreo</strong>
+            Hormicash no vende ni comparte tus datos con nadie.
+          </div>
+        </div>
+        <div class="ob-privacy-item">
+          <div class="ob-privacy-icon">🛡️</div>
+          <div class="ob-privacy-text">
+            <strong>Datos encriptados en Google Cloud</strong>
+            Infraestructura de nivel bancario para proteger tu información.
+          </div>
+        </div>
+      </div>
+      <button class="ob-cta-btn" onclick="obNext(3)">Entendido, continuar →</button>
+    </div>
+
+    <!-- ── STEP 4: Bienvenida + Social Proof ── -->
+    <div class="ob-step" id="ob-step-4">
+      <div class="ob-logo-chip">🐜 Hormicash</div>
+      <div class="ob-step-counter">Paso 4 de 4</div>
+      <div class="ob-title" id="obWelcomeTitle">¡Bienvenido a<br>Hormicash! 🎉</div>
+      <div class="ob-sub">Esto es lo que dicen otros peruanos que ya controlan sus gastos:</div>
+
+      <div class="ob-reviews-grid">
+        <div class="ob-review-card">
+          <div class="ob-review-stars">★★★★★</div>
+          <div class="ob-review-name">Claudia R.</div>
+          <div class="ob-review-text">Antes gastaba S/ 200 sin saber en qué. Ahora veo exactamente dónde se va mi plata.</div>
+        </div>
+        <div class="ob-review-card">
+          <div class="ob-review-stars">★★★★★</div>
+          <div class="ob-review-name">Rodrigo V.</div>
+          <div class="ob-review-text">Notificaciones y gráficos de mis gastos, justo lo que necesitaba para ahorrar más.</div>
+        </div>
+        <div class="ob-review-card">
+          <div class="ob-review-stars">★★★★★</div>
+          <div class="ob-review-name">Milagros T.</div>
+          <div class="ob-review-text">Me gustaría que se vincule con Yape, pero igual es lo mejor que he usado para mis finanzas.</div>
+        </div>
+        <div class="ob-review-card">
+          <div class="ob-review-stars">★★★★★</div>
+          <div class="ob-review-name">Ángel C.</div>
+          <div class="ob-review-text">Poder borrar y agregar datos manualmente es clave. Los registros de meses pasados son un salvavidas.</div>
+        </div>
+      </div>
+
+      <button class="ob-cta-btn" onclick="obFinish()" id="obFinishBtn">
+        🐜 Empezar a controlar mis gastos
+      </button>
+    </div>
+
+  </div><!-- /.ob-card -->
+
+  <div class="ob-footer">© 2026 Hormicash · Lima, Perú</div>
+</div><!-- /#onboardingOverlay -->
+
+<script>
+// ── ONBOARDING LOGIC ────────────────────────────────────────
+let _obCurrentStep = 1;
+let _obGoals = [];
+let _obAnswers = {};
+
+// Llamar esto desde onAuthStateChanged cuando es primera vez
+window.showOnboarding = function(userName) {
+  // Personalizar título de bienvenida
+  const nombre = (userName || '').split(' ')[0];
+  const titleEl = document.getElementById('obWelcomeTitle');
+  if (titleEl && nombre) {
+    titleEl.innerHTML = `¡Bienvenido,<br>${nombre}! 🎉`;
+  }
+  _obCurrentStep = 1;
+  const overlay = document.getElementById('onboardingOverlay');
+  overlay.classList.add('active');
+  obUpdateUI(1);
+};
+
+window.toggleGoal = function(el) {
+  const goal = el.dataset.goal;
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    if (!_obGoals.includes(goal)) _obGoals.push(goal);
+  } else {
+    _obGoals = _obGoals.filter(g => g !== goal);
+  }
+};
+
+window.selectQ = function(el) {
+  const q = el.dataset.q;
+  // Deselect same-group buttons
+  document.querySelectorAll(`.ob-yn-btn[data-q="${q}"]`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  _obAnswers[q] = el.dataset.v;
+};
+
+window.obNext = function(fromStep) {
+  if (fromStep < 4) {
+    _obCurrentStep = fromStep + 1;
+    obUpdateUI(_obCurrentStep);
+  }
+};
+
+window.obSkip = function() {
+  obFinish();
+};
+
+window.obFinish = async function() {
+  // Guardar en Firestore
+  try {
+    const user = window._auth?.currentUser;
+    if (user && window._db) {
+      const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+      await setDoc(doc(window._db, 'usuarios', user.uid), {
+        nombre: user.displayName || '',
+        email: user.email || '',
+        onboardingCompleted: true,
+        onboardingGoals: _obGoals,
+        onboardingAnswers: _obAnswers,
+        onboardingDate: new Date()
+      }, { merge: true });
+    }
+  } catch(e) { console.error('Error guardando onboarding:', e); }
+
+  // Cerrar overlay con animación y redirigir
+  const overlay = document.getElementById('onboardingOverlay');
+  const card = document.getElementById('obCard');
+  card.style.transition = 'opacity 0.3s, transform 0.3s';
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(-16px) scale(0.97)';
+  setTimeout(async () => {
+    overlay.classList.remove('active');
+    overlay.style.display = 'none';
+    card.style.opacity = '';
+    card.style.transform = '';
+    // Ir a linkPage si no tiene teléfono, o al app si ya lo tiene
+    try {
+      const user = window._auth?.currentUser;
+      if (user && window._db) {
+        const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+        const snap = await getDoc(doc(window._db, 'usuarios', user.uid));
+        if (!snap.exists() || !snap.data()?.telefono) {
+          showPage('link');
+        } else {
+          showPage('app');
+        }
+      } else {
+        showPage('link');
+      }
+    } catch(e) {
+      showPage('link');
+    }
+  }, 350);
+};
+
+function obUpdateUI(step) {
+  // Cards
+  document.querySelectorAll('.ob-step').forEach((s, i) => {
+    s.classList.toggle('active', i + 1 === step);
+  });
+  // Progress bar
+  const pct = (step / 4) * 100;
+  document.getElementById('obProgressFill').style.width = pct + '%';
+  // Dots
+  for (let i = 1; i <= 4; i++) {
+    const dot = document.getElementById('obDot' + i);
+    if (dot) dot.classList.toggle('active', i === step);
+  }
+  // Animate card
+  const card = document.getElementById('obCard');
+  card.style.animation = 'none';
+  requestAnimationFrame(() => { card.style.animation = 'obFadeIn 0.35s ease'; });
+}
+</script>
+
+<!-- ══════════════════════════════════════════
+     MODAL MÉTRICAS ADMIN
+     Pegar justo antes de </body> en dashboard.html
+     ══════════════════════════════════════════ -->
+
+<style>
+/* ── MODAL MÉTRICAS ── */
+#adminMetricasModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+#adminMetricasModal.open { display: flex; }
+
+.am-modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 820px;
+  margin: auto;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+  overflow: hidden;
+}
+
+/* Header */
+.am-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card2);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.am-header-left { display: flex; align-items: center; gap: 12px; }
+.am-header-icon {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.am-header-title { font-size: 18px; font-weight: 800; letter-spacing: -0.3px; }
+.am-header-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.am-close-btn {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.am-close-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* Body */
+.am-body { padding: 24px 28px; }
+
+/* KPI row */
+.am-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.am-kpi {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: center;
+}
+.am-kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; font-weight: 700; }
+.am-kpi-value { font-size: 28px; font-weight: 800; font-family: 'Inter', sans-serif; }
+.am-kpi-value.green { color: var(--green); }
+.am-kpi-value.blue { color: #3b82f6; }
+.am-kpi-value.amber { color: var(--accent); }
+.am-kpi-value.purple { color: var(--premium); }
+
+/* Tabs */
+.am-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  background: var(--card2);
+  border-radius: 12px;
+  padding: 4px;
+}
+.am-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 9px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.am-tab.active { background: var(--card); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+/* Table */
+.am-table-wrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+.am-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.am-table thead tr {
+  background: var(--card2);
+}
+.am-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+}
+.am-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.am-table tr:last-child td { border-bottom: none; }
+.am-table tr:hover td { background: var(--card2); }
+
+.am-plan-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.am-plan-badge.premium { background: rgba(167,139,250,0.15); color: var(--premium); }
+.am-plan-badge.free { background: var(--card2); color: var(--muted); border: 1px solid var(--border); }
+.am-plan-badge.trial { background: rgba(34,197,94,0.12); color: var(--green); }
+
+.am-goals-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.am-goal-chip {
+  font-size: 10px;
+  background: var(--green-dim);
+  color: var(--green);
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-weight: 600;
+}
+
+/* Export button */
+.am-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.am-export-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(34,197,94,0.3); }
+
+.am-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.am-refresh-btn:hover { border-color: var(--muted); color: var(--text); }
+
+.am-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.am-count-label { font-size: 12px; color: var(--muted); }
+
+/* Loading */
+.am-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Tab content */
+.am-tab-content { display: none; }
+.am-tab-content.active { display: block; }
+
+/* Onboarding stats */
+.am-ob-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.am-ob-card {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.am-ob-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+.am-ob-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.am-ob-bar-label { font-size: 12px; font-weight: 500; min-width: 80px; }
+.am-ob-bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 6px; overflow: hidden; }
+.am-ob-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--green), #16a34a); transition: width 0.6s ease; }
+.am-ob-bar-count { font-size: 11px; font-weight: 700; color: var(--muted); min-width: 24px; text-align: right; }
+
+@media (max-width: 640px) {
+  .am-kpi-row { grid-template-columns: 1fr 1fr; }
+  .am-ob-grid { grid-template-columns: 1fr; }
+  .am-body { padding: 16px; }
+  .am-header { padding: 16px; }
+  .am-table th, .am-table td { padding: 8px 10px; font-size: 12px; }
+}
+</style>
+
+<!-- BOTÓN MÉTRICAS — agregar en el panel admin -->
+<!-- Busca en dashboard.html: "Solo visible para stefanoarte10" y agrega el botón después -->
+
+<!-- MODAL MÉTRICAS -->
+<div id="adminMetricasModal" onclick="if(event.target===this)cerrarMetricasAdmin()">
+  <div class="am-modal">
+
+    <!-- Header -->
+    <div class="am-header">
+      <div class="am-header-left">
+        <div class="am-header-icon">📊</div>
+        <div>
+          <div class="am-header-title">Métricas & Usuarios</div>
+          <div class="am-header-sub" id="amLastUpdate">Cargando...</div>
+        </div>
+      </div>
+      <button class="am-close-btn" onclick="cerrarMetricasAdmin()">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="am-body">
+
+      <!-- KPIs -->
+      <div class="am-kpi-row">
+        <div class="am-kpi">
+          <div class="am-kpi-label">Total usuarios</div>
+          <div class="am-kpi-value blue" id="amKpiTotal">—</div>
+        </div>
+        <div class="am-kpi">
+          <div class="am-kpi-label">Premium</div>
+          <div class="am-kpi-value purple" id="amKpiPremium">—</div>
+        </div>
+        <div class="am-kpi">
+          <div class="am-kpi-label">Trial activo</div>
+          <div class="am-kpi-value green" id="amKpiTrial">—</div>
+        </div>
+        <div class="am-kpi">
+          <div class="am-kpi-label">Onboarding</div>
+          <div class="am-kpi-value amber" id="amKpiOnboarding">—</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="am-tabs">
+        <button class="am-tab active" onclick="amSwitchTab('usuarios')">👥 Usuarios</button>
+        <button class="am-tab" onclick="amSwitchTab('onboarding')">🎯 Onboarding</button>
+        <button class="am-tab" onclick="amSwitchTab('metricas')">⚡ Eventos</button>
+      </div>
+
+      <!-- TAB: USUARIOS -->
+      <div class="am-tab-content active" id="amTab-usuarios">
+        <div class="am-table-wrap">
+          <table class="am-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Plan</th>
+                <th>Teléfono</th>
+                <th>Objetivos</th>
+                <th>Registro</th>
+              </tr>
+            </thead>
+            <tbody id="amUsuariosBody">
+              <tr><td colspan="7" class="am-loading">Cargando usuarios...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="am-footer-row">
+          <div class="am-count-label" id="amUsuariosCount"></div>
+          <div style="display:flex;gap:8px">
+            <button class="am-refresh-btn" onclick="cargarMetricasAdmin()">🔄 Actualizar</button>
+            <button class="am-export-btn" onclick="exportarUsuariosCSV()">📥 Exportar CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: ONBOARDING -->
+      <div class="am-tab-content" id="amTab-onboarding">
+        <div class="am-ob-grid">
+          <div class="am-ob-card">
+            <div class="am-ob-card-title">🎯 Objetivos más elegidos</div>
+            <div id="amObGoals"><div style="color:var(--muted);font-size:13px">Sin datos aún</div></div>
+          </div>
+          <div class="am-ob-card">
+            <div class="am-ob-card-title">💼 Perfil de usuarios</div>
+            <div id="amObProfile"><div style="color:var(--muted);font-size:13px">Sin datos aún</div></div>
+          </div>
+        </div>
+        <div class="am-ob-card" style="margin-bottom:18px">
+          <div class="am-ob-card-title">💰 Tipo de ingresos</div>
+          <div id="amObIngresos"><div style="color:var(--muted);font-size:13px">Sin datos aún</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: EVENTOS -->
+      <div class="am-tab-content" id="amTab-metricas">
+        <div class="am-table-wrap">
+          <table class="am-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Evento</th>
+                <th>Email</th>
+                <th>Fuente</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody id="amEventosBody">
+              <tr><td colspan="5" class="am-loading">Cargando eventos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="am-footer-row">
+          <div class="am-count-label" id="amEventosCount"></div>
+          <button class="am-export-btn" onclick="exportarEventosCSV()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+    </div><!-- /.am-body -->
+  </div><!-- /.am-modal -->
+</div><!-- /#adminMetricasModal -->
+
+<script>
+// ── ADMIN MÉTRICAS ──────────────────────────────────────────
+let _amUsuarios = [];
+let _amEventos  = [];
+
+window.abrirMetricasAdmin = async function() {
+  document.getElementById('adminMetricasModal').classList.add('open');
+  await cargarMetricasAdmin();
+};
+
+window.cerrarMetricasAdmin = function() {
+  document.getElementById('adminMetricasModal').classList.remove('open');
+};
+
+window.amSwitchTab = function(tab) {
+  document.querySelectorAll('.am-tab').forEach((t,i) => {
+    const tabs = ['usuarios','onboarding','metricas'];
+    t.classList.toggle('active', tabs[i] === tab);
+  });
+  document.querySelectorAll('.am-tab-content').forEach(c => c.classList.remove('active'));
+  const tc = document.getElementById('amTab-' + tab);
+  if (tc) tc.classList.add('active');
+};
+
+window.cargarMetricasAdmin = async function() {
+  try {
+    const { getFirestore, collection, getDocs, orderBy, query } =
+      await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+    const db = getFirestore();
+
+    // ── Usuarios ──
+    const usuSnap = await getDocs(collection(db, 'usuarios'));
+    _amUsuarios = usuSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // KPIs
+    const total     = _amUsuarios.length;
+    const premium   = _amUsuarios.filter(u => u.plan === 'premium').length;
+    const trial     = _amUsuarios.filter(u => u.plan === 'trial').length;
+    const conOB     = _amUsuarios.filter(u => u.onboardingCompleted).length;
+
+    document.getElementById('amKpiTotal').textContent     = total;
+    document.getElementById('amKpiPremium').textContent   = premium;
+    document.getElementById('amKpiTrial').textContent     = trial;
+    document.getElementById('amKpiOnboarding').textContent = conOB;
+    document.getElementById('amLastUpdate').textContent   =
+      'Actualizado ' + new Date().toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit' });
+
+    // Tabla usuarios
+    renderAmUsuarios(_amUsuarios);
+
+    // Onboarding stats
+    renderAmOnboarding(_amUsuarios);
+
+    // ── Eventos/métricas ──
+    const metSnap = await getDocs(query(collection(db, 'metricas'), orderBy('fecha', 'desc')));
+    _amEventos = metSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAmEventos(_amEventos);
+
+  } catch(e) {
+    console.error('Error cargando métricas admin:', e);
+    document.getElementById('amUsuariosBody').innerHTML =
+      `<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--red)">Error: ${e.message}</td></tr>`;
+  }
+};
+
+function renderAmUsuarios(usuarios) {
+  const tbody = document.getElementById('amUsuariosBody');
+  const countEl = document.getElementById('amUsuariosCount');
+  if (!usuarios.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--muted)">Sin usuarios registrados</td></tr>';
+    return;
+  }
+  countEl.textContent = `${usuarios.length} usuario${usuarios.length !== 1 ? 's' : ''} registrado${usuarios.length !== 1 ? 's' : ''}`;
+
+  const GOAL_LABELS = {
+    control:'Ver gastos', hormiga:'Gastos hormiga', ahorro:'Ahorrar',
+    deuda:'Pagar deudas', presupuesto:'Presupuesto', otro:'Otro'
+  };
+
+  tbody.innerHTML = usuarios.map((u, i) => {
+    const plan = u.plan || 'free';
+    const planBadge = `<span class="am-plan-badge ${plan}">${plan}</span>`;
+    const fecha = u.creado?.toDate
+      ? u.creado.toDate().toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'2-digit' })
+      : (u.onboardingDate ? new Date(u.onboardingDate.seconds ? u.onboardingDate.seconds*1000 : u.onboardingDate).toLocaleDateString('es-PE', { day:'2-digit', month:'short', year:'2-digit' }) : '—');
+    const tel = u.telefono ? u.telefono.replace('whatsapp:','') : '—';
+    const goals = (u.onboardingGoals || []).map(g =>
+      `<span class="am-goal-chip">${GOAL_LABELS[g] || g}</span>`
+    ).join('');
+    const nombre = u.nombre || '—';
+    return `<tr>
+      <td style="color:var(--muted);font-weight:700">${i+1}</td>
+      <td style="font-weight:600">${nombre}</td>
+      <td style="color:var(--muted);font-size:12px">${u.email || '—'}</td>
+      <td>${planBadge}</td>
+      <td style="font-size:12px;color:var(--muted)">${tel}</td>
+      <td><div class="am-goals-wrap">${goals || '<span style="color:var(--muted);font-size:11px">Sin datos</span>'}</div></td>
+      <td style="font-size:12px;color:var(--muted);white-space:nowrap">${fecha}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAmOnboarding(usuarios) {
+  const conOB = usuarios.filter(u => u.onboardingGoals?.length);
+
+  // Goals
+  const goalCount = {};
+  const GOAL_LABELS = {
+    control:'Ver gastos', hormiga:'Gastos hormiga', ahorro:'Ahorrar',
+    deuda:'Pagar deudas', presupuesto:'Presupuesto', otro:'Otro'
+  };
+  conOB.forEach(u => (u.onboardingGoals||[]).forEach(g => { goalCount[g] = (goalCount[g]||0)+1; }));
+  const goalsSorted = Object.entries(goalCount).sort((a,b)=>b[1]-a[1]);
+  const maxGoal = goalsSorted[0]?.[1] || 1;
+
+  const goalsEl = document.getElementById('amObGoals');
+  goalsEl.innerHTML = goalsSorted.length ? goalsSorted.map(([g,n]) => `
+    <div class="am-ob-bar-item">
+      <div class="am-ob-bar-label">${GOAL_LABELS[g]||g}</div>
+      <div class="am-ob-bar-track"><div class="am-ob-bar-fill" style="width:${((n/maxGoal)*100).toFixed(0)}%"></div></div>
+      <div class="am-ob-bar-count">${n}</div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:13px">Sin respuestas aún</div>';
+
+  // Perfil trabajo
+  const trabajoCount = {};
+  const TRABAJO_LABELS = { trabajo:'Trabajo', estudio:'Estudio', ambos:'Ambos' };
+  conOB.forEach(u => { const v = u.onboardingAnswers?.trabajo; if(v) trabajoCount[v] = (trabajoCount[v]||0)+1; });
+  const trabajoSorted = Object.entries(trabajoCount).sort((a,b)=>b[1]-a[1]);
+  const maxTrabajo = trabajoSorted[0]?.[1] || 1;
+
+  const profileEl = document.getElementById('amObProfile');
+  profileEl.innerHTML = trabajoSorted.length ? trabajoSorted.map(([v,n]) => `
+    <div class="am-ob-bar-item">
+      <div class="am-ob-bar-label">${TRABAJO_LABELS[v]||v}</div>
+      <div class="am-ob-bar-track"><div class="am-ob-bar-fill" style="width:${((n/maxTrabajo)*100).toFixed(0)}%;background:linear-gradient(90deg,#3b82f6,#6366f1)"></div></div>
+      <div class="am-ob-bar-count">${n}</div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:13px">Sin respuestas aún</div>';
+
+  // Ingresos
+  const ingCount = {};
+  const ING_LABELS = { fijos:'Fijos', variables:'Variables', mixto:'Mixto' };
+  conOB.forEach(u => { const v = u.onboardingAnswers?.ingresos; if(v) ingCount[v] = (ingCount[v]||0)+1; });
+  const ingSorted = Object.entries(ingCount).sort((a,b)=>b[1]-a[1]);
+  const maxIng = ingSorted[0]?.[1] || 1;
+
+  const ingEl = document.getElementById('amObIngresos');
+  ingEl.innerHTML = ingSorted.length ? ingSorted.map(([v,n]) => `
+    <div class="am-ob-bar-item">
+      <div class="am-ob-bar-label">${ING_LABELS[v]||v}</div>
+      <div class="am-ob-bar-track"><div class="am-ob-bar-fill" style="width:${((n/maxIng)*100).toFixed(0)}%;background:linear-gradient(90deg,#f59e0b,#f97316)"></div></div>
+      <div class="am-ob-bar-count">${n}</div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:13px">Sin respuestas aún</div>';
+}
+
+function renderAmEventos(eventos) {
+  const tbody = document.getElementById('amEventosBody');
+  const countEl = document.getElementById('amEventosCount');
+  if (!eventos.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">Sin eventos registrados</td></tr>';
+    return;
+  }
+  countEl.textContent = `${eventos.length} evento${eventos.length !== 1 ? 's' : ''}`;
+  tbody.innerHTML = eventos.slice(0,50).map((e,i) => {
+    const fecha = e.fecha?.toDate
+      ? e.fecha.toDate().toLocaleDateString('es-PE', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+      : '—';
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td style="font-weight:600">${e.evento || e.tipo || '—'}</td>
+      <td style="font-size:12px;color:var(--muted)">${e.email || '—'}</td>
+      <td style="font-size:12px">${e.fuente === 'mobile' ? '📱 Mobile' : '🖥️ Desktop'}</td>
+      <td style="font-size:12px;color:var(--muted)">${fecha}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── EXPORTAR CSV ──
+window.exportarUsuariosCSV = function() {
+  if (!_amUsuarios.length) { alert('No hay usuarios para exportar'); return; }
+  const GOAL_LABELS = {
+    control:'Ver gastos', hormiga:'Gastos hormiga', ahorro:'Ahorrar',
+    deuda:'Pagar deudas', presupuesto:'Presupuesto', otro:'Otro'
+  };
+  const headers = ['#','Nombre','Email','Plan','Telefono','Moneda','Objetivos','Trabaja/Estudia','Efectivo','Ingresos','Onboarding','Fecha registro'];
+  const rows = _amUsuarios.map((u,i) => {
+    const fecha = u.creado?.toDate
+      ? u.creado.toDate().toLocaleDateString('es-PE')
+      : '—';
+    const goals = (u.onboardingGoals||[]).map(g=>GOAL_LABELS[g]||g).join(' | ');
+    return [
+      i+1,
+      u.nombre || '',
+      u.email || '',
+      u.plan || 'free',
+      (u.telefono||'').replace('whatsapp:',''),
+      u.moneda || 'S/',
+      goals,
+      u.onboardingAnswers?.trabajo || '',
+      u.onboardingAnswers?.efectivo || '',
+      u.onboardingAnswers?.ingresos || '',
+      u.onboardingCompleted ? 'Sí' : 'No',
+      fecha
+    ].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hormicash_usuarios_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+window.exportarEventosCSV = function() {
+  if (!_amEventos.length) { alert('No hay eventos para exportar'); return; }
+  const headers = ['#','Evento','Email','UID','Fuente','Fecha'];
+  const rows = _amEventos.map((e,i) => {
+    const fecha = e.fecha?.toDate ? e.fecha.toDate().toLocaleString('es-PE') : '—';
+    return [i+1, e.evento||e.tipo||'', e.email||'', e.uid||'', e.fuente||'', fecha]
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hormicash_eventos_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+</script>
+
+
+
 </body>
 </html>
+
+

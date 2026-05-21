@@ -82,7 +82,7 @@ async function enviarEmailBienvenida(email, nombre) {
     </div>
     ${footer('correos de Hormicash')}
   `);
-  return enviarEmail({ to: email, from: 'Hormicash <hola@hormicash.com>', subject: `¡Bienvenido/a a Hormicash, ${nombre}! 🐜`, html });
+  return enviarEmail({ to: email, from: 'Hormicash <hola@hormicash.com>', subject: `${nombre}, tu cuenta de Hormicash está lista`, html });
 }
 
 // ── 2. RECORDATORIO DE GASTOS ─────────────────────────────────────
