@@ -602,6 +602,7 @@ app.post('/webhook', async (req, res) => {
     if(esNuevo){
       estadoUsuario[telefono]={esperando:'bienvenida_limites'};
       await enviarMensaje(telefono,i18n.bienvenida[idioma](telefono));
+      await enviarMensaje(telefono, `📧 Te enviamos un correo de bienvenida a tu email.\n\n¡Revísalo! Y si no lo ves, búscalo en *Spam* y márcalo como "No es spam" para que te lleguen tus recordatorios y resúmenes semanales 🙌`);
       // Email bienvenida
       const userInfo=await obtenerEmailUsuario(telefono);
       if(userInfo?.email) onNuevoUsuario(userInfo.email,userInfo.nombre).catch(e=>console.error('Email bienvenida:',e.message));
