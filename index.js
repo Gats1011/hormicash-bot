@@ -739,7 +739,9 @@ app.post('/webhook', async (req, res) => {
     const multiples=parsearMultiplesMovimientos(mensajeLimpio);
     if(multiples){
       let respuesta=`✅ *${multiples.length} gastos registrados*${esTarjeta?' 💳':''}\n\n`;
+      
       for(const mov of multiples){
+        if(mov.categoria==='otros' && mov.tipo==='gasto'){try{const model=genAI.getGenerativeModel({model:'gemini-2.5-flash-lite'});const result=await model.generateContent(`Clasifica este gasto en UNA categoría: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.\nGasto: "${mov.label}"\nResponde SOLO la categoría.`);const cat=result.response.text().trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');const validas=['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];if(validas.includes(cat))mov.categoria=cat;}catch(e){console.log('Gemini fallback:',e.message);}}
         const uidM=await obtenerUidPorTelefono(telefono);
         const gastoData={telefono,uid:uidM||null,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje:mov.textoOriginal,fecha:admin.firestore.FieldValue.serverTimestamp()};
         if(esTarjeta)gastoData.fuente_pago='tarjeta';
@@ -753,14 +755,23 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-    const mov=parsearMovimiento(mensajeLimpio);
-    if(!mov){
-      const userDoc=await db.collection('usuarios_whatsapp').doc(telefono).get();
-      await enviarMensaje(telefono,i18n.noEntendi[userDoc.data()?.idioma||'es']||i18n.noEntendi.es);
-    }else{
-      const uidT=await obtenerUidPorTelefono(telefono);
-      const gastoData={telefono,uid:uidT||null,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje,fecha:admin.firestore.FieldValue.serverTimestamp()};
-      if(esTarjeta)gastoData.fuente_pago='tarjeta';
+   const mov=parsearMovimiento(mensajeLimpio);
+if(!mov){
+  const userDoc=await db.collection('usuarios_whatsapp').doc(telefono).get();
+  await enviarMensaje(telefono,i18n.noEntendi[userDoc.data()?.idioma||'es']||i18n.noEntendi.es);
+}else{
+  // Si keywords no reconocieron la categoría, intentar con Gemini
+  if(mov.categoria==='otros' && mov.tipo==='gasto'){
+    try{
+      const model=genAI.getGenerativeModel({model:'gemini-2.5-flash-lite'});
+      const result=await model.generateContent(`Clasifica este gasto en UNA categoría: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.\nGasto: "${mov.label}"\nResponde SOLO la categoría.`);
+      const cat=result.response.text().trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');
+      const validas=['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
+      if(validas.includes(cat)) mov.categoria=cat;
+    }catch(e){ console.log('Gemini no disponible, usando keywords:', e.message); }
+  }
+  const uidT=await obtenerUidPorTelefono(telefono);
+  const gastoData={telefono,uid:uidT||null,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje,fecha:admin.firestore.FieldValue.serverTimestamp()};
       await db.collection('gastos').add(gastoData);
       await registrarEvento('gasto_registrado',{telefono,canal:'whatsapp',fuente:esTarjeta?'tarjeta':'texto',categoria:mov.categoria,monto:mov.monto});
       let resp;
