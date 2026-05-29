@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad — Hormicash</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #00C07F;
+    --green-light: #00E599;
+    --green-dark: #00955F;
+    --green-bg: #F0FFF8;
+    --dark: #0D1117;
+    --text: #1A1F2E;
+    --text-muted: #6B7280;
+    --text-light: #9CA3AF;
+    --border: #E5E7EB;
+    --card-bg: #FFFFFF;
+    --section-bg: #F9FAFB;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: #fff;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Sora', sans-serif;
+    font-weight: 800; font-size: 20px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none;
+  }
+  .logo-icon { width: 32px; height: 32px; border-radius: 8px; overflow: hidden; }
+  .logo-icon img { width: 100%; height: 100%; object-fit: cover; }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    text-decoration: none; color: var(--text-muted);
+    font-size: 15px; font-weight: 500; transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .btn-nav {
+    background: var(--green); color: #fff;
+    padding: 10px 22px; border-radius: 100px;
+    font-weight: 600; font-size: 14px;
+    text-decoration: none; transition: background .2s, transform .15s;
+  }
+  .btn-nav:hover { background: var(--green-dark); transform: translateY(-1px); }
+
+  /* CONTENT */
+  .page-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 120px 40px 80px;
+  }
+
+  .page-tag {
+    display: inline-block;
+    background: var(--green-bg); color: var(--green-dark);
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 12px; font-weight: 700; letter-spacing: .5px;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 40px; font-weight: 800;
+    line-height: 1.15; letter-spacing: -1px;
+    color: var(--text); margin-bottom: 12px;
+  }
+
+  .page-meta {
+    font-size: 14px; color: var(--text-muted); margin-bottom: 48px;
+    padding-bottom: 32px; border-bottom: 1px solid var(--border);
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--section-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px 24px;
+    margin-bottom: 48px;
+  }
+  .toc-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .5px; margin-bottom: 12px;
+  }
+  .toc ol { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .toc li { font-size: 14px; }
+  .toc a { color: var(--green); text-decoration: none; font-weight: 500; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* SECTIONS */
+  .doc-section { margin-bottom: 48px; scroll-margin-top: 90px; }
+  .doc-section h2 {
+    font-family: 'Sora', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--text); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .doc-section h2 .s-icon {
+    width: 32px; height: 32px;
+    background: var(--green-bg); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .doc-section p {
+    font-size: 15px; color: var(--text-muted);
+    line-height: 1.75; margin-bottom: 14px;
+  }
+  .doc-section ul, .doc-section ol {
+    padding-left: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 14px;
+  }
+  .doc-section li { font-size: 15px; color: var(--text-muted); line-height: 1.65; }
+  .doc-section li strong { color: var(--text); font-weight: 600; }
+
+  .highlight-box {
+    background: var(--green-bg);
+    border: 1px solid rgba(0,192,127,.2);
+    border-left: 3px solid var(--green);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    font-size: 14px; color: var(--text-muted);
+    line-height: 1.65; margin-bottom: 14px;
+  }
+
+  .contact-card {
+    background: var(--dark);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-top: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .contact-card h3 {
+    font-family: 'Sora', sans-serif;
+    font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px;
+  }
+  .contact-card p { font-size: 14px; color: rgba(255,255,255,.6); margin: 0; }
+  .contact-card a {
+    background: var(--green); color: #fff;
+    padding: 12px 24px; border-radius: 100px;
+    font-weight: 700; font-size: 14px;
+    text-decoration: none; white-space: nowrap;
+    transition: background .2s;
+  }
+  .contact-card a:hover { background: var(--green-dark); }
+
+  /* FOOTER */
+  .page-footer {
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .footer-logo {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700; font-size: 16px; color: var(--text);
+    display: flex; align-items: center; gap: 8px; text-decoration: none;
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; }
+  .footer-links a:hover { color: var(--text); }
+  .footer-copy { font-size: 13px; color: var(--text-light); }
+
+  @media (max-width: 768px) {
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; }
+    .page-wrap { padding: 100px 20px 60px; }
+    .page-title { font-size: 28px; }
+    .page-footer { flex-direction: column; gap: 16px; text-align: center; padding: 24px 20px; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="logo-icon"><img src="https://hormicash.web.app/logo.png" alt="Hormicash logo"></div>
+    Hormicash
+  </a>
+  <div class="nav-links">
+    <a href="/#como-funciona">Cómo funciona</a>
+    <a href="/#precios">Precios</a>
+    <a href="/#faq">FAQ</a>
+    <a href="/dashboard.html" class="btn-nav">Empezar gratis →</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="page-tag">Legal</div>
+  <h1 class="page-title">Política de Privacidad</h1>
+  <p class="page-meta">Última actualización: mayo de 2026 · Aplica a hormicash.com y al bot de WhatsApp de Hormicash</p>
+
+  <div class="toc">
+    <div class="toc-title">Contenido</div>
+    <ol>
+      <li><a href="#quienes-somos">Quiénes somos</a></li>
+      <li><a href="#datos-recopilamos">Datos que recopilamos</a></li>
+      <li><a href="#como-usamos">Cómo usamos tus datos</a></li>
+      <li><a href="#con-quien-compartimos">Con quién compartimos información</a></li>
+      <li><a href="#seguridad">Seguridad de los datos</a></li>
+      <li><a href="#retencion">Retención de datos</a></li>
+      <li><a href="#tus-derechos">Tus derechos</a></li>
+      <li><a href="#cookies">Cookies y tecnologías similares</a></li>
+      <li><a href="#menores">Menores de edad</a></li>
+      <li><a href="#cambios">Cambios a esta política</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ol>
+  </div>
+
+  <div class="highlight-box">
+    🔒 <strong style="color:var(--text);">Resumen rápido:</strong> Usamos tus datos únicamente para brindarte el servicio de Hormicash. No vendemos ni compartimos tu información financiera con terceros con fines comerciales. Tú controlas tus datos y puedes eliminarlos cuando quieras.
+  </div>
+
+  <!-- 1 -->
+  <div class="doc-section" id="quienes-somos">
+    <h2><span class="s-icon">🐜</span> 1. Quiénes somos</h2>
+    <p>Hormicash es un servicio de seguimiento de gastos personales operado por Stefano Gatti (en adelante, "Hormicash", "nosotros" o "el servicio"). Operamos en Perú y nuestro sitio web es <strong>hormicash.com</strong>.</p>
+    <p>Esta Política de Privacidad describe cómo recopilamos, usamos y protegemos la información personal que nos proporcionas al usar Hormicash, incluyendo el bot de WhatsApp y el dashboard web.</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="doc-section" id="datos-recopilamos">
+    <h2><span class="s-icon">📋</span> 2. Datos que recopilamos</h2>
+    <p>Recopilamos únicamente los datos necesarios para prestarte el servicio:</p>
+    <ul>
+      <li><strong>Datos de cuenta:</strong> nombre, dirección de correo electrónico y foto de perfil, obtenidos al iniciar sesión con Google (Google OAuth).</li>
+      <li><strong>Número de WhatsApp:</strong> el número de teléfono que vinculas para usar el bot.</li>
+      <li><strong>Datos de gastos:</strong> monto, descripción, categoría, fecha y fuente de pago (efectivo o tarjeta) de cada transacción que registras.</li>
+      <li><strong>Imágenes de vouchers:</strong> fotos de boletas o recibos que envías al bot para el registro automático. Estas imágenes son procesadas por IA (Google Gemini) y no se almacenan de forma permanente.</li>
+      <li><strong>Audios de voz:</strong> notas de voz enviadas al bot para el registro de gastos. Se procesan en tiempo real y no se guardan.</li>
+      <li><strong>Datos de uso:</strong> información técnica como dirección IP, tipo de navegador y páginas visitadas dentro del dashboard, con fines de diagnóstico.</li>
+    </ul>
+  </div>
+
+  <!-- 3 -->
+  <div class="doc-section" id="como-usamos">
+    <h2><span class="s-icon">⚙️</span> 3. Cómo usamos tus datos</h2>
+    <p>Utilizamos la información recopilada exclusivamente para:</p>
+    <ul>
+      <li><strong>Prestar el servicio:</strong> registrar, clasificar y mostrar tus gastos en el dashboard.</li>
+      <li><strong>Enviar notificaciones:</strong> recordatorios nocturnos por WhatsApp y resúmenes por email sobre tus gastos.</li>
+      <li><strong>Procesar pagos Premium:</strong> gestionar tu suscripción cuando aplique.</li>
+      <li><strong>Mejorar el servicio:</strong> analizar patrones de uso de forma agregada y anónima para mejorar la clasificación automática y la experiencia del usuario.</li>
+      <li><strong>Soporte:</strong> responder consultas o reportes de problemas que nos envíes.</li>
+    </ul>
+    <p>No utilizamos tus datos financieros para publicidad, perfilamiento comercial, ni los cedemos a terceros con fines distintos a los descritos.</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="doc-section" id="con-quien-compartimos">
+    <h2><span class="s-icon">🤝</span> 4. Con quién compartimos información</h2>
+    <p>Trabajamos con los siguientes proveedores de servicios, que procesan datos únicamente bajo nuestras instrucciones:</p>
+    <ul>
+      <li><strong>Google Firebase / Firestore:</strong> almacenamiento de base de datos y autenticación de usuarios.</li>
+      <li><strong>Google Gemini (IA):</strong> procesamiento de imágenes de vouchers y audios de voz para extracción de datos.</li>
+      <li><strong>Twilio / Meta Cloud API:</strong> envío y recepción de mensajes de WhatsApp.</li>
+      <li><strong>Resend:</strong> envío de correos electrónicos transaccionales (recordatorios, resúmenes).</li>
+      <li><strong>Railway:</strong> infraestructura del servidor backend.</li>
+    </ul>
+    <p>No vendemos, alquilamos ni compartimos tu información personal con terceros para fines publicitarios o comerciales.</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="doc-section" id="seguridad">
+    <h2><span class="s-icon">🔒</span> 5. Seguridad de los datos</h2>
+    <p>Tomamos medidas razonables para proteger tu información:</p>
+    <ul>
+      <li>Autenticación segura mediante Google OAuth 2.0.</li>
+      <li>Datos almacenados en Firebase Firestore con reglas de seguridad que garantizan que solo tú puedes acceder a tus transacciones.</li>
+      <li>Comunicaciones cifradas mediante HTTPS en todos los puntos del servicio.</li>
+      <li>Acceso restringido a los datos por parte del equipo de Hormicash.</li>
+    </ul>
+    <p>Aunque implementamos medidas de seguridad razonables, ningún sistema es 100% infalible. Te recomendamos mantener tu cuenta de Google segura y no compartir tu acceso al dashboard.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="doc-section" id="retencion">
+    <h2><span class="s-icon">🗓️</span> 6. Retención de datos</h2>
+    <p>Conservamos tus datos mientras tu cuenta esté activa. Si decides eliminar tu cuenta, borraremos tus datos personales y transacciones en un plazo de <strong>30 días hábiles</strong>, salvo que la ley peruana exija conservarlos por un período mayor.</p>
+    <p>Las imágenes de vouchers y audios de voz se procesan en tiempo real y no se almacenan de forma permanente en nuestros servidores.</p>
+  </div>
+
+  <!-- 7 -->
+  <div class="doc-section" id="tus-derechos">
+    <h2><span class="s-icon">⚖️</span> 7. Tus derechos</h2>
+    <p>De acuerdo con la <strong>Ley N.º 29733 — Ley de Protección de Datos Personales del Perú</strong> y su reglamento, tienes derecho a:</p>
+    <ul>
+      <li><strong>Acceso:</strong> solicitar qué datos personales tenemos sobre ti.</li>
+      <li><strong>Rectificación:</strong> corregir datos inexactos o incompletos.</li>
+      <li><strong>Cancelación / Eliminación:</strong> pedir que eliminemos tus datos.</li>
+      <li><strong>Oposición:</strong> oponerte al uso de tus datos para fines específicos.</li>
+      <li><strong>Portabilidad:</strong> solicitar una copia de tus transacciones en formato descargable.</li>
+    </ul>
+    <p>Para ejercer cualquiera de estos derechos, escríbenos a <strong>hormicash@gmail.com</strong>. Atenderemos tu solicitud en un plazo máximo de 20 días hábiles.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="doc-section" id="cookies">
+    <h2><span class="s-icon">🍪</span> 8. Cookies y tecnologías similares</h2>
+    <p>El dashboard de Hormicash utiliza <strong>almacenamiento local del navegador</strong> (localStorage) para mantener tu sesión activa y guardar preferencias de visualización como el tema claro/oscuro. No utilizamos cookies de rastreo publicitario ni compartimos datos de navegación con redes de publicidad.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="doc-section" id="menores">
+    <h2><span class="s-icon">👤</span> 9. Menores de edad</h2>
+    <p>Hormicash está destinado a personas mayores de 18 años. No recopilamos intencionalmente datos de menores de edad. Si descubrimos que hemos recopilado datos de un menor, los eliminaremos de inmediato. Si eres padre, madre o tutor y crees que tu hijo/a ha registrado una cuenta, contáctanos en <strong>hormicash@gmail.com</strong>.</p>
+  </div>
+
+  <!-- 10 -->
+  <div class="doc-section" id="cambios">
+    <h2><span class="s-icon">📝</span> 10. Cambios a esta política</h2>
+    <p>Podemos actualizar esta Política de Privacidad periódicamente. Cuando hagamos cambios materiales, te notificaremos por correo electrónico o mediante un aviso visible en el dashboard antes de que los cambios entren en vigor.</p>
+    <p>La fecha de "última actualización" en la parte superior de esta página indica cuándo fue revisada por última vez.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="doc-section" id="contacto">
+    <h2><span class="s-icon">✉️</span> 11. Contacto</h2>
+    <p>Si tienes preguntas, comentarios o deseas ejercer tus derechos sobre tus datos, puedes contactarnos por cualquiera de estos medios:</p>
+    <ul>
+      <li><strong>Email:</strong> hormicash@gmail.com</li>
+      <li><strong>WhatsApp:</strong> +51 939 373 212</li>
+      <li><strong>Instagram:</strong> @hormicash</li>
+    </ul>
+  </div>
+
+  <div class="contact-card">
+    <div>
+      <h3>¿Tienes alguna pregunta?</h3>
+      <p>Escríbenos y te respondemos en menos de 24 horas.</p>
+    </div>
+    <a href="mailto:hormicash@gmail.com">Contactar →</a>
+  </div>
+
+</div>
+
+<footer class="page-footer">
+  <a href="/" class="footer-logo">
+    <img src="https://hormicash.web.app/logo.png" alt="logo" style="width:24px;height:24px;object-fit:cover;border-radius:6px;"> Hormicash
+  </a>
+  <div class="footer-links">
+    <a href="/#como-funciona">Cómo funciona</a>
+    <a href="/#precios">Precios</a>
+    <a href="/privacy.html" style="color:var(--text);font-weight:500;">Privacidad</a>
+    <a href="/terms.html">Términos</a>
+    <a href="mailto:hormicash@gmail.com">Soporte</a>
+  </div>
+  <div class="footer-copy">© 2026 Hormicash</div>
+</footer>
+
+</body>
+</html>

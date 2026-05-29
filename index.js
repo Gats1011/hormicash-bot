@@ -7,14 +7,12 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ── EMAIL BASE (Resend) ───────────────────────────────────────────
 async function enviarEmail({ to, from, subject, html }) {
   const { data, error } = await resend.emails.send({ from, to, subject, html });
   if (error) throw new Error(JSON.stringify(error));
   return data;
 }
 
-// ── ESTILOS COMPARTIDOS ──────────────────────────────────────────
 const BASE_STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -266,6 +264,81 @@ async function enviarEmailReengagement(email, nombre, diasInactivo) {
   return enviarEmail({ to: email, from: 'Hormicash <recordatorio@hormicash.com>', subject: `${nombre}, llevas ${diasInactivo} días sin registrar gastos 👀`, html });
 }
 
+// ── 8. RECORDATORIO SEMANAL FREE ─────────────────────────────────
+async function enviarEmailRecordatorioFree(email, nombre, { cantidadSemana, totalSemana }) {
+  const sinRegistrar = cantidadSemana === 0;
+  const poco = cantidadSemana >= 1 && cantidadSemana <= 3;
+  // bastante = 4+
+
+  const subject = sinRegistrar
+    ? `${nombre}, esta semana no registraste ningún gasto 🐜`
+    : poco
+    ? `${nombre}, vas bien — sigue registrando tus gastos 💪`
+    : `${nombre}, ¡buena semana! Pero te estás perdiendo algo 📊`;
+
+  const tag = sinRegistrar ? '⏰ Recordatorio' : poco ? '💪 Vas bien' : '🌟 Gran semana';
+  const tagStyle = sinRegistrar
+    ? ''
+    : poco
+    ? 'background:#e8f7ee;color:#1A6B3C'
+    : 'background:#fef3cd;color:#b45309';
+
+  const titulo = sinRegistrar
+    ? `Esta semana no registraste ningún gasto`
+    : poco
+    ? `Registraste ${cantidadSemana} gasto${cantidadSemana > 1 ? 's' : ''} esta semana`
+    : `¡Registraste ${cantidadSemana} gastos esta semana!`;
+
+  const mensajePrincipal = sinRegistrar
+    ? `Tus gastos hormiga corrieron solos esta semana. Un café, un pasaje, una recarga — sin registrarlos nunca sabrás cuánto suman al mes.`
+    : poco
+    ? `Vas por buen camino. Intenta registrar todo lo que gastes esta semana — en 30 días tendrás un patrón claro de dónde se va tu plata.`
+    : `Llevas un registro consistente. ¿Sabías que con Premium puedes ver análisis por categoría, alertas cuando te pasas de tu límite y un consejo personalizado con IA cada semana?`;
+
+  const statBox = totalSemana > 0 ? `
+    <div class="stat-box">
+      <span class="stat-label">Registrado esta semana</span>
+      <span class="stat-value red">S/ ${totalSemana.toFixed(0)}</span>
+    </div>` : '';
+
+  const ctaTexto = sinRegistrar || poco
+    ? 'Registrar ahora →'
+    : 'Ver mi análisis →';
+
+  const tipBox = sinRegistrar ? `
+    <div class="card" style="background:#f8faf9;border:1px solid #e5e7eb;margin-top:0">
+      <p style="font-size:13px;color:#6b7280;text-align:center;line-height:1.7">
+        Solo escríbele al bot por WhatsApp<br>
+        <strong style="color:#111">"Almuerzo 15"</strong> — así de fácil 🐜
+      </p>
+    </div>` : poco ? `
+    <div class="card" style="background:#f8faf9;border:1px solid #e5e7eb;margin-top:0">
+      <p style="font-size:13px;color:#6b7280;line-height:1.7">
+        💡 <strong style="color:#111">Tip:</strong> registra también por foto de voucher o mensaje de voz. Así no se te escapa ningún gasto.
+      </p>
+    </div>` : `
+    <div class="card" style="background:#f8faf9;border:1px solid #e5e7eb;margin-top:0">
+      <p style="font-size:13px;color:#6b7280;line-height:1.7">
+        ⭐ <strong style="color:#111">Premium por S/ 15/mes</strong> — análisis avanzado, límites por categoría, consejo con IA y reporte PDF mensual.<br><br>
+        <a href="https://hormicash.com/dashboard.html" style="color:#1A6B3C;font-weight:700">Activar Premium →</a>
+      </p>
+    </div>`;
+
+  const html = htmlWrapper(`
+    ${logoHeader()}
+    <div class="card">
+      <div class="tag" style="${tagStyle}">${tag}</div>
+      <h1 style="font-size:22px;font-weight:800;color:#111;margin-bottom:10px;line-height:1.3">${titulo}</h1>
+      <p style="color:#6b7280;font-size:15px;line-height:1.6;margin-bottom:20px">${mensajePrincipal}</p>
+      ${statBox}
+      <a href="https://hormicash.com/dashboard.html" class="btn">${ctaTexto}</a>
+    </div>
+    ${tipBox}
+    ${footer('recordatorios semanales')}
+  `);
+  return enviarEmail({ to: email, from: 'Hormicash <recordatorio@hormicash.com>', subject, html });
+}
+
 // ── HELPERS ───────────────────────────────────────────────────────
 async function calcularTotalMes(uid) {
   const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
@@ -311,6 +384,7 @@ async function cronRecordatorioDiario() {
     }
   } catch(e) { console.error('Error cron recordatorio:', e); }
 }
+
 async function cronResumenSemanal() {
   const ahora = new Date();
   const inicioSemana = new Date(ahora.getTime() - 7*24*60*60*1000); inicioSemana.setHours(0,0,0,0);
@@ -329,6 +403,7 @@ async function cronResumenSemanal() {
     }
   } catch(e) { console.error('Error cron semanal:', e); }
 }
+
 async function cronAlertaTarjeta() {
   const hoy = new Date(); const dia = hoy.getDate();
   if (![18,19,20].includes(dia)) return;
@@ -343,6 +418,81 @@ async function cronAlertaTarjeta() {
     }
   } catch(e) { console.error('Error cron tarjeta:', e); }
 }
+
+// ── NUEVO: RECORDATORIO SEMANAL FREE ─────────────────────────────
+async function cronRecordatorioFree() {
+  const ahora = new Date();
+  const hace7dias = new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000);
+  hace7dias.setHours(0,0,0,0);
+  try {
+    const usuariosSnap = await db.collection('usuarios').where('plan','==','free').get();
+    for (const doc of usuariosSnap.docs) {
+      const data = doc.data(); if (!data.email) continue;
+      const nombre = data.nombre?.split(' ')[0] || 'Usuario';
+
+      // Contar gastos de los últimos 7 días
+      const gastosSnap = await db.collection('gastos')
+        .where('uid','==',doc.id)
+        .where('tipo','==','gasto')
+        .where('fecha','>=',admin.firestore.Timestamp.fromDate(hace7dias))
+        .get();
+
+      let cantidadSemana = 0;
+      let totalSemana = 0;
+      gastosSnap.forEach(d => {
+        cantidadSemana++;
+        totalSemana += d.data().monto || 0;
+      });
+
+      try {
+        await enviarEmailRecordatorioFree(data.email, nombre, { cantidadSemana, totalSemana });
+        console.log(`✅ Recordatorio free (${cantidadSemana} gastos) → ${data.email}`);
+      } catch(e) {
+        console.error(`❌ Recordatorio free ${data.email}:`, e.message);
+      }
+      await new Promise(r => setTimeout(r, 150));
+    }
+  } catch(e) { console.error('Error cron free:', e); }
+}
+
+// ── SCHEDULER MEJORADO ────────────────────────────────────────────
+let _ultimoRecordatorio = null;
+let _ultimoSemanal = null;
+let _ultimaTarjeta = null;
+let _ultimoFree = null;
+
+setInterval(() => {
+  const ahora = new Date();
+  const horaUTC = ahora.getUTCHours();
+  const diaSemana = ahora.getUTCDay(); // 0=dom, 1=lun ... 5=vie, 6=sab
+  const fechaHoy = ahora.toISOString().slice(0, 10);
+  const semanaKey = `${ahora.getUTCFullYear()}-W${Math.floor(ahora.getTime() / (7*24*60*60*1000))}`;
+
+  // Recordatorio diario premium — 8pm Perú = 01:00 UTC
+  if (horaUTC === 1 && _ultimoRecordatorio !== fechaHoy) {
+    _ultimoRecordatorio = fechaHoy;
+    cronRecordatorioDiario();
+  }
+
+  // Resumen semanal premium — lunes 8am Perú = lunes 13:00 UTC
+  if (diaSemana === 1 && horaUTC === 13 && _ultimoSemanal !== semanaKey) {
+    _ultimoSemanal = semanaKey;
+    cronResumenSemanal();
+  }
+
+  // Alerta tarjeta premium — 9am Perú = 14:00 UTC
+  if (horaUTC === 14 && _ultimaTarjeta !== fechaHoy) {
+    _ultimaTarjeta = fechaHoy;
+    cronAlertaTarjeta();
+  }
+
+  // Recordatorio semanal FREE — viernes 9pm Perú = sábado 02:00 UTC
+  if (diaSemana === 6 && horaUTC === 2 && _ultimoFree !== semanaKey) {
+    _ultimoFree = semanaKey;
+    cronRecordatorioFree();
+  }
+
+}, 60000);
 
 // ════════════════════════════════════════════════════════════════
 // FIREBASE + GEMINI + WHATSAPP
@@ -555,24 +705,6 @@ async function generarConsejoIA(telefono) {
   }catch(e){return null;}
 }
 
-// ── CRONS SCHEDULER ──────────────────────────────────────────────
-setInterval(() => {
-  const ahora = new Date();
-  const horaUTC = ahora.getUTCHours();
-  const minUTC = ahora.getUTCMinutes();
-  const diaSemana = ahora.getUTCDay(); // 1=lunes
-
-  // Recordatorio diario — 8pm Perú = 01:00 UTC
-  if (horaUTC === 1 && minUTC === 0) cronRecordatorioDiario();
-
-  // Resumen semanal — lunes 8am Perú = lunes 13:00 UTC
-  if (diaSemana === 1 && horaUTC === 13 && minUTC === 0) cronResumenSemanal();
-
-  // Alerta tarjeta — 9am Perú = 14:00 UTC
-  if (horaUTC === 14 && minUTC === 0) cronAlertaTarjeta();
-
-}, 60000);
-
 // ── RUTAS ─────────────────────────────────────────────────────────
 app.get('/webhook', (req, res) => {
   const mode=req.query['hub.mode'], token=req.query['hub.verify_token'], challenge=req.query['hub.challenge'];
@@ -603,7 +735,6 @@ app.post('/webhook', async (req, res) => {
       estadoUsuario[telefono]={esperando:'bienvenida_limites'};
       await enviarMensaje(telefono,i18n.bienvenida[idioma](telefono));
       await enviarMensaje(telefono, `📧 Te enviamos un correo de bienvenida a tu email.\n\n¡Revísalo! Y si no lo ves, búscalo en *Spam* y márcalo como "No es spam" para que te lleguen tus recordatorios y resúmenes semanales 🙌`);
-      // Email bienvenida
       const userInfo=await obtenerEmailUsuario(telefono);
       if(userInfo?.email) onNuevoUsuario(userInfo.email,userInfo.nombre).catch(e=>console.error('Email bienvenida:',e.message));
       return;
@@ -739,7 +870,6 @@ app.post('/webhook', async (req, res) => {
     const multiples=parsearMultiplesMovimientos(mensajeLimpio);
     if(multiples){
       let respuesta=`✅ *${multiples.length} gastos registrados*${esTarjeta?' 💳':''}\n\n`;
-      
       for(const mov of multiples){
         if(mov.categoria==='otros' && mov.tipo==='gasto'){try{const model=genAI.getGenerativeModel({model:'gemini-2.5-flash-lite'});const result=await model.generateContent(`Clasifica este gasto en UNA categoría: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.\nGasto: "${mov.label}"\nResponde SOLO la categoría.`);const cat=result.response.text().trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');const validas=['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];if(validas.includes(cat))mov.categoria=cat;}catch(e){console.log('Gemini fallback:',e.message);}}
         const uidM=await obtenerUidPorTelefono(telefono);
@@ -755,23 +885,22 @@ app.post('/webhook', async (req, res) => {
       return;
     }
 
-   const mov=parsearMovimiento(mensajeLimpio);
-if(!mov){
-  const userDoc=await db.collection('usuarios_whatsapp').doc(telefono).get();
-  await enviarMensaje(telefono,i18n.noEntendi[userDoc.data()?.idioma||'es']||i18n.noEntendi.es);
-}else{
-  // Si keywords no reconocieron la categoría, intentar con Gemini
-  if(mov.categoria==='otros' && mov.tipo==='gasto'){
-    try{
-      const model=genAI.getGenerativeModel({model:'gemini-2.5-flash-lite'});
-      const result=await model.generateContent(`Clasifica este gasto en UNA categoría: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.\nGasto: "${mov.label}"\nResponde SOLO la categoría.`);
-      const cat=result.response.text().trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');
-      const validas=['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
-      if(validas.includes(cat)) mov.categoria=cat;
-    }catch(e){ console.log('Gemini no disponible, usando keywords:', e.message); }
-  }
-  const uidT=await obtenerUidPorTelefono(telefono);
-  const gastoData={telefono,uid:uidT||null,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje,fecha:admin.firestore.FieldValue.serverTimestamp()};
+    const mov=parsearMovimiento(mensajeLimpio);
+    if(!mov){
+      const userDoc=await db.collection('usuarios_whatsapp').doc(telefono).get();
+      await enviarMensaje(telefono,i18n.noEntendi[userDoc.data()?.idioma||'es']||i18n.noEntendi.es);
+    }else{
+      if(mov.categoria==='otros' && mov.tipo==='gasto'){
+        try{
+          const model=genAI.getGenerativeModel({model:'gemini-2.5-flash-lite'});
+          const result=await model.generateContent(`Clasifica este gasto en UNA categoría: comida, cafe, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.\nGasto: "${mov.label}"\nResponde SOLO la categoría.`);
+          const cat=result.response.text().trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');
+          const validas=['comida','cafe','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
+          if(validas.includes(cat)) mov.categoria=cat;
+        }catch(e){ console.log('Gemini no disponible, usando keywords:', e.message); }
+      }
+      const uidT=await obtenerUidPorTelefono(telefono);
+      const gastoData={telefono,uid:uidT||null,monto:mov.monto,tipo:mov.tipo,categoria:mov.categoria,label:mov.label,fuente:'texto_whatsapp',mensaje,fecha:admin.firestore.FieldValue.serverTimestamp()};
       await db.collection('gastos').add(gastoData);
       await registrarEvento('gasto_registrado',{telefono,canal:'whatsapp',fuente:esTarjeta?'tarjeta':'texto',categoria:mov.categoria,monto:mov.monto});
       let resp;
@@ -842,6 +971,12 @@ app.get('/test-premium', async (req, res) => {
   catch(e) { res.send(`❌ Error: ${e.message}`); }
 });
 
+app.get('/test-recordatorio-free', async (req, res) => {
+  if(req.query.clave!==process.env.ADMIN_SECRET)return res.send('❌ No autorizado');
+  try { await cronRecordatorioFree(); res.json({ok:true,mensaje:'Cron free ejecutado'}); }
+  catch(e) { res.json({error:e.message}); }
+});
+
 app.get('/usuarios-emails', async (req, res) => {
   try{const snap=await db.collection('usuarios').get();const usuarios=[];snap.forEach(d=>{const data=d.data();if(data.email)usuarios.push({nombre:data.nombre?.split(' ')[0]||'Usuario',email:data.email,plan:data.plan||'free',telefono:data.telefono||''}); });res.json({total:usuarios.length,usuarios});}
   catch(e){res.json({error:e.message});}
@@ -857,7 +992,6 @@ app.post('/api/notificar-premium', async (req, res) => {
   const{telefono,nombre}=req.body;
   try{
     await enviarMensaje(telefono,`🌟 *¡Ya eres Premium, ${nombre}!*\n\nTu pago fue confirmado. Entra al dashboard para disfrutar todas las funciones:\nhttps://hormicash.com/dashboard.html\n\n¡Gracias por confiar en Hormicash! 🐜`);
-    // Email premium
     const userInfo=await obtenerEmailUsuario(telefono);
     if(userInfo?.email) onActivoPremium(userInfo.email,userInfo.nombre).catch(console.error);
     res.json({ok:true});

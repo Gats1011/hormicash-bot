@@ -554,6 +554,36 @@
 
   .quick-monto { max-width: 100px; }
 
+  .quick-date-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0 12px;
+    height: 46px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.2s, color 0.2s;
+    position: relative;
+  }
+  .quick-date-btn:hover { border-color: var(--green); color: var(--text); }
+  .quick-date-btn input[type="date"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: none;
+  }
+
   .quick-submit {
     width: 46px;
     height: 46px;
@@ -773,6 +803,145 @@
   .bar-fill.danger { background: linear-gradient(90deg, var(--accent), var(--red)); }
   .bar-fill-hormiga { height: 100%; border-radius: 7px; background: linear-gradient(90deg, var(--accent), #f97316); transition: width 0.7s cubic-bezier(0.34,1.56,0.64,1); }
   .budget-msg { font-size: 12px; color: var(--muted); }
+
+  /* ── HORMIGA MODAL ── */
+  .hormiga-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.65); z-index: 2000;
+    align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .hormiga-modal-overlay.open { display: flex; }
+  .hormiga-modal {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 24px; width: 100%; max-width: 460px;
+    padding: 24px; position: relative;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .hormiga-modal-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .hormiga-modal-title { font-size: 17px; font-weight: 700; color: var(--text); }
+  .hormiga-modal-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .hormiga-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid var(--border); background: transparent;
+    cursor: pointer; color: var(--muted); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .hormiga-close:hover { border-color: var(--red); color: var(--red); }
+
+  /* Stage dots */
+  .hormiga-stages {
+    display: flex; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .hormiga-stage-dot {
+    flex: 1; text-align: center; font-size: 9px;
+    color: var(--muted); padding: 0 2px;
+    transition: color 0.3s;
+  }
+  .hormiga-stage-dot.active { color: var(--accent); font-weight: 700; }
+
+  /* Ant scene */
+  .hormiga-scene {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0 8px; min-height: 200px;
+    position: relative; justify-content: flex-end;
+  }
+  .hormiga-img-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    transform-origin: bottom center;
+  }
+  .hormiga-img {
+    width: 160px; height: 160px; object-fit: contain;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
+  }
+  .hormiga-badge {
+    font-size: 13px; font-weight: 700;
+    color: #fff; background: var(--accent);
+    border-radius: 20px; padding: 3px 14px;
+    margin-bottom: 8px; white-space: nowrap;
+    transition: background 0.4s;
+  }
+  .hormiga-tag {
+    font-size: 12px; color: var(--muted);
+    margin-top: 6px; text-align: center;
+    min-height: 18px;
+  }
+
+  /* Animations per stage */
+  @keyframes hm-float {
+    0%,100% { transform: translateY(0px) rotate(-1deg); }
+    50% { transform: translateY(-8px) rotate(1deg); }
+  }
+  @keyframes hm-wiggle {
+    0%,100% { transform: rotate(-2deg) scale(1); }
+    25% { transform: rotate(2deg) scale(1.03); }
+    75% { transform: rotate(-1deg) scale(0.98); }
+  }
+  @keyframes hm-shake {
+    0%,100% { transform: translateX(0) rotate(0); }
+    20% { transform: translateX(-4px) rotate(-2deg); }
+    40% { transform: translateX(4px) rotate(2deg); }
+    60% { transform: translateX(-3px) rotate(-1deg); }
+    80% { transform: translateX(3px) rotate(1deg); }
+  }
+  @keyframes hm-pulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  @keyframes hm-panic {
+    0%,100% { transform: translateX(0) translateY(0) rotate(0); }
+    15% { transform: translateX(-5px) translateY(-3px) rotate(-3deg); }
+    30% { transform: translateX(5px) translateY(0) rotate(3deg); }
+    45% { transform: translateX(-4px) translateY(-2px) rotate(-2deg); }
+    60% { transform: translateX(4px) translateY(0) rotate(2deg); }
+    75% { transform: translateX(-3px) rotate(-1deg); }
+  }
+  .hm-anim-1 { animation: hm-float 2.5s ease-in-out infinite; }
+  .hm-anim-2 { animation: hm-wiggle 1.8s ease-in-out infinite; }
+  .hm-anim-3 { animation: hm-shake 1.2s ease-in-out infinite; }
+  .hm-anim-4 { animation: hm-pulse 0.9s ease-in-out infinite; }
+  .hm-anim-5 { animation: hm-panic 0.7s ease-in-out infinite; }
+
+  /* Total row */
+  .hormiga-total-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--card2); border-radius: 12px;
+    padding: 10px 14px; margin: 12px 0;
+    border: 1px solid var(--border);
+  }
+  .hormiga-total-label { font-size: 12px; color: var(--muted); }
+  .hormiga-total-count { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .hormiga-total-amount { font-size: 22px; font-weight: 700; color: var(--accent); }
+
+  /* Gastos list */
+  .hormiga-list { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; }
+  .hormiga-list-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; background: var(--card2);
+    border-radius: 10px; font-size: 13px;
+    border: 1px solid var(--border);
+  }
+  .hormiga-list-name { color: var(--text); font-weight: 500; }
+  .hormiga-list-date { font-size: 11px; color: var(--muted); }
+  .hormiga-list-amount { color: var(--accent); font-weight: 600; }
+  .hormiga-empty { text-align: center; font-size: 12px; color: var(--muted); padding: 1rem; }
+
+  /* Ver hormiga btn */
+  .ver-hormiga-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--accent); font-size: 12px; font-weight: 600;
+    padding: 0; margin-left: 6px;
+    text-decoration: underline dotted;
+    transition: opacity 0.15s;
+  }
+  .ver-hormiga-btn:hover { opacity: 0.7; }
 
   /* Config Modal */
   .config-modal-overlay {
@@ -1629,6 +1798,50 @@
   }
 
   .sidebar-bottom { margin-top: 16px; }
+
+  /* Trial/Promo banner en sidebar */
+  .sidebar-trial-banner {
+    margin: 0 10px 10px;
+    border-radius: 12px;
+    padding: 11px 14px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: none;
+  }
+  .sidebar-trial-banner:hover { opacity: 0.85; }
+  .sidebar-trial-banner.promo {
+    background: linear-gradient(135deg, #22c55e18, #16a34a18);
+    border: 1.5px solid #22c55e44;
+  }
+  .sidebar-trial-banner.active {
+    background: linear-gradient(135deg, #1A6B3C18, #52C97A18);
+    border: 1.5px solid var(--primary);
+  }
+  .sidebar-trial-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .sidebar-trial-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .sidebar-trial-bar {
+    margin-top: 7px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .sidebar-trial-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #1A6B3C, #52C97A);
+    transition: width 0.4s;
+  }
   .sidebar-actions { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
   .saction-btn {
     background: none;
@@ -2063,7 +2276,97 @@
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--premium);
+    display: block;
   }
+
+  .dropdown-avatar-wrap {
+    position: relative;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .dropdown-avatar-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    opacity: 0;
+    transition: opacity 0.18s;
+  }
+  .dropdown-avatar-wrap:hover .dropdown-avatar-overlay { opacity: 1; }
+
+  /* Modal editar nombre */
+  .edit-name-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+  }
+  .edit-name-modal-overlay.open { display: flex; }
+  .edit-name-modal {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px 24px 20px;
+    width: 320px;
+    max-width: 90vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  }
+  .edit-name-modal h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 16px;
+  }
+  .edit-name-input {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--card2);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+  .edit-name-input:focus { border-color: var(--primary); }
+  .edit-name-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: flex-end;
+  }
+  .edit-name-cancel {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: none;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .edit-name-save {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: none;
+    background: var(--primary);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .edit-name-save:disabled { opacity: 0.6; cursor: default; }
 
   .profile-dropdown-name {
     font-family: 'Inter', sans-serif;
@@ -2980,7 +3283,7 @@
         </div>
         <button onclick="window.copiarYape()" style="background:var(--premium-dim);border:none;border-radius:8px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--premium);cursor:pointer" id="copiarYapeBtn">📋 Copiar</button>
       </div>
-      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5">Yapea S/ 15 y luego toca el botón de abajo 👇</div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5">Yapea S/ 14 y luego toca el botón de abajo 👇</div>
       <button onclick="window.mostrarFormPago()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#a78bfa);border:none;border-radius:12px;padding:14px;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;color:white;cursor:pointer">✅ Ya pagué — Activar Premium</button>
     </div>
 
@@ -3052,6 +3355,15 @@
       </button>
     </nav>
 
+    <!-- TRIAL BANNER SIDEBAR -->
+    <div id="sidebarTrialBanner" class="sidebar-trial-banner" onclick="window.showUpgrade?.()">
+      <div class="sidebar-trial-title" id="sidebarTrialTitle">🎁 Prueba 14 días gratis</div>
+      <div class="sidebar-trial-sub" id="sidebarTrialSub">Sin pago · Premium completo</div>
+      <div class="sidebar-trial-bar" id="sidebarTrialBarWrap" style="display:none">
+        <div class="sidebar-trial-bar-fill" id="sidebarTrialBarFill" style="width:100%"></div>
+      </div>
+    </div>
+
     <div class="sidebar-bottom">
       <div class="sidebar-actions">
         <button class="saction-btn" onclick="toggleTheme()" id="themeBtn">🌙 Oscuro</button>
@@ -3063,6 +3375,9 @@
         <button class="saction-btn" id="upgradeBtn" onclick="window.showUpgrade()" style="color:var(--accent)">⭐ Upgrade</button>
         <button class="saction-btn" onclick="logout()" id="txt-logout">🚪 Salir</button>
       </div>
+      <button id="repeatTourBtn" onclick="window.repetirTour()" title="Ver tutorial">
+        <span>🎓</span> Tutorial
+      </button>
       <div class="sidebar-footer">© 2026 Hormicash</div>
     </div>
   </nav>
@@ -3127,6 +3442,9 @@
             </div>
             <div class="bar-track"><div class="bar-fill-hormiga" id="hormigaBar" style="width:0%"></div></div>
             <div class="budget-msg" id="hormigaMsg">Cargando...</div>
+            <div style="margin-top:4px;">
+              <button class="ver-hormiga-btn" onclick="abrirModalHormiga()">🐜 Ver mi hormiga →</button>
+            </div>
           </div>
         </div>
         <!-- Últimas transacciones (preview) -->
@@ -3216,7 +3534,7 @@
         <div class="lock-icon">🔒</div>
         <div class="lock-title">Análisis avanzado — Premium</div>
         <div class="lock-desc">KPIs en tiempo real, top categorías, gráficos de distribución, proyecciones y consejos personalizados.</div>
-        <button class="upgrade-cta" onclick="window.showUpgrade()">⭐ Upgrade a Premium — S/ 15/mes</button>
+        <button class="upgrade-cta" onclick="window.showUpgrade()">⭐ Upgrade a Premium — S/ 14/mes</button>
       </div>
       <div id="premiumSection"></div>
     </div>
@@ -3313,13 +3631,41 @@
           <button class="type-btn" id="typeTarjeta" onclick="setType('tarjeta')" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.3);color:var(--premium)">💳 Tarjeta</button>
         </div>
       </div>
-      <div id="quickTCBadge" style="display:none;background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--premium);margin-bottom:10px;text-align:center">
-        💳 Se registrará en tu tarjeta de crédito
+      <div id="quickTCBadge" style="display:none;background:rgba(167,139,250,0.08);border:1.5px solid rgba(167,139,250,0.25);border-radius:12px;padding:12px 14px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--premium);margin-bottom:10px;text-align:center">💳 Gasto con tarjeta de crédito</div>
+        <div style="display:flex;gap:8px;margin-bottom:0" id="tcTipoGastoRow">
+          <button id="btnTCCorriente" onclick="setTCTipo('corriente')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--premium);background:rgba(167,139,250,0.2);color:var(--premium);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+            ✅ Corriente
+          </button>
+          <button id="btnTCDiferido" onclick="setTCTipo('diferido')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--border);background:none;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
+            📅 Diferido (cuotas)
+          </button>
+        </div>
+        <div id="quickDiferidoFields" style="display:none;margin-top:10px;display:none;flex-direction:column;gap:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">N° de cuotas</div>
+              <input type="number" id="tcCuotasInput" min="2" max="72" placeholder="Ej: 12" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;box-sizing:border-box">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:4px">Interés mensual %</div>
+              <input type="number" id="tcInteresInput" min="0" max="30" step="0.01" placeholder="Ej: 3.5" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;box-sizing:border-box">
+            </div>
+          </div>
+          <div id="tcCuotaPreview" style="background:rgba(167,139,250,0.1);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--premium);font-weight:600;text-align:center;display:none"></div>
+        </div>
       </div>
       <div class="quick-add-row">
         <input type="text" class="quick-input" id="quickDesc" placeholder="Ej: Almuerzo, Café, Sueldo..." autocomplete="off">
         <input type="number" class="quick-input quick-monto" id="quickMonto" placeholder="S/" min="0" step="0.01">
         <button class="quick-submit" id="quickSubmit" onclick="quickAdd()">+</button>
+      </div>
+      <div style="margin-top:8px">
+        <button class="quick-date-btn" id="quickDateBtn" title="Cambiar fecha" onclick="document.getElementById('quickDateInput').showPicker()">
+          <span>📅</span>
+          <span id="quickDateLabel">Hoy</span>
+          <input type="date" id="quickDateInput" onchange="onQuickDateChange(this.value)">
+        </button>
       </div>
       <div class="quick-feedback" id="quickFeedback"></div>
       <button class="quick-close" onclick="closeQuickAdd()">✕ Cerrar</button>
@@ -3492,6 +3838,16 @@
           <input type="number" class="tc-form-input" id="tcPago" placeholder="Ej: 18" min="1" max="31">
         </div>
         <div></div>
+      </div>
+
+      <!-- Deuda actual real -->
+      <div id="tcDeudaWrap" style="display:none;margin-top:4px">
+        <label class="tc-form-label" style="display:flex;align-items:center;gap:6px">
+          Deuda total actual (S/)
+          <span style="font-size:10px;color:var(--muted);font-weight:400">· lo que debes al banco hoy</span>
+        </label>
+        <input type="number" class="tc-form-input" id="tcDeudaActual" placeholder="Ej: 2174.39" min="0" step="0.01">
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Encuéntralo en tu homebanking como "Crédito total utilizado"</div>
       </div>
 
       <!-- Default -->
@@ -3745,7 +4101,25 @@
 
   window.openQuickAdd = function() {
     document.getElementById('quickModal').classList.add('open');
+    // Inicializar fecha a hoy
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth()+1).padStart(2,'0');
+    const dd = String(hoy.getDate()).padStart(2,'0');
+    const dateInput = document.getElementById('quickDateInput');
+    if (dateInput) { dateInput.value = `${yyyy}-${mm}-${dd}`; dateInput.max = `${yyyy}-${mm}-${dd}`; }
+    document.getElementById('quickDateLabel').textContent = 'Hoy';
     setTimeout(() => document.getElementById('quickDesc').focus(), 100);
+  };
+
+  window.onQuickDateChange = function(val) {
+    if (!val) return;
+    const [y,m,d] = val.split('-');
+    const hoy = new Date(); const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+    const label = val === hoyStr ? 'Hoy' : `${d}/${m}/${y}`;
+    document.getElementById('quickDateLabel').textContent = label;
+    const btn = document.getElementById('quickDateBtn');
+    if (btn) { btn.style.borderColor = val === hoyStr ? '' : 'var(--primary)'; btn.style.color = val === hoyStr ? '' : 'var(--primary)'; }
   };
 
   window.closeQuickAdd = function() {
@@ -3753,6 +4127,17 @@
     window._quickEsTarjeta = false;
     // Resetear a gasto por defecto
     setType('gasto');
+    window._tcTipo = 'corriente';
+    const cuotasInput = document.getElementById('tcCuotasInput');
+    const interesInput = document.getElementById('tcInteresInput');
+    if (cuotasInput) cuotasInput.value = '';
+    if (interesInput) interesInput.value = '';
+    const preview = document.getElementById('tcCuotaPreview');
+    if (preview) preview.style.display = 'none';
+    // Resetear fecha a hoy
+    const btn = document.getElementById('quickDateBtn');
+    if (btn) { btn.style.borderColor = ''; btn.style.color = ''; }
+    document.getElementById('quickDateLabel').textContent = 'Hoy';
   };
 
   // ── AUTH ──
@@ -3837,6 +4222,7 @@ window.goToDashboard = async () => {
       if (sidebarNameEl) sidebarNameEl.textContent = firstName;
       if (sidebarAvatarEl && user.photoURL) sidebarAvatarEl.src = user.photoURL;
       setTimeout(updateDropdownUI, 200);
+      setTimeout(updateTrialBanner, 300);
       // Mobile cuenta tab
       const cuentaAvatarEl = document.getElementById('cuentaAvatar');
       const cuentaNombreEl = document.getElementById('cuentaNombre');
@@ -3896,6 +4282,16 @@ window.goToDashboard = async () => {
               setTimeout(() => window.showOnboarding(user.displayName), 400);
             } else {
               showPage('app');
+              // Mostrar tutorial si no lo ha visto aún
+              if (!data.tutorialCompleted) {
+                setTimeout(() => window.showTutorialWelcome(), 800);
+              } else {
+                // Ya completó tutorial: mostrar botón repetir
+                setTimeout(() => {
+                  const btn = document.getElementById('repeatTourBtn');
+                  if (btn) btn.classList.add('shown');
+                }, 500);
+              }
             }
             setTimeout(() => renderPremiumSection(), 300);
             window._auth = auth;
@@ -3909,7 +4305,7 @@ window.goToDashboard = async () => {
 
             // Aplicar UI premium con delay para garantizar DOM visible
             if (data.plan === 'premium') {
-              setTimeout(() => { setPremiumUI(); updateDropdownUI(); }, 100);
+              setTimeout(() => { setPremiumUI(); updateDropdownUI(); updateTrialBanner(); }, 100);
             }
           } else {
             // No tiene teléfono → pedir vinculación
@@ -4119,6 +4515,10 @@ window.abrirModalTarjeta = (tarjetaId = null) => {
     document.getElementById('tcPago').value    = tc.dia_pago || '';
     document.getElementById('tcRed').value     = tc.red || 'visa';
     document.getElementById('tcDefault').checked = tc.es_default || false;
+    // Mostrar campo deuda al editar
+    const deudaWrap = document.getElementById('tcDeudaWrap');
+    if (deudaWrap) deudaWrap.style.display = 'block';
+    document.getElementById('tcDeudaActual').value = tc.deuda_total || '';
     tcSelectedBanco = tc.banco || 'bcp';
     tcSelectedColor = tc.color || 'blue';
     document.querySelectorAll('.tc-bank-opt').forEach(el => el.classList.toggle('selected', el.dataset.banco === tcSelectedBanco));
@@ -4136,6 +4536,9 @@ window.abrirModalTarjeta = (tarjetaId = null) => {
     document.getElementById('tcCorte').value   = '';
     document.getElementById('tcRed').value     = 'visa';
     document.getElementById('tcDefault').checked = _tarjetasCache.length === 0;
+    const deudaWrap2 = document.getElementById('tcDeudaWrap');
+    if (deudaWrap2) deudaWrap2.style.display = 'none';
+    document.getElementById('tcDeudaActual').value = '';
     tcSelectedBanco = 'bcp';
     tcSelectedColor = 'blue';
     document.querySelectorAll('.tc-bank-opt').forEach(el => el.classList.toggle('selected', el.dataset.banco === 'bcp'));
@@ -4173,7 +4576,9 @@ window.guardarTarjeta = async () => {
       }
     }
     const pago = parseInt(document.getElementById('tcPago')?.value) || 0;
+    const deudaActual = parseFloat(document.getElementById('tcDeudaActual')?.value) || null;
     const data = { nombre, banco: tcSelectedBanco, color: tcSelectedColor, digitos, limite, dia_corte: corte, dia_pago: pago, red, es_default: esDefault, actualizado: serverTimestamp() };
+    if (deudaActual !== null && deudaActual >= 0) data.deuda_total = deudaActual;
     if (editId) {
       await setDoc(doc(db, 'usuarios', user.uid, 'tarjetas', editId), data, { merge: true });
     } else {
@@ -4431,13 +4836,17 @@ window.abrirDashboardTarjeta = async (tarjetaId, cicloOffset) => {
 
   // Store current cycle offset for navigation
   if (!window._tcCicloOffset) window._tcCicloOffset = 0;
-  
+
+  // Cargar diferidos activos
+  window._diferidosActivosHTML = await cargarDiferidosActivos(tarjetaId, tc);
+
   content.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap">
       <button onclick="volverListaTarjetas()" style="background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--text);cursor:pointer">← Mis tarjetas</button>
       <div style="font-size:16px;font-weight:700">${tc.nombre}${tc.digitos ? ` ••${tc.digitos}` : ''}</div>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <button onclick="window.registrarPagoTarjeta('${tarjetaId}')" style="background:linear-gradient(135deg,#22c55e,#16a34a);border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;color:white;cursor:pointer">💳 Registrar pago</button>
+        <button onclick="window.abrirImportarMovimientos('${tarjetaId}')" style="background:linear-gradient(135deg,#3b82f6,#6366f1);border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;color:white;cursor:pointer">📥 Importar Excel</button>
         <button onclick="abrirModalTarjeta('${tarjetaId}')" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer">✏️ Editar</button>
       </div>
     </div>
@@ -4453,7 +4862,7 @@ window.abrirDashboardTarjeta = async (tarjetaId, cicloOffset) => {
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
-        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">Gastado</div>
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">Este ciclo</div>
         <div style="font-size:20px;font-weight:800;color:var(--red)">${cur} ${gasto.toFixed(0)}</div>
         <div style="font-size:11px;color:var(--muted);margin-top:3px">de ${cur} ${tc.limite || '—'}</div>
       </div>
@@ -4467,9 +4876,30 @@ window.abrirDashboardTarjeta = async (tarjetaId, cicloOffset) => {
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
         <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">Transacciones</div>
         <div style="font-size:20px;font-weight:800;color:var(--premium)">${txTC.length}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">este mes</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">este ciclo</div>
       </div>
     </div>
+    ${tc.deuda_total > 0 ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:rgba(239,68,68,0.06);border:1.5px solid rgba(239,68,68,0.2);border-radius:12px;padding:16px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">💳 Deuda total real</div>
+        <div style="font-size:22px;font-weight:800;color:var(--red)">${cur} ${(tc.deuda_total||0).toFixed(2)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">lo que debes al banco hoy</div>
+      </div>
+      <div style="background:rgba(167,139,250,0.06);border:1.5px solid rgba(167,139,250,0.2);border-radius:12px;padding:16px">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">📅 A pagar próximo mes</div>
+        <div style="font-size:22px;font-weight:800;color:var(--premium)">${cur} ${gasto.toFixed(2)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">gastos del ciclo actual</div>
+      </div>
+    </div>` : `
+    <div style="background:var(--card2);border:1px dashed var(--border);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:20px">💡</div>
+      <div>
+        <div style="font-size:13px;font-weight:600">Configura tu deuda real</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Edita la tarjeta y añade el "Crédito total utilizado" de tu homebanking para ver tu deuda real y proyección de pago.</div>
+      </div>
+      <button onclick="abrirModalTarjeta('${tarjetaId}')" style="flex-shrink:0;padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Editar</button>
+    </div>`}
     ${proximoHTML}
     ${topCats.length ? `
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px">
@@ -4514,8 +4944,75 @@ window.abrirDashboardTarjeta = async (tarjetaId, cicloOffset) => {
         </div>`;
       }).join('') : `<div style="color:var(--muted);font-size:13px;padding:8px 0">Sin transacciones este mes</div>`}
     </div>
+    ${window._diferidosActivosHTML || ''}
   `;
 };
+
+// Cargar diferidos activos por tarjeta
+async function cargarDiferidosActivos(tarjetaId, tc) {
+  if (!userPhone) return '';
+  const cur = window.userCurrency || 'S/';
+  try {
+    const { getDocs: gd, query: q, collection: col, where: w, orderBy: ob } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+    const snap = await gd(q(col(db,'gastos'), w('telefono','==',userPhone), w('fuente_pago','==','tarjeta'), w('tc_tipo','==','diferido')));
+    const diferidos = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.tarjeta_id !== tarjetaId && !(tc.es_default && !data.tarjeta_id)) return;
+      if ((data.tc_cuotas_pagadas || 0) >= (data.tc_cuotas_total || 1)) return; // ya terminado
+      diferidos.push({ id: d.id, ...data });
+    });
+    if (!diferidos.length) return '';
+    const totalCuotaMes = diferidos.reduce((s,d) => s + (d.tc_cuota_mensual || 0), 0);
+    const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const hoy = new Date();
+    const rows = diferidos.map(d => {
+      const pagadas = d.tc_cuotas_pagadas || 0;
+      const total = d.tc_cuotas_total || 1;
+      const restantes = total - pagadas;
+      const pct = Math.round((pagadas/total)*100);
+      // Fecha estimada fin
+      const fechaInicio = d.fecha?.toDate ? d.fecha.toDate() : new Date(d.fecha);
+      const fechaFin = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth() + total, fechaInicio.getDate());
+      const mesAno = `${monthNames[fechaFin.getMonth()]} ${fechaFin.getFullYear()}`;
+      return `
+        <div style="border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+            <div>
+              <div style="font-size:13px;font-weight:700">${d.label || 'Diferido'}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">${pagadas}/${total} cuotas · termina ${mesAno}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:14px;font-weight:800;color:var(--red)">${cur} ${(d.tc_cuota_mensual||0).toFixed(2)}/mes</div>
+              <div style="font-size:11px;color:var(--muted)">Total original: ${cur} ${(d.tc_monto_original||d.monto||0).toFixed(2)}</div>
+            </div>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:6px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#7c3aed,#a78bfa);border-radius:6px;transition:width 0.4s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="font-size:10px;color:var(--muted)">${pagadas} pagadas</span>
+            <span style="font-size:10px;color:var(--muted)">${restantes} restantes</span>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.5px">📅 Diferidos activos</div>
+          <div style="font-size:11px;color:var(--muted)">${diferidos.length} activo${diferidos.length!==1?'s':''}</div>
+        </div>
+        <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25);border-radius:10px;padding:12px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px">A pagar próximo mes</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Solo cuotas diferidas</div>
+          </div>
+          <div style="font-size:22px;font-weight:800;color:var(--premium)">${cur} ${totalCuotaMes.toFixed(2)}</div>
+        </div>
+        ${rows}
+      </div>`;
+  } catch(e) { console.error(e); return ''; }
+}
 
 window.volverListaTarjetas = () => {
   const grid = document.getElementById('tcCardsGrid');
@@ -4523,6 +5020,219 @@ window.volverListaTarjetas = () => {
   if (grid) grid.style.display = '';
   if (detalle) { detalle.style.display = 'none'; detalle.innerHTML = ''; }
   window._tcCicloOffset = 0;
+};
+
+// ── IMPORTAR MOVIMIENTOS DESDE EXCEL/CSV ──
+window._importTarjetaId = null;
+window._importMovimientos = [];
+
+window.abrirImportarMovimientos = (tarjetaId) => {
+  window._importTarjetaId = tarjetaId;
+  window._importMovimientos = [];
+  const overlay = document.getElementById('importModalOverlay');
+  if (overlay) { overlay.style.display = 'flex'; }
+  // Reset steps
+  document.getElementById('importStep1').style.display = 'block';
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep3').style.display = 'none';
+  document.getElementById('importFileInput').value = '';
+};
+
+window.cerrarImportModal = () => {
+  const overlay = document.getElementById('importModalOverlay');
+  if (overlay) overlay.style.display = 'none';
+  window._importMovimientos = [];
+  document.getElementById('importFileInput').value = '';
+};
+
+window.handleImportFile = async (file) => {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','csv'].includes(ext)) {
+    alert('Formato no soportado. Usa .xlsx, .xls o .csv');
+    return;
+  }
+  // Show step 2
+  document.getElementById('importStep1').style.display = 'none';
+  document.getElementById('importStep2').style.display = 'block';
+  const progress = document.getElementById('importProgress');
+  const bar = document.getElementById('importProgressBar');
+
+  progress.textContent = 'Leyendo archivo...';
+  bar.style.width = '20%';
+
+  try {
+    // Read file as text/base64
+    let contenido = '';
+    if (ext === 'csv') {
+      contenido = await file.text();
+    } else {
+      // For xlsx/xls, read as base64 and send to backend for extraction
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      contenido = btoa(binary);
+    }
+
+    bar.style.width = '40%';
+    progress.textContent = 'Enviando a IA para análisis...';
+
+    const prompt = ext === 'csv'
+      ? `Eres un extractor de movimientos bancarios. Analiza este archivo CSV de estado de cuenta de tarjeta de crédito BCP Perú y extrae TODOS los movimientos de gasto (no pagos al banco).
+
+CSV:
+${contenido.substring(0, 8000)}
+
+Responde SOLO con JSON válido, sin markdown. Formato exacto:
+{"movimientos":[{"fecha":"YYYY-MM-DD","descripcion":"nombre del comercio o gasto","monto":150.00,"tipo":"gasto"}]}
+
+Reglas:
+- Solo incluir cargos/gastos, NO pagos al banco (PAGO HOMEBANKING, abonos positivos)
+- fecha en formato YYYY-MM-DD
+- monto siempre positivo (número)
+- descripcion: nombre limpio del comercio
+- Si no encuentras movimientos válidos: {"movimientos":[]}`
+      : `Eres un extractor de movimientos bancarios. Te envío un archivo Excel codificado en base64 de un estado de cuenta de tarjeta de crédito BCP Perú. 
+
+Basándote en el contenido típico de un Excel de BCP con columnas como Fecha, Descripción/Comercio, Monto, extrae TODOS los movimientos de gasto.
+
+El archivo base64 es del tipo ${ext}. Analiza su estructura e interpreta los datos.
+
+Responde SOLO con JSON válido, sin markdown:
+{"movimientos":[{"fecha":"YYYY-MM-DD","descripcion":"nombre del comercio","monto":150.00}]}
+
+Si el base64 no es interpretable directamente, responde: {"error":"necesita_csv","mensaje":"Por favor exporta como CSV"}`;
+
+    bar.style.width = '60%';
+
+    const res = await fetch('https://hormicash-bot-production.up.railway.app/api/analisis-mes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
+    });
+    const data = await res.json();
+    bar.style.width = '80%';
+    progress.textContent = 'Procesando resultados...';
+
+    let texto = data.texto || '';
+    texto = texto.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(texto);
+
+    if (parsed.error === 'necesita_csv') {
+      document.getElementById('importStep2').style.display = 'none';
+      document.getElementById('importStep1').style.display = 'block';
+      alert('⚠️ Para archivos Excel (.xlsx), por favor exporta como CSV desde Excel:\nArchivo → Guardar como → CSV UTF-8\n\nO usa directamente el archivo CSV del homebanking BCP.');
+      return;
+    }
+
+    const movs = parsed.movimientos || [];
+    if (!movs.length) {
+      document.getElementById('importStep2').style.display = 'none';
+      document.getElementById('importStep1').style.display = 'block';
+      alert('No se encontraron movimientos de gasto en el archivo. Verifica que sea el estado de cuenta correcto.');
+      return;
+    }
+
+    bar.style.width = '100%';
+    window._importMovimientos = movs.map((m, i) => ({ ...m, _idx: i, _selected: true }));
+
+    // Categorizar con IA en lote
+    progress.textContent = `Categorizando ${movs.length} movimientos...`;
+    const CATS = ['comida','transporte','telecom','compras','entretenimiento','hogar','salud','educacion','otros'];
+    for (let m of window._importMovimientos) {
+      try {
+        const catPrompt = `Clasifica este gasto de tarjeta de crédito en UNA categoría: comida, transporte, telecom, compras, entretenimiento, hogar, salud, educacion, otros.\nGasto: "${m.descripcion}"\nResponde SOLO la categoría.`;
+        const catRes = await fetch('https://hormicash-bot-production.up.railway.app/api/analisis-mes', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: catPrompt })
+        });
+        const catData = await catRes.json();
+        const cat = (catData.texto||'').trim().toLowerCase().replace(/[^a-záéíóúñ]/g,'');
+        m._categoria = CATS.includes(cat) ? cat : 'otros';
+      } catch(e) { m._categoria = 'otros'; }
+    }
+
+    // Show step 3
+    document.getElementById('importStep2').style.display = 'none';
+    renderImportPreview();
+
+  } catch(e) {
+    console.error(e);
+    document.getElementById('importStep2').style.display = 'none';
+    document.getElementById('importStep1').style.display = 'block';
+    alert('❌ Error al procesar el archivo: ' + e.message);
+  }
+};
+
+function renderImportPreview() {
+  document.getElementById('importStep3').style.display = 'block';
+  const movs = window._importMovimientos;
+  const cur = window.userCurrency || 'S/';
+  const catIcons = { comida:'🍔',transporte:'🚌',telecom:'📱',compras:'🛍️',entretenimiento:'🎮',hogar:'🏠',salud:'💊',educacion:'📚',otros:'💸' };
+  const selCount = movs.filter(m => m._selected).length;
+  document.getElementById('importPreviewCount').textContent = `${selCount} de ${movs.length} seleccionados`;
+  document.getElementById('importPreviewTitle').textContent = `${movs.length} movimiento${movs.length!==1?'s':''} detectado${movs.length!==1?'s':''}`;
+
+  document.getElementById('importPreviewList').innerHTML = movs.map((m,i) => `
+    <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);cursor:pointer;background:${m._selected?'var(--card2)':'transparent'};transition:background 0.15s" onclick="window.toggleImportRow(${i})">
+      <input type="checkbox" ${m._selected?'checked':''} style="width:16px;height:16px;accent-color:var(--primary);flex-shrink:0" onchange="window.toggleImportRow(${i})">
+      <div style="font-size:16px;flex-shrink:0">${catIcons[m._categoria]||'💸'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.descripcion}</div>
+        <div style="font-size:11px;color:var(--muted)">${m.fecha} · ${m._categoria}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--red);flex-shrink:0">−${cur} ${parseFloat(m.monto).toFixed(2)}</div>
+    </label>`).join('');
+}
+
+window.toggleImportRow = (idx) => {
+  window._importMovimientos[idx]._selected = !window._importMovimientos[idx]._selected;
+  renderImportPreview();
+};
+
+window.confirmarImport = async () => {
+  const btn = document.getElementById('importConfirmBtn');
+  const seleccionados = window._importMovimientos.filter(m => m._selected);
+  if (!seleccionados.length) { alert('Selecciona al menos un movimiento.'); return; }
+  btn.disabled = true;
+  btn.textContent = `Importando ${seleccionados.length} movimientos...`;
+  try {
+    const { addDoc, collection: col, Timestamp } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+    const tarjetaId = window._importTarjetaId;
+    const tc = _tarjetasCache?.find(t => t.id === tarjetaId);
+    let importados = 0;
+    for (const m of seleccionados) {
+      const [y,mo,d] = (m.fecha||'').split('-');
+      const fecha = (y&&mo&&d) ? new Date(parseInt(y),parseInt(mo)-1,parseInt(d),12,0,0) : new Date();
+      const label = m.descripcion.length > 30 ? m.descripcion.substring(0,30) : m.descripcion;
+      await addDoc(col(db,'gastos'), {
+        telefono: userPhone,
+        uid: window._auth?.currentUser?.uid || null,
+        monto: parseFloat(m.monto),
+        tipo: 'gasto',
+        categoria: m._categoria || 'otros',
+        label,
+        fuente: 'importacion_excel',
+        fuente_pago: 'tarjeta',
+        tarjeta_id: tarjetaId || null,
+        mensaje: m.descripcion,
+        fecha: Timestamp.fromDate(fecha),
+        importado: true
+      });
+      importados++;
+    }
+    btn.textContent = `✅ ${importados} movimientos importados`;
+    setTimeout(() => {
+      window.cerrarImportModal();
+      window.abrirDashboardTarjeta(tarjetaId);
+    }, 1200);
+  } catch(e) {
+    console.error(e);
+    btn.disabled = false;
+    btn.textContent = '✅ Importar seleccionados';
+    alert('❌ Error al importar: ' + e.message);
+  }
 };
 
 window.tcNavCiclo = (tarjetaId, dir) => {
@@ -4539,12 +5249,11 @@ window.registrarPagoTarjeta = (tarjetaId) => {
   if (m <= 0) return;
   const user = window._auth?.currentUser;
   if (!user) return;
-  import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js").then(({ addDoc, collection, Timestamp }) => {
-    // Usar el mes/año seleccionado en el navegador, no la fecha actual
+  import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js").then(async ({ addDoc, collection, Timestamp, doc, getDoc, setDoc }) => {
     const mes = window._currentMonth ? window._currentMonth() : new Date().getMonth();
     const año = window._currentYear ? window._currentYear() : new Date().getFullYear();
     const fechaPago = Timestamp.fromDate(new Date(año, mes, 15, 12, 0, 0));
-    addDoc(collection(window._db, 'gastos'), {
+    await addDoc(collection(window._db, 'gastos'), {
       uid: user.uid,
       telefono: (typeof window._userPhone === 'function' ? window._userPhone() : window._userPhone) || '',
       label: 'Pago Homebanking',
@@ -4555,10 +5264,19 @@ window.registrarPagoTarjeta = (tarjetaId) => {
       tarjeta_id: tarjetaId,
       es_pago: true,
       fecha: fechaPago
-    }).then(() => {
-      window.abrirDashboardTarjeta(tarjetaId);
-    }).catch(e => { console.error(e); alert('Error al registrar pago'); });
-  });
+    });
+    // Restar de deuda_total
+    try {
+      const tcRef = doc(window._db, 'usuarios', user.uid, 'tarjetas', tarjetaId);
+      const tcSnap = await getDoc(tcRef);
+      if (tcSnap.exists()) {
+        const deudaActual = tcSnap.data().deuda_total || 0;
+        const nuevaDeuda = Math.max(0, deudaActual - m);
+        await setDoc(tcRef, { deuda_total: nuevaDeuda }, { merge: true });
+      }
+    } catch(e) { console.error('Error actualizando deuda:', e); }
+    window.abrirDashboardTarjeta(tarjetaId);
+  }).catch(e => { console.error(e); alert('Error al registrar pago'); });
 };
 
 // ═══════════════════════════════════════════════════════
@@ -5249,6 +5967,7 @@ window.activarTrial = async () => {
     setPremiumUI();
     showPage('app');
     renderPremiumSection();
+    updateTrialBanner();
     loadData(user);
     showTab('premium');
   } catch(e) {
@@ -5324,7 +6043,7 @@ window.activarTrial = async () => {
       `• Top categorías y distribución\n` +
       `• Seguimiento de tarjeta de crédito\n` +
       `• Sin anuncios\n\n` +
-      `Por solo S/ 15/mes estás ahorrando tiempo y tomando mejores decisiones con tu dinero. ¿Estás seguro?`;
+      `Por solo S/ 14/mes estás ahorrando tiempo y tomando mejores decisiones con tu dinero. ¿Estás seguro?`;
     if (!confirm(msg)) return;
     const user = auth.currentUser;
     if (!user) return;
@@ -5386,7 +6105,49 @@ window.activarTrial = async () => {
       tarjetaBtn.style.color = 'var(--premium)';
     }
     if (tcBadge) tcBadge.style.display = tipo === 'tarjeta' ? 'block' : 'none';
+    if (tipo === 'tarjeta') setTCTipo('corriente');
   };
+
+  window._tcTipo = 'corriente';
+
+  window.setTCTipo = (tipo) => {
+    window._tcTipo = tipo;
+    const btnC = document.getElementById('btnTCCorriente');
+    const btnD = document.getElementById('btnTCDiferido');
+    const fields = document.getElementById('quickDiferidoFields');
+    if (tipo === 'corriente') {
+      if (btnC) { btnC.style.background = 'rgba(167,139,250,0.2)'; btnC.style.borderColor = 'var(--premium)'; btnC.style.color = 'var(--premium)'; }
+      if (btnD) { btnD.style.background = 'none'; btnD.style.borderColor = 'var(--border)'; btnD.style.color = 'var(--muted)'; }
+      if (fields) fields.style.display = 'none';
+    } else {
+      if (btnD) { btnD.style.background = 'rgba(167,139,250,0.2)'; btnD.style.borderColor = 'var(--premium)'; btnD.style.color = 'var(--premium)'; }
+      if (btnC) { btnC.style.background = 'none'; btnC.style.borderColor = 'var(--border)'; btnC.style.color = 'var(--muted)'; }
+      if (fields) fields.style.display = 'flex';
+    }
+  };
+
+  function calcularCuotaDiferido(montoTotal, cuotas, interesMensual) {
+    if (!cuotas || cuotas < 1) return montoTotal;
+    if (!interesMensual || interesMensual <= 0) return montoTotal / cuotas;
+    const r = interesMensual / 100;
+    return montoTotal * (r * Math.pow(1+r, cuotas)) / (Math.pow(1+r, cuotas) - 1);
+  }
+
+  // Preview de cuota en tiempo real
+  document.addEventListener('input', (e) => {
+    if (['tcCuotasInput','tcInteresInput','quickMonto'].includes(e.target.id)) {
+      const monto = parseFloat(document.getElementById('quickMonto')?.value) || 0;
+      const cuotas = parseInt(document.getElementById('tcCuotasInput')?.value) || 0;
+      const interes = parseFloat(document.getElementById('tcInteresInput')?.value) || 0;
+      const preview = document.getElementById('tcCuotaPreview');
+      if (preview && monto > 0 && cuotas >= 2 && window._tcTipo === 'diferido') {
+        const cuota = calcularCuotaDiferido(monto, cuotas, interes);
+        const cur = window.userCurrency || 'S/';
+        preview.style.display = 'block';
+        preview.textContent = `Cuota mensual estimada: ${cur} ${cuota.toFixed(2)} × ${cuotas} meses`;
+      } else if (preview) { preview.style.display = 'none'; }
+    }
+  });
 
   window.quickAdd = async () => {
     const descInput = document.getElementById('quickDesc');
@@ -5426,22 +6187,11 @@ window.activarTrial = async () => {
       const { addDoc, setDoc, doc, getDoc, Timestamp } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
 
       // ── Detectar si es gasto con tarjeta de crédito ──
-      // Puede venir del botón Tarjeta O de keywords en el texto
-      const tcKeywords = ['tc','credito','crédito','tarjeta','visa','mastercard'];
-      const descLower = desc.toLowerCase();
-      const tcEnTexto = tcKeywords.some(k => {
-        const regex = new RegExp(`(^|\\s|[-,])${k}(\\s|[-,]|$)`, 'i');
-        return regex.test(descLower);
-      });
-      const esTarjeta = window._quickEsTarjeta || tcEnTexto;
+      // SOLO por botón Tarjeta, nunca por keywords en el texto
+      const esTarjeta = window._quickEsTarjeta === true;
 
-      // Limpiar keywords TC del label
+      // Limpiar keywords TC del label (solo si viene del botón tarjeta)
       let descLimpia = desc;
-      if (esTarjeta) {
-        tcKeywords.forEach(k => {
-          descLimpia = descLimpia.replace(new RegExp(`\\s*[-,]?\\s*\\b${k}\\b\\s*[-,]?\\s*`, 'gi'), ' ').trim();
-        });
-      }
 
       const gastoData = {
         telefono: userPhone,
@@ -5457,6 +6207,11 @@ window.activarTrial = async () => {
         fuente: 'web_dashboard',
         mensaje: `${desc} ${monto} (web)`,
         fecha: (() => {
+          const dateInput = document.getElementById('quickDateInput');
+          if (dateInput?.value) {
+            const [y,m,d] = dateInput.value.split('-');
+            return Timestamp.fromDate(new Date(parseInt(y), parseInt(m)-1, parseInt(d), 12, 0, 0));
+          }
           const hoy = new Date();
           const cMes = window._currentMonth ? window._currentMonth() : hoy.getMonth();
           const cYear = window._currentYear ? window._currentYear() : hoy.getFullYear();
@@ -5469,6 +6224,19 @@ window.activarTrial = async () => {
 
       if (esTarjeta && quickType === 'gasto') {
         gastoData.fuente_pago = 'tarjeta';
+        gastoData.tc_tipo = window._tcTipo || 'corriente';
+        if (window._tcTipo === 'diferido') {
+          const cuotas = parseInt(document.getElementById('tcCuotasInput')?.value) || 0;
+          const interes = parseFloat(document.getElementById('tcInteresInput')?.value) || 0;
+          if (cuotas >= 2) {
+            const cuotaMensual = calcularCuotaDiferido(monto, cuotas, interes);
+            gastoData.tc_cuotas_total = cuotas;
+            gastoData.tc_cuotas_pagadas = 0;
+            gastoData.tc_interes_mensual = interes;
+            gastoData.tc_cuota_mensual = parseFloat(cuotaMensual.toFixed(2));
+            gastoData.tc_monto_original = monto;
+          }
+        }
       }
 
       await addDoc(collection(db, 'gastos'), gastoData);
@@ -5870,6 +6638,166 @@ window.activarTrial = async () => {
   window.cancelPremiumFromDropdown = () => {
     closeProfileDropdown();
     cancelPremium();
+  };
+
+  // ── EDITAR NOMBRE ──
+  window.abrirEditarNombre = function() {
+    const currentName = document.getElementById('sidebarName')?.textContent || '';
+    // Get full name from auth
+    const user = auth.currentUser;
+    const fullName = user?.displayName || currentName;
+    const input = document.getElementById('editNameInput');
+    if (input) input.value = fullName;
+    document.getElementById('editNameModalOverlay')?.classList.add('open');
+    setTimeout(() => input?.focus(), 100);
+  };
+
+  window.cerrarEditarNombre = function() {
+    document.getElementById('editNameModalOverlay')?.classList.remove('open');
+  };
+
+  window.guardarNombre = async function() {
+    const input = document.getElementById('editNameInput');
+    const saveBtn = document.getElementById('editNameSaveBtn');
+    const nuevoNombre = input?.value?.trim();
+    if (!nuevoNombre) { input?.focus(); return; }
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando…';
+
+    try {
+      // Update Firebase Auth profile
+      const { updateProfile } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js');
+      await updateProfile(user, { displayName: nuevoNombre });
+
+      // Update Firestore
+      const { doc: fsDoc, setDoc: fsSetDoc, getFirestore: fsGetFirestore } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+      await fsSetDoc(fsDoc(fsGetFirestore(), 'usuarios', user.uid), { nombre: nuevoNombre }, { merge: true });
+
+      // Update UI
+      const firstName = nuevoNombre.split(' ')[0];
+      const sidebarNameEl = document.getElementById('sidebarName');
+      if (sidebarNameEl) sidebarNameEl.textContent = firstName;
+      const cuentaNombreEl = document.getElementById('cuentaNombre');
+      if (cuentaNombreEl) cuentaNombreEl.textContent = nuevoNombre;
+      updateDropdownUI();
+
+      cerrarEditarNombre();
+    } catch(e) {
+      console.error(e);
+      alert('Error al guardar el nombre. Intenta de nuevo.');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Guardar';
+    }
+  };
+
+  // ── EDITAR FOTO DE PERFIL ──
+  window.triggerAvatarUpload = function() {
+    document.getElementById('avatarFileInput')?.click();
+  };
+
+  window.handleAvatarUpload = async function(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { alert('La imagen no puede superar 3MB.'); return; }
+
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Show loading overlay on avatar
+    const wrap = document.querySelector('.dropdown-avatar-wrap');
+    const overlay = wrap?.querySelector('.dropdown-avatar-overlay');
+    if (overlay) { overlay.style.opacity = '1'; overlay.textContent = '⏳'; }
+
+    try {
+      // Import Firebase Storage
+      const { getStorage, ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-storage.js');
+      const storage = getStorage();
+      const storageRef = ref(storage, `avatars/${user.uid}`);
+
+      // Upload
+      await uploadBytes(storageRef, file, { contentType: file.type });
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Update Firebase Auth profile
+      const { updateProfile } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js');
+      await updateProfile(user, { photoURL: downloadURL });
+
+      // Update Firestore
+      const { doc: fsDoc, setDoc: fsSetDoc, getFirestore: fsGetFirestore } = await import('https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js');
+      await fsSetDoc(fsDoc(fsGetFirestore(), 'usuarios', user.uid), { photoURL: downloadURL }, { merge: true });
+
+      // Update all avatar images in UI
+      document.getElementById('sidebarAvatar').src = downloadURL;
+      document.getElementById('dropdownAvatar').src = downloadURL;
+      const cuentaAvatarEl = document.getElementById('cuentaAvatar');
+      if (cuentaAvatarEl) cuentaAvatarEl.src = downloadURL;
+      updateDropdownUI();
+
+    } catch(e) {
+      console.error(e);
+      alert('Error al subir la foto. Intenta de nuevo.');
+    } finally {
+      if (overlay) { overlay.style.opacity = ''; overlay.textContent = '📷'; }
+      input.value = '';
+    }
+  };
+
+  // ── TRIAL BANNER SIDEBAR ──
+  window.updateTrialBanner = async function() {
+    const banner = document.getElementById('sidebarTrialBanner');
+    if (!banner) return;
+    const user = auth.currentUser;
+    if (!user) { banner.style.display = 'none'; return; }
+
+    try {
+      const userSnap = await getDoc(doc(db, 'usuarios', user.uid));
+      if (!userSnap.exists()) { banner.style.display = 'none'; return; }
+      const data = userSnap.data();
+      const plan = data.plan || 'free';
+
+      // Premium pagado → nada
+      if (plan === 'premium') { banner.style.display = 'none'; return; }
+
+      // Trial activo
+      if (plan === 'trial' && data.trial_fin) {
+        const trialFin = data.trial_fin?.toDate ? data.trial_fin.toDate() : new Date(data.trial_fin);
+        const trialInicio = data.trial_inicio?.toDate ? data.trial_inicio.toDate() : new Date(data.trial_inicio || (trialFin - 14*24*60*60*1000));
+        const ahora = new Date();
+        if (ahora >= trialFin) { banner.style.display = 'none'; return; } // vencido
+        const diasRestantes = Math.ceil((trialFin - ahora) / (1000*60*60*24));
+        const totalDias = 14;
+        const porcentaje = Math.round((diasRestantes / totalDias) * 100);
+        banner.className = 'sidebar-trial-banner active';
+        banner.style.display = 'block';
+        banner.onclick = null; // no redirige al modal, ya tienen trial
+        document.getElementById('sidebarTrialTitle').textContent = `⭐ ${diasRestantes} día${diasRestantes !== 1 ? 's' : ''} restante${diasRestantes !== 1 ? 's' : ''}`;
+        document.getElementById('sidebarTrialSub').textContent = 'Trial Premium activo';
+        const barWrap = document.getElementById('sidebarTrialBarWrap');
+        const barFill = document.getElementById('sidebarTrialBarFill');
+        if (barWrap) barWrap.style.display = 'block';
+        if (barFill) barFill.style.width = porcentaje + '%';
+        return;
+      }
+
+      // Free y nunca usó trial → mostrar promo
+      if (plan === 'free' && !data.trial_fin) {
+        banner.className = 'sidebar-trial-banner promo';
+        banner.style.display = 'block';
+        banner.onclick = () => window.showUpgrade?.();
+        document.getElementById('sidebarTrialTitle').textContent = '🎁 Prueba 14 días gratis';
+        document.getElementById('sidebarTrialSub').textContent = 'Sin pago · Premium completo';
+        document.getElementById('sidebarTrialBarWrap').style.display = 'none';
+        return;
+      }
+
+      // Cualquier otro caso → ocultar
+      banner.style.display = 'none';
+    } catch(e) { banner.style.display = 'none'; }
   };
 
   window.updateDropdownUI = function() {
@@ -7054,9 +7982,18 @@ document.addEventListener('click', (e) => {
     <div class="profile-dropdown-overlay" id="profileDropdownOverlay" onclick="closeProfileDropdown()">
       <div class="profile-dropdown" id="profileDropdown" onclick="event.stopPropagation()">
         <div class="profile-dropdown-header">
-          <img class="profile-dropdown-avatar" id="dropdownAvatar" src="" alt="">
-          <div>
-            <div class="profile-dropdown-name" id="dropdownName">—</div>
+          <div class="dropdown-avatar-wrap" onclick="triggerAvatarUpload()" title="Cambiar foto">
+            <img class="profile-dropdown-avatar" id="dropdownAvatar" src="" alt="">
+            <div class="dropdown-avatar-overlay">📷</div>
+          </div>
+          <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div class="profile-dropdown-name" id="dropdownName" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+              <button onclick="abrirEditarNombre()" style="background:none;border:none;cursor:pointer;padding:2px;color:var(--muted);display:flex;align-items:center;flex-shrink:0" title="Editar nombre">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+            </div>
             <div class="profile-dropdown-plan" id="dropdownPlan">Free</div>
           </div>
         </div>
@@ -7085,6 +8022,74 @@ document.addEventListener('click', (e) => {
       </div>
     </div>
 
+
+    <!-- MODAL IMPORTAR MOVIMIENTOS -->
+    <div id="importModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;align-items:center;justify-content:center;padding:16px" onclick="if(event.target===this)window.cerrarImportModal()">
+      <div style="background:var(--card);border-radius:20px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+        <div style="padding:24px 24px 0;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800">📥 Importar movimientos</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px">Sube el Excel exportado desde tu homebanking</div>
+          </div>
+          <button onclick="window.cerrarImportModal()" style="background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1">✕</button>
+        </div>
+        <div style="padding:20px 24px;flex:1">
+          <!-- Step 1: Upload -->
+          <div id="importStep1">
+            <div style="border:2px dashed var(--border);border-radius:14px;padding:32px;text-align:center;margin-bottom:16px;cursor:pointer;transition:border-color 0.2s" id="importDropZone" onclick="document.getElementById('importFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--primary)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';window.handleImportFile(event.dataTransfer.files[0])">
+              <div style="font-size:36px;margin-bottom:10px">📊</div>
+              <div style="font-weight:700;font-size:14px;margin-bottom:6px">Arrastra tu archivo aquí</div>
+              <div style="font-size:12px;color:var(--muted)">o haz clic para seleccionar</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:8px">Soporta: .xlsx, .xls, .csv</div>
+            </div>
+            <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="window.handleImportFile(this.files[0])">
+            <div style="background:var(--card2);border-radius:12px;padding:14px 16px">
+              <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px">💡 ¿Cómo exportar desde BCP?</div>
+              <div style="font-size:12px;color:var(--muted);line-height:1.7">
+                1. Entra a <strong>viabcp.com</strong> → Tarjetas de crédito<br>
+                2. Click en <strong>"Exportar movimientos"</strong> (arriba a la derecha)<br>
+                3. Descarga el archivo Excel<br>
+                4. Súbelo aquí
+              </div>
+            </div>
+          </div>
+          <!-- Step 2: Processing -->
+          <div id="importStep2" style="display:none;text-align:center;padding:40px 0">
+            <div style="font-size:40px;margin-bottom:16px">🤖</div>
+            <div style="font-weight:700;font-size:15px;margin-bottom:8px">Analizando con IA...</div>
+            <div style="font-size:13px;color:var(--muted)" id="importProgress">Leyendo archivo...</div>
+            <div style="margin-top:16px;height:4px;background:var(--border);border-radius:4px;overflow:hidden">
+              <div id="importProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:4px;transition:width 0.5s"></div>
+            </div>
+          </div>
+          <!-- Step 3: Preview -->
+          <div id="importStep3" style="display:none">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <div style="font-weight:700;font-size:14px" id="importPreviewTitle">Movimientos detectados</div>
+              <div style="font-size:12px;color:var(--muted)" id="importPreviewCount"></div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Revisa y desmarca los que no quieras importar:</div>
+            <div id="importPreviewList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;margin-bottom:16px"></div>
+            <div style="display:flex;gap:10px">
+              <button onclick="window.cerrarImportModal()" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:none;color:var(--text);font-family:'Inter',sans-serif;font-weight:600;cursor:pointer">Cancelar</button>
+              <button onclick="window.confirmarImport()" id="importConfirmBtn" style="flex:2;padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;font-family:'Inter',sans-serif;font-weight:700;cursor:pointer">✅ Importar seleccionados</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL EDITAR NOMBRE -->
+    <div class="edit-name-modal-overlay" id="editNameModalOverlay" onclick="cerrarEditarNombre()">
+      <div class="edit-name-modal" onclick="event.stopPropagation()">
+        <h3>✏️ Editar nombre</h3>
+        <input class="edit-name-input" id="editNameInput" type="text" placeholder="Tu nombre" maxlength="40" autocomplete="off" onkeydown="if(event.key==='Enter')guardarNombre();if(event.key==='Escape')cerrarEditarNombre()">
+        <div class="edit-name-actions">
+          <button class="edit-name-cancel" onclick="cerrarEditarNombre()">Cancelar</button>
+          <button class="edit-name-save" id="editNameSaveBtn" onclick="guardarNombre()">Guardar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- MODAL MONEDA -->
     <div id="monedaModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;align-items:center;justify-content:center" onclick="cerrarModalMoneda()">
@@ -7158,7 +8163,7 @@ document.addEventListener('click', (e) => {
   window.abrirDesgloseCat = async function(cat) {
   if (window.userPlan !== 'premium') {
     if (window.mostrarUpgradeModal) window.mostrarUpgradeModal();
-    else alert('Esta función es exclusiva de Premium 🌟\nDesbloquea por S/ 15/mes con el código HORMI2026');
+    else alert('Esta función es exclusiva de Premium 🌟\nDesbloquea por S/ 14/mes con el código HORMI2026');
     return;
   }
   const modal = document.getElementById('catDesglosModal');
@@ -8010,6 +9015,8 @@ window.obFinish = async function() {
           showPage('link');
         } else {
           showPage('app');
+          // Mostrar tutorial de bienvenida después del onboarding
+          setTimeout(() => window.showTutorialWelcome(), 600);
         }
       } else {
         showPage('link');
@@ -8671,6 +9678,562 @@ window.exportarEventosCSV = function() {
 </script>
 
 
+<!-- ══════════════════════════════════════════
+     MODAL BIENVENIDA TUTORIAL
+     ══════════════════════════════════════════ -->
+<style>
+/* ── WELCOME MODAL ── */
+#tutorialWelcomeOverlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(4px);
+}
+#tutorialWelcomeOverlay.open { display: flex; }
+
+.tw-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 36px 32px 28px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+  animation: twCardIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes twCardIn {
+  from { opacity:0; transform: scale(0.88) translateY(20px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+.tw-emoji { font-size: 52px; margin-bottom: 12px; line-height: 1; }
+.tw-title { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.tw-sub   { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 24px; }
+
+.tw-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+.tw-feat-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--card2);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+.tw-feat-item .tw-feat-icon { font-size: 18px; flex-shrink: 0; }
+
+.tw-btn-primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.tw-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(34,197,94,0.35); }
+
+.tw-btn-skip {
+  width: 100%;
+  padding: 11px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.tw-btn-skip:hover { border-color: var(--text); color: var(--text); }
+
+/* ── TOUR TOOLTIP ── */
+#tourTooltip {
+  display: none;
+  position: fixed;
+  z-index: 99998;
+  max-width: 300px;
+  background: var(--card);
+  border: 1.5px solid var(--green);
+  border-radius: 16px;
+  padding: 16px 18px 14px;
+  box-shadow: 0 8px 32px rgba(34,197,94,0.2), 0 2px 12px rgba(0,0,0,0.15);
+  animation: tooltipIn 0.25s ease;
+}
+@keyframes tooltipIn {
+  from { opacity:0; transform: scale(0.92); }
+  to   { opacity:1; transform: scale(1); }
+}
+#tourTooltip.visible { display: block; }
+
+.tt-step  { font-size: 11px; color: var(--green); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.tt-title { font-size: 15px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+.tt-desc  { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 12px; }
+
+.tt-actions { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.tt-next {
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tt-prev {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tt-skip-tour {
+  font-size: 12px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.tt-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.tt-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s, width 0.2s;
+}
+.tt-dot.active { background: var(--green); width: 14px; border-radius: 3px; }
+
+/* ── HIGHLIGHT RING ── */
+#tourHighlight {
+  display: none;
+  position: fixed;
+  z-index: 99997;
+  border-radius: 12px;
+  border: 2.5px solid var(--green);
+  box-shadow: 0 0 0 4000px rgba(0,0,0,0.45), 0 0 24px rgba(34,197,94,0.4);
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+}
+#tourHighlight.visible { display: block; }
+
+/* ── BOTÓN REPETIR TOUR ── */
+#repeatTourBtn {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+#repeatTourBtn:hover { border-color: var(--green); color: var(--green); }
+#repeatTourBtn.shown { display: flex; }
+</style>
+
+<!-- MODAL BIENVENIDA -->
+<div id="tutorialWelcomeOverlay">
+  <div class="tw-card">
+    <div class="tw-emoji">🐜</div>
+    <div class="tw-title">¡Bienvenido a Hormicash!</div>
+    <div class="tw-sub">¿Quieres que te mostremos cómo funciona el dashboard? Solo toma 1 minuto.</div>
+    <div class="tw-features">
+      <div class="tw-feat-item"><span class="tw-feat-icon">📊</span>Resumen de gastos e ingresos</div>
+      <div class="tw-feat-item"><span class="tw-feat-icon">🐜</span>Detección de gastos hormiga</div>
+      <div class="tw-feat-item"><span class="tw-feat-icon">📲</span>Cómo registrar por WhatsApp</div>
+      <div class="tw-feat-item"><span class="tw-feat-icon">💳</span>Control de tarjeta de crédito</div>
+    </div>
+    <button class="tw-btn-primary" onclick="window.startTour()">🚀 Ver tutorial rápido</button>
+    <button class="tw-btn-skip" onclick="window.skipTutorial()">Ya sé cómo funciona</button>
+  </div>
+</div>
+
+<!-- HIGHLIGHT RING -->
+<div id="tourHighlight"></div>
+
+<!-- TOOLTIP TOUR -->
+<div id="tourTooltip">
+  <div class="tt-step" id="ttStep">Paso 1 de 6</div>
+  <div class="tt-title" id="ttTitle"></div>
+  <div class="tt-desc" id="ttDesc"></div>
+  <div class="tt-actions">
+    <div class="tt-dots" id="ttDots"></div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="tt-prev" id="ttPrevBtn" onclick="window.tourPrev()">← Atrás</button>
+      <button class="tt-next" id="ttNextBtn" onclick="window.tourNext()">Siguiente →</button>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:10px">
+    <button class="tt-skip-tour" onclick="window.endTour()">Saltar tutorial</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// TOUR LÓGICO
+// ══════════════════════════════════════════
+
+const TOUR_STEPS = [
+  {
+    targetId: 'snav-resumen',
+    fallbackId: 'mtab-resumen',
+    title: '📊 Tu resumen mensual',
+    desc: 'Aquí ves tus ingresos, gastos y balance del mes en tiempo real. Cambia el mes con las flechas.',
+    tabToShow: 'resumen',
+    position: 'bottom'
+  },
+  {
+    targetId: 'snav-categorias',
+    fallbackId: 'mtab-categorias',
+    title: '🐜 Gastos hormiga',
+    desc: 'Analiza cuánto gastas por categoría. Aquí detectas los gastos pequeños que se acumulan sin que los notes.',
+    tabToShow: 'categorias',
+    position: 'bottom'
+  },
+  {
+    targetId: 'snav-transacciones',
+    fallbackId: 'mtab-transacciones',
+    title: '📋 Tus movimientos',
+    desc: 'Lista completa de gastos e ingresos. Puedes editar o eliminar cualquier movimiento tocándolo.',
+    tabToShow: 'transacciones',
+    position: 'bottom'
+  },
+  {
+    targetId: 'snav-tarjeta',
+    fallbackId: 'mtab-tarjeta',
+    title: '💳 Tarjeta de crédito',
+    desc: 'Controla tu tarjeta BCP Amex: ciclo de facturación, gastos del periodo y registro de pagos. Función Premium.',
+    tabToShow: 'resumen',
+    position: 'bottom'
+  },
+  {
+    targetId: 'snav-premium',
+    fallbackId: 'mtab-premium',
+    title: '✨ Premium',
+    desc: 'Desbloquea análisis IA, exportación PDF y más por solo S/ 14/mes. Usa el código HORMI2026 para activarlo.',
+    tabToShow: 'resumen',
+    position: 'bottom',
+    isLast: true
+  }
+];
+
+let _tourStep = 0;
+let _tourActive = false;
+
+// ── Mostrar modal bienvenida tutorial ──
+window.showTutorialWelcome = async function() {
+  // Revisar si ya completó el tutorial
+  try {
+    const user = window._auth?.currentUser;
+    if (user && window._db) {
+      const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+      const snap = await getDoc(doc(window._db, 'usuarios', user.uid));
+      if (snap.exists() && snap.data()?.tutorialCompleted) return; // ya lo vio
+    }
+  } catch(e) { /* continuar de todas formas */ }
+  document.getElementById('tutorialWelcomeOverlay').classList.add('open');
+};
+
+window.skipTutorial = async function() {
+  document.getElementById('tutorialWelcomeOverlay').classList.remove('open');
+  await _saveTutorialCompleted();
+  _showRepeatBtn();
+};
+
+window.startTour = function() {
+  document.getElementById('tutorialWelcomeOverlay').classList.remove('open');
+  _tourStep = 0;
+  _tourActive = true;
+  _renderTourStep();
+};
+
+window.tourNext = function() {
+  if (_tourStep < TOUR_STEPS.length - 1) {
+    _tourStep++;
+    _renderTourStep();
+  } else {
+    window.endTour();
+  }
+};
+
+window.tourPrev = function() {
+  if (_tourStep > 0) {
+    _tourStep--;
+    _renderTourStep();
+  }
+};
+
+window.endTour = async function() {
+  _tourActive = false;
+  document.getElementById('tourTooltip').classList.remove('visible');
+  document.getElementById('tourHighlight').classList.remove('visible');
+  // Volver al tab resumen
+  if (window.showTab) window.showTab('resumen');
+  await _saveTutorialCompleted();
+  _showRepeatBtn();
+};
+
+function _renderTourStep() {
+  const step = TOUR_STEPS[_tourStep];
+  if (!step) return;
+
+  // Cambiar al tab correspondiente si aplica
+  if (step.tabToShow && window.showTab) {
+    window.showTab(step.tabToShow);
+  }
+
+  // Buscar el elemento objetivo
+  let targetEl = document.getElementById(step.targetId);
+  if (!targetEl && step.fallbackId) targetEl = document.getElementById(step.fallbackId);
+
+  // Actualizar tooltip
+  document.getElementById('ttStep').textContent = `Paso ${_tourStep + 1} de ${TOUR_STEPS.length}`;
+  document.getElementById('ttTitle').textContent = step.title;
+  document.getElementById('ttDesc').textContent = step.desc;
+
+  // Botón de acción final
+  const nextBtn = document.getElementById('ttNextBtn');
+  nextBtn.textContent = step.isLast ? '✅ Finalizar' : 'Siguiente →';
+
+  // Botón atrás
+  document.getElementById('ttPrevBtn').style.display = _tourStep === 0 ? 'none' : '';
+
+  // Dots
+  const dotsEl = document.getElementById('ttDots');
+  dotsEl.innerHTML = TOUR_STEPS.map((_, i) =>
+    `<div class="tt-dot ${i === _tourStep ? 'active' : ''}"></div>`
+  ).join('');
+
+  // Posicionar highlight y tooltip
+  if (targetEl) {
+    setTimeout(() => _positionTour(targetEl, step.position), 50);
+  } else {
+    // Sin elemento → solo mostrar tooltip centrado
+    const tt = document.getElementById('tourTooltip');
+    tt.style.top = '50%';
+    tt.style.left = '50%';
+    tt.style.transform = 'translate(-50%, -50%)';
+    tt.classList.add('visible');
+    document.getElementById('tourHighlight').classList.remove('visible');
+  }
+}
+
+function _positionTour(el, position) {
+  const rect = el.getBoundingClientRect();
+  const hl = document.getElementById('tourHighlight');
+  const tt = document.getElementById('tourTooltip');
+
+  const pad = 6;
+  hl.style.top    = (rect.top - pad) + 'px';
+  hl.style.left   = (rect.left - pad) + 'px';
+  hl.style.width  = (rect.width + pad*2) + 'px';
+  hl.style.height = (rect.height + pad*2) + 'px';
+  hl.classList.add('visible');
+
+  tt.style.transform = '';
+  const ttW = 300;
+  const margin = 12;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  let top, left;
+
+  if (position === 'bottom') {
+    top = rect.bottom + margin + pad;
+    left = rect.left + rect.width/2 - ttW/2;
+  } else {
+    top = rect.top - margin - pad - 180;
+    left = rect.left + rect.width/2 - ttW/2;
+  }
+
+  // Bounds check
+  left = Math.max(12, Math.min(left, vw - ttW - 12));
+  if (top + 220 > vh) top = rect.top - 220 - margin;
+  if (top < 8) top = rect.bottom + margin + pad;
+
+  tt.style.top = top + 'px';
+  tt.style.left = left + 'px';
+  tt.classList.add('visible');
+
+  // Scroll suave al elemento
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function _saveTutorialCompleted() {
+  try {
+    const user = window._auth?.currentUser;
+    if (user && window._db) {
+      const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js");
+      await setDoc(doc(window._db, 'usuarios', user.uid), { tutorialCompleted: true }, { merge: true });
+    }
+  } catch(e) { /* silencioso */ }
+}
+
+function _showRepeatBtn() {
+  const btn = document.getElementById('repeatTourBtn');
+  if (btn) btn.classList.add('shown');
+}
+
+// ── Repetir tour desde el header ──
+window.repetirTour = function() {
+  _tourStep = 0;
+  _tourActive = true;
+  _renderTourStep();
+};
+
+// Cerrar tour con Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && _tourActive) window.endTour();
+});
+</script>
+
+<!-- MODAL HORMIGA -->
+<div class="hormiga-modal-overlay" id="hormigaModalOverlay" onclick="if(event.target===this)cerrarModalHormiga()">
+  <div class="hormiga-modal">
+    <div class="hormiga-modal-header">
+      <div>
+        <div class="hormiga-modal-title">🐜 Tu hormiga de gastos</div>
+        <div class="hormiga-modal-sub" id="hmModalSub">Este mes</div>
+      </div>
+      <button class="hormiga-close" onclick="cerrarModalHormiga()">✕</button>
+    </div>
+    <div class="hormiga-stages">
+      <div class="hormiga-stage-dot" id="hmdot0">1. Tranquila</div>
+      <div class="hormiga-stage-dot" id="hmdot1">2. Ocupada</div>
+      <div class="hormiga-stage-dot" id="hmdot2">3. Cargada</div>
+      <div class="hormiga-stage-dot" id="hmdot3">4. Ejecutiva</div>
+      <div class="hormiga-stage-dot" id="hmdot4">5. Aplastada</div>
+    </div>
+    <div class="hormiga-scene">
+      <div class="hormiga-badge" id="hmBadge">S/ 0</div>
+      <div class="hormiga-img-wrap" id="hmImgWrap">
+        <img id="hmAntImg" class="hormiga-img hm-anim-1" src="/hormiga-1.png" alt="Hormiga"/>
+      </div>
+      <div class="hormiga-tag" id="hmTag">Sin gastos hormiga este mes 😊</div>
+    </div>
+    <div class="hormiga-total-row">
+      <div>
+        <div class="hormiga-total-label">Total gastos hormiga</div>
+        <div class="hormiga-total-count" id="hmCount">0 gastos este mes</div>
+      </div>
+      <div class="hormiga-total-amount" id="hmTotal">S/ 0</div>
+    </div>
+    <div class="hormiga-list" id="hmGastosList">
+      <div class="hormiga-empty">Sin gastos hormiga registrados</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const _hmStages = [
+  { max: 20,       img: '/hormiga-1.png', anim: 'hm-anim-1', tag: 'Tranquila... por ahora 😊',       badgeColor: '#22c55e' },
+  { max: 50,       img: '/hormiga-2.png', anim: 'hm-anim-2', tag: 'Ya siente el peso 😐',            badgeColor: '#f59e0b' },
+  { max: 150,      img: '/hormiga-3.png', anim: 'hm-anim-3', tag: '¡Cargando demasiado! 😬',         badgeColor: '#f97316' },
+  { max: 500,      img: '/hormiga-4.png', anim: 'hm-anim-4', tag: 'Hormiga ejecutiva 😤',            badgeColor: '#ef4444' },
+  { max: Infinity, img: '/hormiga-5.png', anim: 'hm-anim-5', tag: '¡HORMIGÓN! Revisa tus gastos 🚨', badgeColor: '#dc2626' },
+];
+
+function _hmGetStage(total) {
+  for (let i = 0; i < _hmStages.length; i++) if (total <= _hmStages[i].max) return i;
+  return _hmStages.length - 1;
+}
+
+window.abrirModalHormiga = function() {
+  const overlay = document.getElementById('hormigaModalOverlay');
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('open'), 10);
+  const cur = window.userCurrency || 'S/';
+  const umbral = window.userUmbralHormiga || 50;
+  const mes = window._currentMonth ? window._currentMonth() : new Date().getMonth();
+  const anio = window._currentYear ? window._currentYear() : new Date().getFullYear();
+  const allTx = window._mesActual || [];
+  const mesActual = allTx.filter(tx => tx.tipo === 'gasto' && tx.monto <= umbral);
+  const total = mesActual.reduce((s, tx) => s + tx.monto, 0);
+  const idx = _hmGetStage(total);
+  const st = _hmStages[idx];
+  const img = document.getElementById('hmAntImg');
+  img.src = st.img;
+  img.className = 'hormiga-img ' + st.anim;
+  const badge = document.getElementById('hmBadge');
+  badge.textContent = cur + ' ' + total.toFixed(0);
+  badge.style.background = st.badgeColor;
+  document.getElementById('hmTag').textContent = st.tag;
+  for (let i = 0; i < 5; i++) {
+    document.getElementById('hmdot' + i).classList.toggle('active', i === idx);
+  }
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  document.getElementById('hmModalSub').textContent = meses[mes] + ' ' + anio;
+  document.getElementById('hmTotal').textContent = cur + ' ' + total.toFixed(0);
+  document.getElementById('hmCount').textContent = mesActual.length + (mesActual.length === 1 ? ' gasto' : ' gastos') + ' este mes';
+  const list = document.getElementById('hmGastosList');
+  if (mesActual.length === 0) {
+    list.innerHTML = '<div class="hormiga-empty">Sin gastos hormiga este mes 🎉</div>';
+  } else {
+    const sorted = [...mesActual].sort((a,b) => {
+      const da = a.fecha && a.fecha.toDate ? a.fecha.toDate() : new Date(a.fecha);
+      const db2 = b.fecha && b.fecha.toDate ? b.fecha.toDate() : new Date(b.fecha);
+      return db2 - da;
+    });
+    list.innerHTML = sorted.map(tx => {
+      const d = tx.fecha && tx.fecha.toDate ? tx.fecha.toDate() : new Date(tx.fecha);
+      const mns = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+      const fecha = d.getDate() + ' ' + mns[d.getMonth()] + ' · ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+      const emjs = { comida:'🍱', transporte:'🚌', telecom:'📱', compras:'🛍️', entretenimiento:'🎮', hogar:'🏠', salud:'💊', educacion:'📚', otros:'💸' };
+      const emoji = emjs[tx.categoria] || '💸';
+      const label = tx.label || tx.descripcion || tx.categoria || 'Gasto';
+      return '<div class="hormiga-list-item"><span class="hormiga-list-name">' + emoji + ' ' + label + '</span><span class="hormiga-list-date">' + fecha + '</span><span class="hormiga-list-amount">-' + cur + ' ' + tx.monto.toFixed(2) + '</span></div>';
+    }).join('');
+  }
+};
+
+window.cerrarModalHormiga = function() {
+  const overlay = document.getElementById('hormigaModalOverlay');
+  overlay.classList.remove('open');
+  setTimeout(() => { overlay.style.display = 'none'; }, 200);
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') window.cerrarModalHormiga();
+});
+</script>
 
 </body>
 </html>

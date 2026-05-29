@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Términos y Condiciones — Hormicash</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/logo3.png">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #00C07F;
+    --green-light: #00E599;
+    --green-dark: #00955F;
+    --green-bg: #F0FFF8;
+    --dark: #0D1117;
+    --text: #1A1F2E;
+    --text-muted: #6B7280;
+    --text-light: #9CA3AF;
+    --border: #E5E7EB;
+    --card-bg: #FFFFFF;
+    --section-bg: #F9FAFB;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    background: #fff;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    font-family: 'Sora', sans-serif;
+    font-weight: 800; font-size: 20px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none;
+  }
+  .logo-icon { width: 32px; height: 32px; border-radius: 8px; overflow: hidden; }
+  .logo-icon img { width: 100%; height: 100%; object-fit: cover; }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    text-decoration: none; color: var(--text-muted);
+    font-size: 15px; font-weight: 500; transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+  .btn-nav {
+    background: var(--green); color: #fff;
+    padding: 10px 22px; border-radius: 100px;
+    font-weight: 600; font-size: 14px;
+    text-decoration: none; transition: background .2s, transform .15s;
+  }
+  .btn-nav:hover { background: var(--green-dark); transform: translateY(-1px); }
+
+  /* CONTENT */
+  .page-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 120px 40px 80px;
+  }
+
+  .page-tag {
+    display: inline-block;
+    background: var(--green-bg); color: var(--green-dark);
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 12px; font-weight: 700; letter-spacing: .5px;
+    text-transform: uppercase; margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 40px; font-weight: 800;
+    line-height: 1.15; letter-spacing: -1px;
+    color: var(--text); margin-bottom: 12px;
+  }
+
+  .page-meta {
+    font-size: 14px; color: var(--text-muted); margin-bottom: 48px;
+    padding-bottom: 32px; border-bottom: 1px solid var(--border);
+  }
+
+  /* TOC */
+  .toc {
+    background: var(--section-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px 24px;
+    margin-bottom: 48px;
+  }
+  .toc-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 13px; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .5px; margin-bottom: 12px;
+  }
+  .toc ol { padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+  .toc li { font-size: 14px; }
+  .toc a { color: var(--green); text-decoration: none; font-weight: 500; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* SECTIONS */
+  .doc-section { margin-bottom: 48px; scroll-margin-top: 90px; }
+  .doc-section h2 {
+    font-family: 'Sora', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--text); margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .doc-section h2 .s-icon {
+    width: 32px; height: 32px;
+    background: var(--green-bg); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .doc-section p {
+    font-size: 15px; color: var(--text-muted);
+    line-height: 1.75; margin-bottom: 14px;
+  }
+  .doc-section ul, .doc-section ol {
+    padding-left: 20px;
+    display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 14px;
+  }
+  .doc-section li { font-size: 15px; color: var(--text-muted); line-height: 1.65; }
+  .doc-section li strong { color: var(--text); font-weight: 600; }
+
+  .highlight-box {
+    background: var(--green-bg);
+    border: 1px solid rgba(0,192,127,.2);
+    border-left: 3px solid var(--green);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    font-size: 14px; color: var(--text-muted);
+    line-height: 1.65; margin-bottom: 14px;
+  }
+
+  .warning-box {
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-left: 3px solid #F59E0B;
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+    font-size: 14px; color: #92400E;
+    line-height: 1.65; margin-bottom: 14px;
+  }
+
+  .contact-card {
+    background: var(--dark);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    margin-top: 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; flex-wrap: wrap;
+  }
+  .contact-card h3 {
+    font-family: 'Sora', sans-serif;
+    font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 6px;
+  }
+  .contact-card p { font-size: 14px; color: rgba(255,255,255,.6); margin: 0; }
+  .contact-card a {
+    background: var(--green); color: #fff;
+    padding: 12px 24px; border-radius: 100px;
+    font-weight: 700; font-size: 14px;
+    text-decoration: none; white-space: nowrap;
+    transition: background .2s;
+  }
+  .contact-card a:hover { background: var(--green-dark); }
+
+  /* FOOTER */
+  .page-footer {
+    padding: 32px 40px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 1100px; margin: 0 auto;
+  }
+  .footer-logo {
+    font-family: 'Sora', sans-serif;
+    font-weight: 700; font-size: 16px; color: var(--text);
+    display: flex; align-items: center; gap: 8px; text-decoration: none;
+  }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; }
+  .footer-links a:hover { color: var(--text); }
+  .footer-copy { font-size: 13px; color: var(--text-light); }
+
+  @media (max-width: 768px) {
+    nav { padding: 14px 20px; }
+    .nav-links { display: none; }
+    .page-wrap { padding: 100px 20px 60px; }
+    .page-title { font-size: 28px; }
+    .page-footer { flex-direction: column; gap: 16px; text-align: center; padding: 24px 20px; }
+    .footer-links { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <div class="logo-icon"><img src="https://hormicash.web.app/logo.png" alt="Hormicash logo"></div>
+    Hormicash
+  </a>
+  <div class="nav-links">
+    <a href="/#como-funciona">Cómo funciona</a>
+    <a href="/#precios">Precios</a>
+    <a href="/#faq">FAQ</a>
+    <a href="/dashboard.html" class="btn-nav">Empezar gratis →</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <div class="page-tag">Legal</div>
+  <h1 class="page-title">Términos y Condiciones</h1>
+  <p class="page-meta">Última actualización: mayo de 2026 · Al usar Hormicash, aceptas estos términos</p>
+
+  <div class="toc">
+    <div class="toc-title">Contenido</div>
+    <ol>
+      <li><a href="#aceptacion">Aceptación de los términos</a></li>
+      <li><a href="#descripcion">Descripción del servicio</a></li>
+      <li><a href="#cuenta">Tu cuenta</a></li>
+      <li><a href="#uso-aceptable">Uso aceptable</a></li>
+      <li><a href="#planes">Planes Free y Premium</a></li>
+      <li><a href="#pagos">Pagos y cancelación</a></li>
+      <li><a href="#propiedad">Propiedad intelectual</a></li>
+      <li><a href="#contenido">Tu contenido</a></li>
+      <li><a href="#limitacion">Limitación de responsabilidad</a></li>
+      <li><a href="#disponibilidad">Disponibilidad del servicio</a></li>
+      <li><a href="#terminacion">Terminación de la cuenta</a></li>
+      <li><a href="#ley">Ley aplicable</a></li>
+      <li><a href="#cambios">Cambios a estos términos</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ol>
+  </div>
+
+  <div class="highlight-box">
+    📄 <strong style="color:var(--text);">Al crear una cuenta o usar Hormicash, aceptas estos Términos y Condiciones.</strong> Si no estás de acuerdo con alguna parte, por favor no uses el servicio.
+  </div>
+
+  <!-- 1 -->
+  <div class="doc-section" id="aceptacion">
+    <h2><span class="s-icon">✅</span> 1. Aceptación de los términos</h2>
+    <p>Estos Términos y Condiciones ("Términos") rigen el acceso y uso del servicio Hormicash, incluyendo el sitio web <strong>hormicash.com</strong>, el dashboard web y el bot de WhatsApp (colectivamente, el "Servicio"), operado por Stefano Gatti ("Hormicash", "nosotros").</p>
+    <p>Al registrarte, acceder o usar el Servicio, confirmas que has leído, entendido y aceptado estos Términos y nuestra <a href="/privacy.html" style="color:var(--green);font-weight:500;">Política de Privacidad</a>.</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="doc-section" id="descripcion">
+    <h2><span class="s-icon">🐜</span> 2. Descripción del servicio</h2>
+    <p>Hormicash es una herramienta de seguimiento y análisis de gastos personales que te permite:</p>
+    <ul>
+      <li>Registrar gastos mediante mensajes de texto, fotos de vouchers o notas de voz a través de WhatsApp.</li>
+      <li>Visualizar y analizar tus gastos en un dashboard web.</li>
+      <li>Recibir recordatorios y resúmenes periódicos por WhatsApp y email.</li>
+      <li>Gestionar presupuestos y categorías de gastos.</li>
+    </ul>
+    <p>Hormicash es una herramienta de apoyo personal. <strong>No somos una institución financiera, no brindamos asesoría financiera profesional y no tenemos acceso a tus cuentas bancarias.</strong></p>
+  </div>
+
+  <!-- 3 -->
+  <div class="doc-section" id="cuenta">
+    <h2><span class="s-icon">👤</span> 3. Tu cuenta</h2>
+    <ul>
+      <li>Debes tener al menos <strong>18 años</strong> para usar Hormicash.</li>
+      <li>Debes registrarte con una cuenta de Google válida. Eres responsable de mantener la seguridad de tu cuenta.</li>
+      <li>No puedes ceder, vender o transferir tu cuenta a otra persona.</li>
+      <li>Solo puedes tener una cuenta activa por persona.</li>
+      <li>Debes proporcionar información veraz al momento de registrarte.</li>
+    </ul>
+  </div>
+
+  <!-- 4 -->
+  <div class="doc-section" id="uso-aceptable">
+    <h2><span class="s-icon">🚫</span> 4. Uso aceptable</h2>
+    <p>Está prohibido usar Hormicash para:</p>
+    <ul>
+      <li>Violar cualquier ley peruana o internacional aplicable.</li>
+      <li>Enviar contenido ofensivo, fraudulento o engañoso al bot de WhatsApp.</li>
+      <li>Intentar acceder de forma no autorizada a nuestros sistemas o a cuentas de otros usuarios.</li>
+      <li>Realizar ingeniería inversa, descompilar o desensamblar cualquier parte del Servicio.</li>
+      <li>Usar el Servicio para actividades automatizadas masivas (scraping, spam) sin autorización expresa.</li>
+    </ul>
+    <p>Nos reservamos el derecho de suspender cuentas que violen estas normas sin previo aviso.</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="doc-section" id="planes">
+    <h2><span class="s-icon">⭐</span> 5. Planes Free y Premium</h2>
+    <p><strong>Plan Free:</strong> acceso gratuito con las funciones básicas del servicio descritas en <a href="/#precios" style="color:var(--green);font-weight:500;">la página de precios</a>. No requiere tarjeta de crédito.</p>
+    <p><strong>Plan Premium:</strong> incluye funciones avanzadas como el tab de tarjeta de crédito, analytics detallado y exportación de reportes. Actualmente se activa mediante un código de acceso; próximamente habilitaremos el pago mensual vía Culqi.</p>
+    <p>Las características de cada plan pueden cambiar. Te notificaremos con anticipación ante cambios significativos.</p>
+  </div>
+
+  <!-- 6 -->
+  <div class="doc-section" id="pagos">
+    <h2><span class="s-icon">💳</span> 6. Pagos y cancelación</h2>
+    <p>Cuando el pago mensual de Premium esté disponible:</p>
+    <ul>
+      <li>El precio del plan Premium es de <strong>S/ 14.00 por mes</strong>.</li>
+      <li>Los pagos se procesarán mensualmente de forma anticipada.</li>
+      <li>Puedes cancelar tu suscripción en cualquier momento. Al cancelar, mantendrás el acceso Premium hasta el final del período ya pagado.</li>
+      <li>No ofrecemos reembolsos por períodos parciales, salvo que la ley lo exija.</li>
+    </ul>
+    <div class="warning-box">
+      ⚠️ Los precios pueden cambiar. En caso de cambio de precio, te avisaremos con al menos 30 días de anticipación por email.
+    </div>
+  </div>
+
+  <!-- 7 -->
+  <div class="doc-section" id="propiedad">
+    <h2><span class="s-icon">©️</span> 7. Propiedad intelectual</h2>
+    <p>Todo el contenido del Servicio — incluyendo el código fuente, diseño, logotipo, textos, gráficos y el nombre "Hormicash" — es propiedad de Hormicash y está protegido por las leyes de propiedad intelectual aplicables.</p>
+    <p>No puedes copiar, reproducir, distribuir ni crear obras derivadas del Servicio sin nuestro permiso expreso por escrito.</p>
+  </div>
+
+  <!-- 8 -->
+  <div class="doc-section" id="contenido">
+    <h2><span class="s-icon">📝</span> 8. Tu contenido</h2>
+    <p>Eres el único propietario de los datos que ingresas en Hormicash (tus transacciones, categorías, presupuestos). Al usar el Servicio, nos otorgas una licencia limitada, no exclusiva y revocable para procesar esos datos exclusivamente con el fin de prestarte el Servicio.</p>
+    <p>No reclamamos propiedad sobre tu información financiera personal.</p>
+  </div>
+
+  <!-- 9 -->
+  <div class="doc-section" id="limitacion">
+    <h2><span class="s-icon">⚠️</span> 9. Limitación de responsabilidad</h2>
+    <p>El Servicio se proporciona <strong>"tal como está"</strong>, sin garantías de ningún tipo, expresas o implícitas.</p>
+    <p>En ningún caso Hormicash será responsable por:</p>
+    <ul>
+      <li>Pérdidas financieras derivadas de decisiones tomadas basándose en la información del dashboard.</li>
+      <li>Interrupciones del servicio por mantenimiento, fallos técnicos o causas de fuerza mayor.</li>
+      <li>Pérdida de datos derivada de fallos técnicos fuera de nuestro control.</li>
+      <li>Daños indirectos, incidentales o consecuentes de cualquier naturaleza.</li>
+    </ul>
+    <p>Hormicash <strong>no es un servicio bancario</strong> y no reemplaza el asesoramiento financiero profesional.</p>
+  </div>
+
+  <!-- 10 -->
+  <div class="doc-section" id="disponibilidad">
+    <h2><span class="s-icon">🔧</span> 10. Disponibilidad del servicio</h2>
+    <p>Nos esforzamos por mantener Hormicash disponible, pero no garantizamos una disponibilidad del 100%. El Servicio puede estar temporalmente inaccesible por:</p>
+    <ul>
+      <li>Mantenimiento programado o de emergencia.</li>
+      <li>Fallos de proveedores externos (Firebase, Twilio, Railway, etc.).</li>
+      <li>Causas de fuerza mayor.</li>
+    </ul>
+    <p>Nos comprometemos a notificarte con anticipación en caso de mantenimiento planificado que afecte el Servicio.</p>
+  </div>
+
+  <!-- 11 -->
+  <div class="doc-section" id="terminacion">
+    <h2><span class="s-icon">🚪</span> 11. Terminación de la cuenta</h2>
+    <p><strong>Por tu parte:</strong> puedes eliminar tu cuenta en cualquier momento escribiéndonos a hormicash@gmail.com. Eliminaremos tus datos según lo descrito en nuestra Política de Privacidad.</p>
+    <p><strong>Por nuestra parte:</strong> podemos suspender o eliminar tu cuenta si:</p>
+    <ul>
+      <li>Incumples estos Términos.</li>
+      <li>El servicio es discontinuado (con aviso previo de al menos 30 días).</li>
+      <li>Detectamos actividad fraudulenta o abusiva.</li>
+    </ul>
+  </div>
+
+  <!-- 12 -->
+  <div class="doc-section" id="ley">
+    <h2><span class="s-icon">⚖️</span> 12. Ley aplicable</h2>
+    <p>Estos Términos se rigen por las leyes de la <strong>República del Perú</strong>. Cualquier disputa que no pueda resolverse amigablemente se someterá a los tribunales competentes de la ciudad de Lima, Perú.</p>
+  </div>
+
+  <!-- 13 -->
+  <div class="doc-section" id="cambios">
+    <h2><span class="s-icon">📋</span> 13. Cambios a estos términos</h2>
+    <p>Podemos modificar estos Términos en cualquier momento. Cuando los cambios sean significativos, te notificaremos por email o mediante un aviso en el dashboard con al menos <strong>15 días de anticipación</strong>.</p>
+    <p>El uso continuado del Servicio tras la entrada en vigor de los cambios implica la aceptación de los nuevos Términos.</p>
+  </div>
+
+  <!-- 14 -->
+  <div class="doc-section" id="contacto">
+    <h2><span class="s-icon">✉️</span> 14. Contacto</h2>
+    <p>Para cualquier consulta sobre estos Términos:</p>
+    <ul>
+      <li><strong>Email:</strong> hormicash@gmail.com</li>
+      <li><strong>WhatsApp:</strong> +51 939 373 212</li>
+      <li><strong>Instagram:</strong> @hormicash</li>
+    </ul>
+  </div>
+
+  <div class="contact-card">
+    <div>
+      <h3>¿Tienes alguna pregunta?</h3>
+      <p>Escríbenos y te respondemos en menos de 24 horas.</p>
+    </div>
+    <a href="mailto:hormicash@gmail.com">Contactar →</a>
+  </div>
+
+</div>
+
+<footer class="page-footer">
+  <a href="/" class="footer-logo">
+    <img src="https://hormicash.web.app/logo.png" alt="logo" style="width:24px;height:24px;object-fit:cover;border-radius:6px;"> Hormicash
+  </a>
+  <div class="footer-links">
+    <a href="/#como-funciona">Cómo funciona</a>
+    <a href="/#precios">Precios</a>
+    <a href="/privacy.html">Privacidad</a>
+    <a href="/terms.html" style="color:var(--text);font-weight:500;">Términos</a>
+    <a href="mailto:hormicash@gmail.com">Soporte</a>
+  </div>
+  <div class="footer-copy">© 2026 Hormicash</div>
+</footer>
+
+</body>
+</html>
